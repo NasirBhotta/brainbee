@@ -1,0 +1,16 @@
+Flutter concepts
+-> In Stack the child that is placed after some other child will be shown on top of the child it is placed after.
+
+If suggestions for the const and other errors in flutter not working.
+-> go to the analysis.yaml file and add following rules
+rules:
+    - prefer_const_constructors
+    - prefer_const_literals_to_create_immutables
+
+what to do for auto fixing the suggestion on save?
+-> open settings.json file and then add this into the file
+	"editor.codeActionsOnSave": {
+        "source.fixAll": true,
+        "source.fixAll.dart": true
+    },
+
