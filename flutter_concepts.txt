@@ -22,3 +22,15 @@ extension BBExtension on BuildContext {
   double get screenWidth => MediaQuery.sizeOf(this).width;
   double get screenHeight => MediaQuery.sizeOf(this).height;
 }
+
+what if we have to remove all the elevated button constraints?
+-> tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+	this will remove the internal padding of the elevated button
+-> minimumSize will set the size of elevated button according to our requirements
+
+selected and unselectedlabelstyle?
+-> the selected and unselectedlabelstyle only control fontsize or fontfamily you cant apply colors there
+
+
+what to do when the we click on outside the popup?
+-> if you want to do any specific work when you dismiss the popup, then you have to call a function called ".then()" on the showgeneraldialogue it will handle the logic at barrier dismissal.

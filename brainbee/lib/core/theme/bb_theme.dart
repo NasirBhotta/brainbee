@@ -30,7 +30,7 @@ class BrainBeeTheme {
         fontWeight: FontWeight.normal,
       ),
 
-      // For body text like “RM50 Daily Lucky draw...”
+      // For body text l[ike “RM50 Daily Lucky draw...”
       bodySmall: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w400),
 
       // For buttons like "Answer Quiz"

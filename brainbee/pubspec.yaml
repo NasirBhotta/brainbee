@@ -60,6 +60,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    - assets/
     - assets/main_logo.png
     - assets/google.png
     - assets/apple.png
@@ -71,6 +72,14 @@ flutter:
     - assets/trophy.png
     - assets/heart.png
     - assets/fire.png
+    - assets/compass.png
+    - assets/calculator.png
+    - assets/molecule.png
+    - assets/dna.png
+    - assets/chemistry.png
+    - assets/biology.png
+    - assets/chemistry-book.png
+    - assets/physics.png
 
 
 

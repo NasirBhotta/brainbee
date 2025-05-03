@@ -1,8 +1,14 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
-import 'package:brainbee/core/utils/bb_extension.dart';
-import 'package:brainbee/core/utils/bb_text.dart';
-import 'package:brainbee/presentation/views/dashboard/bb_progress_bar.dart';
+import 'package:brainbee/core/utils/bb_screen_extension.dart';
+
+import 'package:brainbee/presentation/views/class/bb_class.dart';
+
+import 'package:brainbee/presentation/views/extras/bb_extras.dart';
+import 'package:brainbee/presentation/views/home/bb_home.dart';
+import 'package:brainbee/presentation/views/learn/bb_learn.dart';
+import 'package:brainbee/presentation/views/learn/bb_learn_popup.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BBDashboard extends StatefulWidget {
   const BBDashboard({super.key});
@@ -12,212 +18,110 @@ class BBDashboard extends StatefulWidget {
 }
 
 class _BBDashboardState extends State<BBDashboard> {
-  List<String> imgPath = [
-    'assets/trophy.png',
-    'assets/coin.png',
-    'assets/fire.png',
-    'assets/heart.png',
+  int selectedScreen = 0;
+  int previousScreen = 0;
+  List<Widget> dashBoardScreens = [
+    const BBhome(),
+    const BBhome(),
+    const BBClass(),
+    const BBhome(),
   ];
-  List<Color> color = [
-    BBColors.orangeAccent,
-    BBColors.yellowAccent,
-    BBColors.secondaryColor,
-    BBColors.alertRed,
+  List<Map<String, String>> popUpItems = [
+    {'title': 'Battle', 'imgPath': 'assets/battle.png'},
+    {'title': 'Practice', 'imgPath': 'assets/exercise.png'},
+    {'title': 'FlashCards', 'imgPath': 'assets/flash-card.png'},
+    {'title': 'Books', 'imgPath': 'assets/text-book.png'},
   ];
-  List<String> desc = ['10', '1', '0', '5/5'];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 130,
-            pinned: true,
-            floating: false,
-
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                padding: const EdgeInsets.only(left: 10, right: 10),
-                color: Colors.transparent,
-                child: Row(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 40),
-                        Text(
-                          "Good Evening",
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(fontSize: 10),
-                        ),
-                        const Expanded(child: SizedBox.shrink()),
-                        Text(
-                          "Nasir Bhutta",
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                        const SizedBox(height: 50),
-                        const Expanded(child: SizedBox.shrink()),
-                      ],
-                    ),
-                    const Expanded(child: SizedBox.shrink()),
-                    const Column(
-                      children: [
-                        Row(
-                          children: [
-                            SizedBox(height: 150),
-                            Icon(
-                              Icons.notifications,
-                              size: 20,
-                              color: BBColors.disabledText,
-                            ),
-                            SizedBox(width: 10),
-                            CircleAvatar(),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              expandedTitleScale: 1,
-              title: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(4, (index) {
-                  return BbProgressBar(
-                    color: color[index],
-                    imgPath: imgPath[index],
-                    desc: desc[index],
-                    index: index,
-                  );
-                }),
-              ),
-              centerTitle: true,
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: BBColors.white,
+        elevation: 0,
+        onTap: (value) {
+          setState(() {
+            previousScreen = selectedScreen;
+            selectedScreen = value;
+          });
+          if (value == 1) {
+            showSlidingPopup(
+              context,
+              popUpItems,
+              onDismiss: () {
+                setState(() {
+                  selectedScreen = previousScreen;
+                });
+              },
+            );
+          } else if (value == 3) {
+            showSlidingPopup(
+              context,
+              popUpItems,
+              onDismiss: () {
+                setState(() {
+                  selectedScreen = previousScreen;
+                });
+              },
+            );
+          }
+        },
+        selectedLabelStyle: GoogleFonts.poppins(fontSize: 10),
+        showUnselectedLabels: true,
+        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 10),
+        unselectedItemColor: BBColors.bodyText,
+        selectedItemColor: BBColors.bodyText,
+        type: BottomNavigationBarType.fixed,
+        items: [
+          BottomNavigationBarItem(
+            icon: Image(
+              image: const AssetImage("assets/home.png"),
+              height: context.screenHeight * 0.025,
+              color:
+                  selectedScreen == 0
+                      ? BBColors.primaryColor
+                      : BBColors.darkHeading,
             ),
+            label: "Home",
           ),
-          SliverList.builder(
-            itemBuilder: (_, index) {
-              return index == 0
-                  ? Container(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: BBColors.white,
-                    ),
-                    height: 70,
-                    width: double.infinity,
-
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            BBText(
-                              data: "Bookmark 6 Questions",
-                              style: Theme.of(
-                                context,
-                              ).textTheme.titleSmall?.copyWith(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            SizedBox(
-                              width: context.screenWidth * 0.7,
-                              child: LinearProgressIndicator(
-                                value: 0.5,
-                                backgroundColor: BBColors.lightGrayBG,
-                                color: BBColors.primaryColor,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          constraints: const BoxConstraints(
-                            maxHeight: 30,
-                            maxWidth: 60,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            gradient: const LinearGradient(
-                              colors: [
-                                BBColors.primaryColor,
-                                BBColors.secondaryColor,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                Image.asset(
-                                  "assets/coin.png",
-                                  width: context.screenWidth * 0.05,
-                                  height: context.screenHeight * 0.05,
-                                ),
-                                BBText(
-                                  data: "6",
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.labelLarge?.copyWith(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: BBColors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                  : Container(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    height: context.screenHeight * 0.12,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: BBColors.white,
-                    ),
-                    child: Center(
-                      child: Text(
-                        "Item $index",
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                  );
-            },
-            itemCount: 20,
+          BottomNavigationBarItem(
+            icon: Image(
+              image: const AssetImage("assets/open-book.png"),
+              height: context.screenHeight * 0.025,
+              color:
+                  selectedScreen == 1
+                      ? BBColors.primaryColor
+                      : BBColors.darkHeading,
+            ),
+            label: "Learn",
+          ),
+          BottomNavigationBarItem(
+            icon: Image(
+              image: const AssetImage("assets/presentation.png"),
+              height: context.screenHeight * 0.025,
+              color:
+                  selectedScreen == 2
+                      ? BBColors.primaryColor
+                      : BBColors.darkHeading,
+            ),
+            label: "Class",
+          ),
+          BottomNavigationBarItem(
+            icon: Image(
+              image: const AssetImage("assets/badge.png"),
+              height: context.screenHeight * 0.025,
+              color:
+                  selectedScreen == 3
+                      ? BBColors.primaryColor
+                      : BBColors.darkHeading,
+            ),
+            label: "Extras",
           ),
         ],
       ),
+      body:
+          selectedScreen == 0 || selectedScreen == 2
+              ? dashBoardScreens[selectedScreen]
+              : dashBoardScreens[previousScreen],
     );
   }
 }
