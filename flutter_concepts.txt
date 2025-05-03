@@ -14,3 +14,11 @@ what to do for auto fixing the suggestion on save?
         "source.fixAll.dart": true
     },
 
+what is flutter extention?
+-> by using extension method in flutter you can add your own defined methods in the existing packages.
+import 'package:flutter/material.dart';
+
+extension BBExtension on BuildContext {
+  double get screenWidth => MediaQuery.sizeOf(this).width;
+  double get screenHeight => MediaQuery.sizeOf(this).height;
+}

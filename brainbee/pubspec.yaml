@@ -67,6 +67,12 @@ flutter:
     - assets/2.png
     - assets/3.png
     - assets/3.1.png
+    - assets/coin.png
+    - assets/trophy.png
+    - assets/heart.png
+    - assets/fire.png
+
+
 
   #   - images/a_dot_ham.jpeg
 

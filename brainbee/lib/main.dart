@@ -19,8 +19,7 @@ class BrainBeeApp extends StatelessWidget {
       theme: BrainBeeTheme.lightTheme,
       debugShowCheckedModeBanner: false,
 
-      home:
-          const SplashScreen(), // Change this to BbDashboard() or BbCombinedOnboard() as needed
+      home: const BBDashboard(),
     );
   }
 }
