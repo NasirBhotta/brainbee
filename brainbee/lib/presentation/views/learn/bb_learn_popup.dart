@@ -1,4 +1,3 @@
-import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/presentation/views/learn/bb_popup_items.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +52,7 @@ void showSlidingPopup(
                       alignment: WrapAlignment.spaceBetween,
                       children: List.generate(4, (index) {
                         return BBPopupItems(
+                          index: index,
                           title: items[index]['title'],
                           imgPath: items[index]['imgPath'],
                         );

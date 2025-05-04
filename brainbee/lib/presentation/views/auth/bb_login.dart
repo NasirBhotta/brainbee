@@ -1,5 +1,7 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/scroll_controller.dart';
+import 'package:brainbee/presentation/views/dashboard/bb_dashboard.dart';
+
 import 'package:flutter/material.dart';
 
 class BbLogin extends StatefulWidget {
@@ -139,7 +141,14 @@ class _BbLoginState extends State<BbLogin> {
                   ),
                 ),
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BBDashboard(),
+                      ),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,

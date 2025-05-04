@@ -3,9 +3,7 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 
 import 'package:brainbee/presentation/views/class/bb_class.dart';
 
-import 'package:brainbee/presentation/views/extras/bb_extras.dart';
 import 'package:brainbee/presentation/views/home/bb_home.dart';
-import 'package:brainbee/presentation/views/learn/bb_learn.dart';
 import 'package:brainbee/presentation/views/learn/bb_learn_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';

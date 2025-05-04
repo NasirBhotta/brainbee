@@ -3,6 +3,11 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/presentation/views/dashboard/bb_progress_bar.dart';
 import 'package:brainbee/presentation/views/dashboard/bb_quizzes_display.dart';
+import 'package:brainbee/presentation/views/home/bb_coin_popup.dart';
+import 'package:brainbee/presentation/views/home/bb_lives_popup.dart';
+import 'package:brainbee/presentation/views/home/bb_notification_center.dart';
+import 'package:brainbee/presentation/views/home/bb_score_popup.dart';
+import 'package:brainbee/presentation/views/home/bb_streak_popup.dart';
 import 'package:brainbee/presentation/views/settings/bb_settings.dart';
 import 'package:flutter/material.dart';
 
@@ -54,6 +59,12 @@ class _BBhomeState extends State<BBhome> {
       'imagePath2': 'assets/chemistry-book.png',
     },
   ];
+  List<Function> popUpFunctions = [
+    showScoreGoalsPopup,
+    showCoinsPopup,
+    showStreakPopup,
+    showLivesPopup,
+  ];
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
@@ -97,10 +108,21 @@ class _BBhomeState extends State<BBhome> {
                       Row(
                         children: [
                           const SizedBox(height: 150),
-                          const Icon(
-                            Icons.notifications,
-                            size: 20,
-                            color: BBColors.disabledText,
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => const BBNotificationCenter(),
+                                ),
+                              );
+                            },
+                            child: const Icon(
+                              Icons.notifications,
+                              size: 20,
+                              color: BBColors.disabledText,
+                            ),
                           ),
                           const SizedBox(width: 10),
                           GestureDetector(
@@ -136,6 +158,9 @@ class _BBhomeState extends State<BBhome> {
                   imgPath: imgPath[index],
                   desc: desc[index],
                   index: index,
+                  onTap: () {
+                    popUpFunctions[index](context);
+                  },
                 );
               }),
             ),
