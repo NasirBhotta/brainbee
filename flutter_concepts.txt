@@ -34,3 +34,21 @@ selected and unselectedlabelstyle?
 
 what to do when the we click on outside the popup?
 -> if you want to do any specific work when you dismiss the popup, then you have to call a function called ".then()" on the showgeneraldialogue it will handle the logic at barrier dismissal.
+
+
+why provider is not good for large applications?
+-> 
+
+
+
+why multi-level inheritance is discouraged in flutter?
+-> hard to manage
+-> tight coupling
+-> difficult to debug when the app scales.
+	-> solution
+-> we can solve it by using mixins, interfaces/abstract classes or composition.
+
+
+why we use proxyProvider in the provider?
+-> we use the proxy provider if the state of one provider depends on other. I mean that if change in one provider is required to rebuild other provider dependent material then we use proxy provider.
+ -> this is horrible 

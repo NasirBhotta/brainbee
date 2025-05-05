@@ -1,6 +1,7 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
+import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/presentation/views/dashboard/bb_progress_bar.dart';
 import 'package:brainbee/presentation/views/dashboard/bb_quizzes_display.dart';
 import 'package:brainbee/presentation/views/home/bb_coin_popup.dart';
@@ -37,26 +38,26 @@ class _BBhomeState extends State<BBhome> {
     {
       'title': 'Mathematics',
       'description': 'Quiz level 1 - Basic and Mixed Operations',
-      'imagePath1': 'assets/compass.png',
-      'imagePath2': 'assets/calculator.png',
+      'imagePath1': 'assets/bg1.png',
+      'imagePath2': 'assets/quiz1.png',
     },
     {
       'title': 'Physics',
       'description': 'Quiz level 1 - Science Process Skills',
-      'imagePath1': 'assets/molecule.png',
-      'imagePath2': 'assets/physics.png',
+      'imagePath1': 'assets/bg2.png',
+      'imagePath2': 'assets/quiz2.png',
     },
     {
       'title': 'Biology',
       'description': 'Quiz level 1 - Introduction to Biology',
-      'imagePath1': 'assets/dna.png',
-      'imagePath2': 'assets/biology.png',
+      'imagePath1': 'assets/bg3.png',
+      'imagePath2': 'assets/quiz3.png',
     },
     {
       'title': 'Chemistry',
       'description': 'Quiz level 1 - Introduction to Chemistry',
-      'imagePath1': 'assets/chemistry.png',
-      'imagePath2': 'assets/chemistry-book.png',
+      'imagePath1': 'assets/bg4.png',
+      'imagePath2': 'assets/quiz4.png',
     },
   ];
   List<Function> popUpFunctions = [
@@ -175,89 +176,95 @@ class _BBhomeState extends State<BBhome> {
                     horizontal: 10,
                     vertical: 5,
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: BBColors.white,
-                  ),
-                  height: 70,
+
+                  height: context.screenHeight * 0.25,
                   width: double.infinity,
 
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Stack(
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          BBText(
-                            data: "Bookmark 6 Questions",
-                            style: Theme.of(
-                              context,
-                            ).textTheme.titleSmall?.copyWith(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
+                      Align(
+                        alignment: Alignment.center,
+                        child: Container(
+                          width: context.screenWidth,
+                          height: context.screenHeight * 0.18,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: BBColors.white,
+                            image: const DecorationImage(
+                              image: AssetImage('assets/promotionbg.png'),
+                              fit: BoxFit.cover,
                             ),
                           ),
-                          SizedBox(
-                            width: context.screenWidth * 0.7,
-                            child: LinearProgressIndicator(
-                              value: 0.5,
-                              backgroundColor: BBColors.lightGrayBG,
-                              color: BBColors.primaryColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 17,
                           ),
-                        ],
-                      ),
-                      Container(
-                        constraints: const BoxConstraints(
-                          maxHeight: 30,
-                          maxWidth: 60,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: const LinearGradient(
-                            colors: [
-                              BBColors.primaryColor,
-                              BBColors.secondaryColor,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            spacing: 15,
                             children: [
-                              Image.asset(
-                                "assets/coin.png",
-                                width: context.screenWidth * 0.05,
-                                height: context.screenHeight * 0.05,
+                              SizedBox(
+                                width: context.screenWidth * 0.5,
+                                child: BBText(
+                                  data: "Bookmark 6 Questions",
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleSmall?.copyWith(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: BBColors.white,
+                                  ),
+                                ),
                               ),
-                              BBText(
-                                data: "6",
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.labelLarge?.copyWith(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
+
+                              // SizedBox(
+                              //   width: context.screenWidth * 0.7,
+                              //   child: LinearProgressIndicator(
+                              //     value: 0.5,
+                              //     backgroundColor: BBColors.lightGrayBG,
+                              //     color: BBColors.primaryColor,
+                              //     borderRadius: BorderRadius.circular(12),
+                              //   ),
+                              // ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(30),
                                   color: BBColors.white,
+                                ),
+                                child: ElevatedButton(
+                                  onPressed: () {},
+                                  style: ElevatedButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                  ),
+                                  child: BBText(
+                                    data: "Claim Now",
+                                    style: context.textStyle.titleMedium
+                                        ?.copyWith(fontSize: 14),
+                                  ),
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                      ),
+
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: SizedBox(
+                          height: context.screenHeight * 0.5,
+                          width: context.screenWidth * 0.5,
+                          child: Image.asset(
+                            'assets/promotion.png',
+                            fit: BoxFit.contain,
                           ),
                         ),
                       ),
