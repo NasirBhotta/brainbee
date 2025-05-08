@@ -11,6 +11,7 @@ class BbQuizzesDisplay extends StatefulWidget {
   final String description;
   final String imagePath1;
   final String imagePath2;
+  final Color color;
 
   const BbQuizzesDisplay({
     super.key,
@@ -18,6 +19,7 @@ class BbQuizzesDisplay extends StatefulWidget {
     required this.description,
     required this.imagePath1,
     required this.imagePath2,
+    required this.color,
   });
 
   @override
@@ -78,10 +80,7 @@ class _BbQuizzesDisplayState extends State<BbQuizzesDisplay> {
 
                 SizedBox(
                   width: context.screenWidth * 0.5,
-                  child: const CustomProgressBar(
-                    progress: 0.5,
-                    color: BBColors.primaryBlue,
-                  ),
+                  child: CustomProgressBar(progress: 0.5, color: widget.color),
                 ),
                 Align(
                   alignment: Alignment.bottomRight,

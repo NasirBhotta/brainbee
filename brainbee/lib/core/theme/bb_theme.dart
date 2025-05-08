@@ -12,42 +12,71 @@ class BrainBeeTheme {
       elevation: 0,
     ),
     textTheme: TextTheme(
-      // For main title like "Nasir Bhotta"
       headlineSmall: GoogleFonts.poppins(
         fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
 
-      // For section titles like "Mathematics", "Science"
       titleMedium: GoogleFonts.poppins(
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
 
-      // For small subtitles like "Quiz Level 1 - Science Process Skills"
       bodyMedium: GoogleFonts.poppins(
         fontSize: 14,
         fontWeight: FontWeight.normal,
       ),
 
-      // For body text l[ike “RM50 Daily Lucky draw...”
       bodySmall: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w400),
 
-      // For buttons like "Answer Quiz"
       labelLarge: GoogleFonts.poppins(
         fontSize: 15,
         fontWeight: FontWeight.w500,
       ),
 
-      // For streak highlights like “0 Day Streak”
       headlineMedium: GoogleFonts.poppins(
         fontSize: 20,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
       ),
 
-      // For streak detail like “Longest Streak: 1 Day”
       titleSmall: GoogleFonts.poppins(
         fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+
+      displayLarge: GoogleFonts.poppins(
+        fontSize: 32,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.5,
+      ),
+
+      displayMedium: GoogleFonts.poppins(
+        fontSize: 28,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.25,
+      ),
+
+      displaySmall: GoogleFonts.poppins(
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+      ),
+
+      headlineLarge: GoogleFonts.poppins(fontSize: 22),
+
+      titleLarge: GoogleFonts.poppins(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+
+      bodyLarge: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w400),
+
+      labelMedium: GoogleFonts.poppins(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+
+      labelSmall: GoogleFonts.poppins(
+        fontSize: 12,
         fontWeight: FontWeight.w500,
       ),
     ),
@@ -60,24 +89,15 @@ class BrainBeeTheme {
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(
-          color: BBColors.bodyText, // light grey border
-          width: 1,
-        ),
+        borderSide: const BorderSide(color: BBColors.bodyText, width: 1),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(
-          color: BBColors.bodyText, // light grey border
-          width: 1,
-        ),
+        borderSide: const BorderSide(color: BBColors.bodyText, width: 1),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(
-          color: Color(0xFF4CAF50), // green (same as button)
-          width: 2.0,
-        ),
+        borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2.0),
       ),
       hintStyle: GoogleFonts.poppins(
         fontSize: 14,

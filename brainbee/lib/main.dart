@@ -1,5 +1,10 @@
 import 'package:brainbee/core/theme/bb_theme.dart';
 import 'package:brainbee/presentation/splashscreen/splash_screen.dart';
+import 'package:brainbee/presentation/views/extras/leaderboard/bb_customgraph.dart';
+import 'package:brainbee/presentation/views/extras/leaderboard/bb_leaderboard.dart';
+import 'package:brainbee/presentation/views/extras/reportcard/bb_book_analytics.dart';
+import 'package:brainbee/presentation/views/extras/reportcard/bb_reportcard.dart';
+import 'package:brainbee/presentation/views/extras/scorecard/bb_scorecard.dart';
 
 import 'package:flutter/material.dart';
 
@@ -18,7 +23,7 @@ class BrainBeeApp extends StatelessWidget {
       theme: BrainBeeTheme.lightTheme,
       debugShowCheckedModeBanner: false,
 
-      home: const SplashScreen(),
+      home: const BBOverallScoreScreen(),
     );
   }
 }

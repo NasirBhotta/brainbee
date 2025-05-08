@@ -1,0 +1,23 @@
+what are the containers?
+a docker container is actually a mini computer 
+
+why we need docker?
+containers vs virtual machines?
+
+
+for installing docker on Linux: 
+
+-> curl -fsSL https://get.docker.com -o get-docker.sh
+-> sudo sh get-docker.sh
+ runs these commands
+
+for deploying you web app on ec2?
+-> create dockerfiles for each of the folder like frontend and backend
+-> now create a docker compose file in the root directory of the two folder.
+-> then run docker-compose build command
+-> then run docker-compose up -d command
+
+
+how to create a docker image?
+-> chat-gpt it you dumb
+

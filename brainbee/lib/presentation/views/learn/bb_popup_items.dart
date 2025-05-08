@@ -37,12 +37,20 @@ class BBPopupItems extends StatelessWidget {
             );
           },
           child: Container(
-            height: context.screenHeight * 0.065,
-            width: context.screenWidth * 0.14,
+            height: context.screenHeight * 0.075,
+            width: context.screenWidth * 0.16,
             padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              color: BBColors.primaryColor.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(40),
+              color: const Color.fromARGB(179, 135, 219, 139),
+
+              boxShadow: const [
+                BoxShadow(
+                  color: Color.fromARGB(115, 135, 219, 139),
+                  blurRadius: 5,
+                  spreadRadius: 5,
+                ),
+              ],
             ),
             child: Image.asset(imgPath ?? "assets/battle.png"),
           ),

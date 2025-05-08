@@ -34,30 +34,34 @@ class _BBhomeState extends State<BBhome> {
   ];
   List<String> desc = ['10', '1', '0', '5/5'];
 
-  List<Map<String, String>> quizzes = [
+  List<Map<String, dynamic>> quizzes = [
     {
       'title': 'Mathematics',
       'description': 'Quiz level 1 - Basic and Mixed Operations',
       'imagePath1': 'assets/bg1.png',
       'imagePath2': 'assets/quiz1.png',
+      'color': BBColors.progressColor1,
     },
     {
       'title': 'Physics',
       'description': 'Quiz level 1 - Science Process Skills',
       'imagePath1': 'assets/bg2.png',
       'imagePath2': 'assets/quiz2.png',
+      'color': BBColors.progressColor2,
     },
     {
       'title': 'Biology',
       'description': 'Quiz level 1 - Introduction to Biology',
       'imagePath1': 'assets/bg3.png',
       'imagePath2': 'assets/quiz3.png',
+      'color': BBColors.progressColor3,
     },
     {
       'title': 'Chemistry',
       'description': 'Quiz level 1 - Introduction to Chemistry',
       'imagePath1': 'assets/bg4.png',
       'imagePath2': 'assets/quiz4.png',
+      'color': BBColors.progressColor4,
     },
   ];
   List<Function> popUpFunctions = [
@@ -276,6 +280,7 @@ class _BBhomeState extends State<BBhome> {
                   description: quizzes[index - 1]['description']!,
                   imagePath1: quizzes[index - 1]['imagePath1']!,
                   imagePath2: quizzes[index - 1]['imagePath2']!,
+                  color: quizzes[index - 1]['color']!,
                 );
           },
           itemCount: quizzes.length + 1,

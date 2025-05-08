@@ -52,3 +52,6 @@ why multi-level inheritance is discouraged in flutter?
 why we use proxyProvider in the provider?
 -> we use the proxy provider if the state of one provider depends on other. I mean that if change in one provider is required to rebuild other provider dependent material then we use proxy provider.
  -> this is horrible 
+
+why copywith() don't override some of the properties of the text?
+-> because the properties that are written explicitly will not be overridden by the copywith() method.
