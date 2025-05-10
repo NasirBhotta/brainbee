@@ -2,6 +2,7 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 
 import 'package:brainbee/presentation/views/class/bb_class.dart';
+import 'package:brainbee/presentation/views/extras/bb_extrapopup.dart';
 
 import 'package:brainbee/presentation/views/home/bb_home.dart';
 import 'package:brainbee/presentation/views/learn/bb_learn_popup.dart';
@@ -24,11 +25,20 @@ class _BBDashboardState extends State<BBDashboard> {
     const BBClass(),
     const BBhome(),
   ];
-  List<Map<String, String>> popUpItems = [
+  List<Map<String, String>> learnPopUp = [
     {'title': 'Battle', 'imgPath': 'assets/battle.png'},
     {'title': 'Practice', 'imgPath': 'assets/exercise.png'},
     {'title': 'FlashCards', 'imgPath': 'assets/flash-card.png'},
     {'title': 'Books', 'imgPath': 'assets/text-book.png'},
+  ];
+  List<Map<String, String>> extraPopUP = [
+    {'title': 'Score', 'imgPath': 'assets/battle.png'},
+    {'title': 'Report Card', 'imgPath': 'assets/exercise.png'},
+    {'title': 'Leaderboard', 'imgPath': 'assets/flash-card.png'},
+    {'title': 'Rewards', 'imgPath': 'assets/text-book.png'},
+    {'title': 'Coin Quests', 'imgPath': 'assets/text-book.png'},
+    {'title': 'Badges', 'imgPath': 'assets/text-book.png'},
+    {'title': 'Certificates', 'imgPath': 'assets/text-book.png'},
   ];
   @override
   Widget build(BuildContext context) {
@@ -44,7 +54,7 @@ class _BBDashboardState extends State<BBDashboard> {
           if (value == 1) {
             showSlidingPopup(
               context,
-              popUpItems,
+              learnPopUp,
               onDismiss: () {
                 setState(() {
                   selectedScreen = previousScreen;
@@ -52,9 +62,9 @@ class _BBDashboardState extends State<BBDashboard> {
               },
             );
           } else if (value == 3) {
-            showSlidingPopup(
+            showExtraPopup(
               context,
-              popUpItems,
+              extraPopUP,
               onDismiss: () {
                 setState(() {
                   selectedScreen = previousScreen;

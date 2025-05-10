@@ -2,7 +2,7 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/presentation/views/learn/bb_popup_items.dart';
 import 'package:flutter/material.dart';
 
-void showSlidingPopup(
+void showExtraPopup(
   BuildContext context,
   List<Map<String, String>> items, {
   VoidCallback? onDismiss,
@@ -28,7 +28,7 @@ void showSlidingPopup(
             elevation: 20,
             child: Container(
               width: MediaQuery.of(context).size.width * 1,
-              height: context.screenHeight * 0.3,
+              height: context.screenHeight * 0.4,
               padding: const EdgeInsets.only(
                 left: 20,
                 right: 20,
@@ -49,10 +49,13 @@ void showSlidingPopup(
                   SizedBox(
                     width: context.screenWidth,
                     child: Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      children: List.generate(4, (index) {
+                      alignment: WrapAlignment.center,
+                      direction: Axis.horizontal,
+                      spacing: context.screenWidth * 0.05,
+                      runSpacing: context.screenWidth * 0.1,
+                      children: List.generate(items.length, (index) {
                         return BBPopupItems(
-                          barType: BottomBarType.learn,
+                          barType: BottomBarType.extra,
                           index: index,
                           title: items[index]['title'],
                           imgPath: items[index]['imgPath'],
