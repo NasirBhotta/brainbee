@@ -18,8 +18,7 @@ class Subject {
   });
 }
 
-
-class BbBattleChapSelect extends StatelessWidget {
+class BBBookSelection extends StatelessWidget {
   final List<Subject> subjects = [
     Subject(
       name: 'English',
@@ -53,7 +52,7 @@ class BbBattleChapSelect extends StatelessWidget {
     ),
   ];
 
-  BbBattleChapSelect({super.key});
+  BBBookSelection({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +91,7 @@ class BbBattleChapSelect extends StatelessWidget {
                   data: subject.name,
                   style: context.textStyle.titleMedium?.copyWith(fontSize: 16),
                 ),
-                
+
                 onTap: () {
                   _showStudyModeDialog(context, subject, index);
                 },
@@ -115,9 +114,9 @@ class BbBattleChapSelect extends StatelessWidget {
           title: Center(
             child: BBText(
               data: 'Battle Mode',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
           content: Column(
@@ -134,19 +133,26 @@ class BbBattleChapSelect extends StatelessWidget {
                 children: [
                   _buildStudyModeButton(
                     context,
-                
+
                     label: 'By Chapter',
                     onTap: () {
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => BBChapterSelectionScreen(subject: subject),));
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  BBChapterSelectionScreen(subject: subject),
+                        ),
+                      );
                     },
                   ),
                   _buildStudyModeButton(
                     context,
-                 
+
                     label: 'Whole Book',
                     onTap: () {
                       Navigator.pop(context);
-                      _navigateToFlashcards(context, subject);
+                      _showInvitationPopUp(context);
                     },
                   ),
                 ],
@@ -171,7 +177,9 @@ class BbBattleChapSelect extends StatelessWidget {
         decoration: BoxDecoration(
           color: BBColors.primaryBlue,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: BBColors.primaryColor.withValues(alpha: 0.3)),
+          border: Border.all(
+            color: BBColors.primaryColor.withValues(alpha: 0.3),
+          ),
           boxShadow: const [
             BoxShadow(
               color: Colors.black12,
@@ -183,21 +191,115 @@ class BbBattleChapSelect extends StatelessWidget {
         child: BBText(
           data: label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: BBColors.white,
-                fontWeight: FontWeight.w600,
-              ),
+            color: BBColors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
   }
 
+  void _showInvitationPopUp(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "invitaion",
+      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.2),
+            end: const Offset(0, 0),
+          ).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            child: Stack(
+              children: [
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: BBColors.lightGrayBG,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Center(
+                          child: BBText(
+                            data: 'Invite Friends',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            BBText(
+                              data: 'Are you ready?',
 
+                              style: Theme.of(context).textTheme.bodyMedium,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            _buildStudyModeButton(
+                              context,
+                              label: "Share Invitation Code",
+                              onTap: () {},
+                            ),
+                            Expanded(child: child),
+                            _buildStudyModeButton(
+                              context,
+                              label: "Invite Friends",
+                              onTap: () {},
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
-  void _navigateToFlashcards(BuildContext context, Subject subject) {
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Whole Book Flashcards for ${subject.name}')),
+                Align(
+                  alignment: const Alignment(0.72, -0.07),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: BBColors.lightGrayBG,
+                        borderRadius: BorderRadius.circular(2),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: BBColors.disabledText,
+                            spreadRadius: 0.5,
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.close, size: 20),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
-
