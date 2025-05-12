@@ -4,9 +4,6 @@ Flutter concepts
 If suggestions for the const and other errors in flutter not working.
 -> go to the analysis.yaml file and add following rules
 rules:
-    - prefer_const_constructors
-    - prefer_const_literals_to_create_immutables
-
 what to do for auto fixing the suggestion on save?
 -> open settings.json file and then add this into the file
 	"editor.codeActionsOnSave": {
@@ -55,3 +52,10 @@ why we use proxyProvider in the provider?
 
 why copywith() don't override some of the properties of the text?
 -> because the properties that are written explicitly will not be overridden by the copywith() method.
+
+what is gradle? why do we need it?
+-> gradle is actually a how to. 
+-> dart compiles the code into the native machine code then gradle comes in gradle combines everything and then handle the android plugins and dependencies, it is actually the build process. gives us .apk file. 
+
+why widgetsBinding is necessary?
+-> 

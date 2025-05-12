@@ -2,6 +2,7 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
+import 'package:brainbee/presentation/views/battle/bb_book_selection.dart';
 import 'package:flutter/material.dart';
 
 class BBBattle extends StatefulWidget {
@@ -155,6 +156,9 @@ class _BBBattleState extends State<BBBattle> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               InkWell(
+                                onTap: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => BbBattleChapSelect()));
+                                },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 15,

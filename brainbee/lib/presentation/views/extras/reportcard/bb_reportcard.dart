@@ -2,6 +2,7 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
+import 'package:brainbee/presentation/views/extras/reportcard/bb_book_analytics.dart';
 import 'package:flutter/material.dart';
 
 class ReportCardScreen extends StatelessWidget {
@@ -132,7 +133,7 @@ class ReportCardScreen extends StatelessWidget {
                 final subject = grades[index];
                 return Column(
                   children: [
-                    SubjectGradeRow(subject: subject, index: index),
+                    GestureDetector(onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => const BBBookAnalytics(),));},child: SubjectGradeRow(subject: subject, index: index)),
                     if (index < grades.length - 1)
                       Divider(
                         height: 1,
@@ -178,76 +179,73 @@ class SubjectGradeRow extends StatelessWidget {
       subjectColor = BBColors.progressColor1;
     }
 
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 15),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 30,
-              child: BBText(
-                data: '${subject.number}',
-                style: context.textStyle.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 15),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 30,
+            child: BBText(
+              data: '${subject.number}',
+              style: context.textStyle.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
             ),
-
-            Expanded(
-              child: BBText(
-                data: subject.subject,
-                style: context.textStyle.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w400,
+          ),
+    
+          Expanded(
+            child: BBText(
+              data: subject.subject,
+              style: context.textStyle.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w400,
+                color: BBColors.primaryColor,
+              ),
+            ),
+          ),
+    
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: subjectColor.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: subject.score / 100,
+              child: Container(
+                decoration: BoxDecoration(
                   color: BBColors.primaryColor,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: subjectColor.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: subject.score / 100,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: BBColors.primaryColor,
-                    borderRadius: BorderRadius.circular(2),
+          ),
+    
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                BBText(
+                  data: '${subject.score}%',
+                  textAlign: TextAlign.center,
+                  style: context.textStyle.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w400,
+                    color: BBColors.bodyText,
                   ),
                 ),
-              ),
-            ),
-
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  BBText(
-                    data: '${subject.score}%',
-                    textAlign: TextAlign.center,
-                    style: context.textStyle.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w400,
-                      color: BBColors.bodyText,
-                    ),
+    
+                BBText(
+                  data: subject.grade,
+                  textAlign: TextAlign.center,
+                  style: context.textStyle.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w500,
                   ),
-
-                  BBText(
-                    data: subject.grade,
-                    textAlign: TextAlign.center,
-                    style: context.textStyle.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

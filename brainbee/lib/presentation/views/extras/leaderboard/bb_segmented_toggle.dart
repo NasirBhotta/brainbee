@@ -23,7 +23,6 @@ class _BBSegmentedToggleState extends State<BBSegmentedToggle> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     selectedOption = widget.initialOption;
   }
@@ -75,7 +74,7 @@ class _BBSegmentedToggleState extends State<BBSegmentedToggle> {
           child: BBText(
             data: label,
             style: context.textStyle.labelMedium?.copyWith(
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.normal,
               color: isSelected ? BBColors.white : BBColors.black,
             ),

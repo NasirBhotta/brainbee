@@ -8,6 +8,7 @@ class SlowMaxScrollPhysics extends ScrollPhysics {
   @override
   SlowMaxScrollPhysics applyTo(ScrollPhysics? ancestor) {
     return SlowMaxScrollPhysics(
+      
       maxOffset: maxOffset,
       parent: buildParent(ancestor),
     );
@@ -25,6 +26,6 @@ class SlowMaxScrollPhysics extends ScrollPhysics {
   // Slow down the user drag scroll speed
   @override
   double applyPhysicsToUserOffset(ScrollMetrics position, double offset) {
-    return offset * 0.3; // Adjust this multiplier to control speed
+    return offset * 0.4; // Adjust this multiplier to control speed
   }
 }
