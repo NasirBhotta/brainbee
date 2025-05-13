@@ -1,4 +1,5 @@
 import 'package:brainbee/core/models/bb_chapter.dart';
+import 'package:brainbee/core/widgets/popups/bb_invite_popUp.dart';
 import 'package:brainbee/presentation/views/battle/bb_battle_quiz_screen.dart';
 import 'package:brainbee/presentation/views/battle/bb_book_selection.dart';
 import 'package:flutter/material.dart';
@@ -9,37 +10,30 @@ import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 class BBChapterSelectionScreen extends StatefulWidget {
   final Subject subject;
 
-  const BBChapterSelectionScreen({
-    super.key, 
-    required this.subject,
-  });
+  const BBChapterSelectionScreen({super.key, required this.subject});
 
   @override
-  _BBChapterSelectionScreenState createState() => _BBChapterSelectionScreenState();
+  _BBChapterSelectionScreenState createState() =>
+      _BBChapterSelectionScreenState();
 }
 
 class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
-   
   final Map<String, bool> _selectedChapters = {};
 
-   
   late List<Chapter> _chapters;
 
   @override
   void initState() {
     super.initState();
-     
+
     _chapters = _getChaptersForSubject(widget.subject.name);
-    
-     
+
     for (var chapter in _chapters) {
       _selectedChapters[chapter.name] = false;
     }
   }
 
-   
   List<Chapter> _getChaptersForSubject(String subjectName) {
-     
     switch (subjectName) {
       case 'English':
         return [
@@ -86,7 +80,6 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,7 +101,6 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
       ),
       body: Column(
         children: [
-           
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -122,9 +114,10 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                       color: BBColors.white,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: _selectedChapters[chapter.name]! 
-                          ? BBColors.primaryBlue 
-                          : Colors.transparent,
+                        color:
+                            _selectedChapters[chapter.name]!
+                                ? BBColors.primaryBlue
+                                : Colors.transparent,
                         width: 2,
                       ),
                     ),
@@ -133,12 +126,13 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                         data: chapter.name,
                         style: context.textStyle.titleMedium?.copyWith(
                           fontSize: 16,
-                          color: _selectedChapters[chapter.name]! 
-                            ? BBColors.primaryBlue 
-                            : Colors.black,
+                          color:
+                              _selectedChapters[chapter.name]!
+                                  ? BBColors.primaryBlue
+                                  : Colors.black,
                         ),
                       ),
-                      
+
                       value: _selectedChapters[chapter.name] ?? false,
                       onChanged: (bool? value) {
                         setState(() {
@@ -153,8 +147,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
               },
             ),
           ),
-          
-           
+
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
@@ -170,35 +163,43 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                 
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     BBText(
-                      data: 'Selected Chapters: ${_selectedChapters.values.where((v) => v).length}',
+                      data:
+                          'Selected Chapters: ${_selectedChapters.values.where((v) => v).length}',
                       style: context.textStyle.bodyMedium,
                     ),
-                  
                   ],
                 ),
-                
-                 
+
                 ElevatedButton(
-                  onPressed: _selectedChapters.values.contains(true) 
-                    ? () {
-                         
-                       Navigator.pushReplacement(context, MaterialPageRoute(builder:(context) => const BBBattleQuizScreen(),));
-                      }
-                    : null,
+                  onPressed:
+                      _selectedChapters.values.contains(true)
+                          ? () {
+                            showInvitationPopUp(
+                              context: context,
+                              title: "Invite Friends",
+                              desc: "Are you ready?",
+                              button1Label: "Share invitation code",
+                              button2Label: "Random Match",
+                              subject: widget.subject,
+                            );
+                          }
+                          : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BBColors.primaryBlue,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   child: BBText(
-                    data: 'Start Battle',
+                    data: 'Start Match',
                     style: context.textStyle.titleSmall?.copyWith(
                       color: BBColors.white,
                       fontWeight: FontWeight.bold,
@@ -212,10 +213,4 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
       ),
     );
   }
-
-
 }
-
- 
-
-
