@@ -250,7 +250,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
     return Scaffold(
       backgroundColor: BBColors.lightGrayBG,
       appBar: AppBar(
-        backgroundColor: BBColors.primaryBlue,
+        backgroundColor: BBColors.lightGrayBG,
         title: BBText(
           data: "Brain Battle",
           style: context.textStyle.labelMedium?.copyWith(color: Colors.white),

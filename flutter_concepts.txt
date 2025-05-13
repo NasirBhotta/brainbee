@@ -59,3 +59,5 @@ what is gradle? why do we need it?
 
 why widgetsBinding is necessary?
 -> 
+
+how will you work with drag and drop in flutter?

@@ -1,7 +1,6 @@
 import 'package:brainbee/core/theme/bb_theme.dart';
 import 'package:brainbee/presentation/splashscreen/splash_screen.dart';
 import 'package:brainbee/presentation/views/battle/bb_book_selection.dart';
-
 import 'package:flutter/material.dart';
 
 void main(List<String> args) async {
@@ -19,7 +18,7 @@ class BrainBeeApp extends StatelessWidget {
       theme: BrainBeeTheme.lightTheme,
       debugShowCheckedModeBanner: false,
 
-      home: BBBookSelection(),
+      home: const SplashScreen(),
     );
   }
 }
