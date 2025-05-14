@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
@@ -82,94 +84,100 @@ class _BBhomeState extends State<BBhome> {
           backgroundColor: Colors.transparent,
           elevation: 0,
 
-          flexibleSpace: FlexibleSpaceBar(
-            background: Container(
-              padding: const EdgeInsets.only(left: 10, right: 10),
-              color: Colors.transparent,
-              child: Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          flexibleSpace: ClipRRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+              child: FlexibleSpaceBar(
+                background: Container(
+                  padding: const EdgeInsets.only(left: 10, right: 10),
+                  color: Colors.transparent,
+                  child: Row(
                     children: [
-                      const SizedBox(height: 40),
-                      Text(
-                        "Good Evening",
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(fontSize: 10),
-                      ),
-                      const Expanded(child: SizedBox.shrink()),
-                      Text(
-                        "Nasir Bhutta",
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 50),
-                      const Expanded(child: SizedBox.shrink()),
-                    ],
-                  ),
-                  const Expanded(child: SizedBox.shrink()),
-                  Column(
-                    children: [
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 150),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => const BBNotificationCenter(),
-                                ),
-                              );
-                            },
-                            child: const Icon(
-                              Icons.notifications,
-                              size: 20,
-                              color: BBColors.disabledText,
-                            ),
+                          const SizedBox(height: 40),
+                          Text(
+                            "Good Evening",
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(fontSize: 10),
                           ),
-                          const SizedBox(width: 10),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const BBSettings(),
+                          const Expanded(child: SizedBox.shrink()),
+                          Text(
+                            "Nasir Bhutta",
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          const SizedBox(height: 50),
+                          const Expanded(child: SizedBox.shrink()),
+                        ],
+                      ),
+                      const Expanded(child: SizedBox.shrink()),
+                      Column(
+                        children: [
+                          Row(
+                            children: [
+                              const SizedBox(height: 150),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) =>
+                                              const BBNotificationCenter(),
+                                    ),
+                                  );
+                                },
+                                child: const Icon(
+                                  Icons.notifications,
+                                  size: 20,
+                                  color: BBColors.disabledText,
                                 ),
-                              );
-                            },
-                            child: CircleAvatar(
-                              backgroundColor: Colors.green[700],
-                              child: const Text(
-                                'N',
-                                style: TextStyle(color: Colors.white),
                               ),
-                            ),
+                              const SizedBox(width: 10),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const BBSettings(),
+                                    ),
+                                  );
+                                },
+                                child: CircleAvatar(
+                                  backgroundColor: Colors.green[700],
+                                  child: const Text(
+                                    'N',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ],
                   ),
-                ],
+                ),
+                expandedTitleScale: 1,
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(4, (index) {
+                    return BbProgressBar(
+                      color: color[index],
+                      imgPath: imgPath[index],
+                      desc: desc[index],
+                      index: index,
+                      onTap: () {
+                        popUpFunctions[index](context);
+                      },
+                    );
+                  }),
+                ),
+                centerTitle: true,
               ),
             ),
-            expandedTitleScale: 1,
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(4, (index) {
-                return BbProgressBar(
-                  color: color[index],
-                  imgPath: imgPath[index],
-                  desc: desc[index],
-                  index: index,
-                  onTap: () {
-                    popUpFunctions[index](context);
-                  },
-                );
-              }),
-            ),
-            centerTitle: true,
           ),
         ),
         SliverList.builder(

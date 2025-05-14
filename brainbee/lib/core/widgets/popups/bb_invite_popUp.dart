@@ -33,9 +33,9 @@ void showInvitationPopUp({
             children: [
               Center(
                 child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 10),
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
+                    horizontal: 10,
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
@@ -140,7 +140,11 @@ void showInvitationPopUp({
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.close, size: 20),
+                    child: const Icon(
+                      Icons.close,
+                      size: 20,
+                      color: BBColors.secondaryColor,
+                    ),
                   ),
                 ),
               ),

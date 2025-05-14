@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_custom_progressbar.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';

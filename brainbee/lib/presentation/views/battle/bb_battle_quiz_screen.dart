@@ -1,5 +1,6 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/models/bb_question.dart';
+import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:flutter/material.dart';
@@ -134,83 +135,247 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   }
 
   void _showResultDialog() {
-    showDialog(
+    showGeneralDialog(
       context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: BBColors.primaryBlue,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            title: BBText(
-              data: "Battle Result",
-              style: context.textStyle.titleMedium?.copyWith(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                BBText(
-                  data:
-                      score > opponentScore
-                          ? "You Win! 🏆"
-                          : score == opponentScore
-                          ? "It's a Tie!"
-                          : "You Lost! 😔",
-                  style: context.textStyle.labelMedium?.copyWith(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color:
-                        score > opponentScore
-                            ? Colors.green
-                            : score == opponentScore
-                            ? Colors.amber
-                            : Colors.red,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildScoreCard("Your Score", score, Colors.blue),
-                    _buildScoreCard("Opponent", opponentScore, Colors.red),
+      barrierDismissible: true,
+      barrierLabel: "Dismiss",
+      barrierColor: Colors.black.withValues(alpha: 0.7),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Center(
+          child: AnimatedBuilder(
+            animation: animation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: Curves.easeOutBack.transform(animation.value),
+                child: Opacity(opacity: animation.value, child: child),
+              );
+            },
+            child: Material(
+              color: Colors.transparent,
+              elevation: 0,
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.85,
+                constraints: const BoxConstraints(maxWidth: 400),
+                decoration: BoxDecoration(
+                  color: BBColors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
                   ],
                 ),
-              ],
-            ),
-            actions: [
-              Center(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BBColors.primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 30,
-                      vertical: 12,
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.pop(context);
-                  },
-                  child: BBText(
-                    data: "Done",
-                    style: context.textStyle.labelSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        decoration: const BoxDecoration(
+                          color: BBColors.primaryColor,
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Positioned(
+                              right: 15,
+                              top: 0,
+                              bottom: 0,
+                              child: Icon(
+                                Icons.emoji_events,
+                                color: Colors.white.withValues(alpha: 0.2),
+                                size: 40,
+                              ),
+                            ),
+                            BBText(
+                              data: "Battle Result",
+                              style: context.textStyle.titleMedium?.copyWith(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 25, 24, 15),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 24,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    score > opponentScore
+                                        ? Colors.green.withValues(alpha: 0.1)
+                                        : score == opponentScore
+                                        ? Colors.amber.withValues(alpha: 0.1)
+                                        : Colors.red.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(50),
+                                border: Border.all(
+                                  color:
+                                      score > opponentScore
+                                          ? Colors.green.withValues(alpha: 0.3)
+                                          : score == opponentScore
+                                          ? Colors.amber.withValues(alpha: 0.3)
+                                          : Colors.red.withValues(alpha: 0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: BBText(
+                                data:
+                                    score > opponentScore
+                                        ? "You Win! 🏆"
+                                        : score == opponentScore
+                                        ? "It's a Tie!"
+                                        : "You Lost! 😔",
+                                style: context.textStyle.labelMedium?.copyWith(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color:
+                                      score > opponentScore
+                                          ? Colors.green.shade700
+                                          : score == opponentScore
+                                          ? Colors.amber.shade700
+                                          : Colors.red.shade700,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 25),
+
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildEnhancedScoreCard(
+                                  "Your Score",
+                                  score,
+                                  Colors.blue,
+                                ),
+                                Container(
+                                  height: 70,
+                                  width: 1,
+                                  color: Colors.grey.withValues(alpha: 0.2),
+                                ),
+                                _buildEnhancedScoreCard(
+                                  "Opponent",
+                                  opponentScore,
+                                  Colors.red,
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 25),
+
+                            Container(
+                              width: double.infinity,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    BBColors.primaryColor,
+                                    BBColors.primaryColor.withValues(
+                                      alpha: 0.8,
+                                    ),
+                                    BBColors.primaryColor.withValues(
+                                      alpha: 0.9,
+                                    ),
+                                  ],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                ),
+                                borderRadius: BorderRadius.circular(50),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: BBColors.primaryColor.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(50),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    Navigator.pop(context);
+                                  },
+                                  child: Center(
+                                    child: BBText(
+                                      data: "Done",
+                                      style: context.textStyle.labelSmall
+                                          ?.copyWith(
+                                            fontSize: 16,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.5,
+                                          ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
+            ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEnhancedScoreCard(String label, int scoreValue, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        BBText(
+          data: label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color.withValues(alpha: 0.1),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
+          ),
+          child: Center(
+            child: BBText(
+              data: scoreValue.toString(),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -218,7 +383,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: color, width: 2),
       ),
@@ -253,7 +418,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         backgroundColor: BBColors.lightGrayBG,
         title: BBText(
           data: "Brain Battle",
-          style: context.textStyle.labelMedium?.copyWith(color: Colors.white),
+          style: context.textStyle.titleMedium?.copyWith(color: BBColors.black),
         ),
         centerTitle: true,
         leading: IconButton(
@@ -263,7 +428,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
               context: context,
               builder:
                   (context) => AlertDialog(
-                    backgroundColor: BBColors.primaryBlue,
+                    backgroundColor: BBColors.secondaryColor,
                     title: BBText(
                       data: "Quit Battle?",
                       style: context.textStyle.labelMedium?.copyWith(
@@ -335,7 +500,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: BBColors.primaryBlue,
+            color: BBColors.secondaryColor,
             borderRadius: BorderRadius.circular(20),
           ),
           child: BBText(
@@ -343,6 +508,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
             style: context.textStyle.labelMedium?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w600,
+              fontSize: 12,
             ),
           ),
         ),
@@ -350,21 +516,21 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         Row(
           children: [
             _buildPlayerScore("You", score, Colors.blue),
-            const SizedBox(width: 10),
+            SizedBox(width: context.screenWidth * 0.08),
             Container(
-              width: 30,
-              height: 30,
+              width: 28,
+              height: 28,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
 
-                color: BBColors.primaryBlue,
+                color: BBColors.secondaryColor,
               ),
               child: Center(
                 child: BBText(
                   data: "VS",
                   style: context.textStyle.labelMedium?.copyWith(
                     color: Colors.white,
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -420,7 +586,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
             BBText(
               data: "Time Remaining:",
               style: context.textStyle.labelMedium?.copyWith(
-                fontSize: 18,
+                fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
               ),
@@ -430,6 +596,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
               style: context.textStyle.labelMedium?.copyWith(
                 color: timerColor,
                 fontWeight: FontWeight.bold,
+                fontSize: 12,
               ),
             ),
           ],
@@ -439,7 +606,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
           value: progress,
           backgroundColor: Colors.grey.shade300,
           valueColor: AlwaysStoppedAnimation<Color>(timerColor),
-          minHeight: 10,
+          minHeight: 7,
           borderRadius: BorderRadius.circular(10),
         ),
       ],
@@ -451,11 +618,13 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: BBColors.primaryBlue,
+        gradient: const LinearGradient(
+          colors: [BBColors.primaryColor, BBColors.secondaryColor],
+        ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -464,7 +633,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
       child: BBText(
         data: questions[currentQuestionIndex].text,
         style: context.textStyle.labelMedium?.copyWith(
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
@@ -490,12 +659,12 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
           Color backgroundColor =
               isSelected
                   ? (isCorrect
-                      ? Colors.green.withOpacity(0.3)
+                      ? Colors.green.withValues(alpha: 0.3)
                       : isWrong
-                      ? Colors.red.withOpacity(0.3)
-                      : BBColors.primaryColor.withOpacity(0.3))
+                      ? Colors.red.withValues(alpha: 0.3)
+                      : BBColors.primaryColor.withValues(alpha: 0.3))
                   : (isAnswerSubmitted && isCorrect
-                      ? Colors.green.withOpacity(0.3)
+                      ? Colors.green.withValues(alpha: 0.3)
                       : Colors.white);
 
           Color borderColor =
@@ -520,7 +689,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
                 border: Border.all(color: borderColor, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 5,
                     offset: const Offset(0, 2),
                   ),
@@ -542,7 +711,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
                                   : BBColors.primaryColor)
                               : (isAnswerSubmitted && isCorrect
                                   ? Colors.green
-                                  : BBColors.primaryBlue),
+                                  : BBColors.secondaryColor),
                     ),
                     child: Center(
                       child: BBText(
@@ -559,7 +728,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
                     child: BBText(
                       data: questions[currentQuestionIndex].options[index],
                       style: context.textStyle.labelMedium?.copyWith(
-                        fontSize: 16,
+                        fontSize: 14,
                         color:
                             isAnswerSubmitted
                                 ? (isCorrect || (isSelected && isWrong)

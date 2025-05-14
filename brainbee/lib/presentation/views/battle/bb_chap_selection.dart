@@ -1,6 +1,6 @@
 import 'package:brainbee/core/models/bb_chapter.dart';
 import 'package:brainbee/core/widgets/popups/bb_invite_popUp.dart';
-import 'package:brainbee/presentation/views/battle/bb_battle_quiz_screen.dart';
+
 import 'package:brainbee/presentation/views/battle/bb_book_selection.dart';
 import 'package:flutter/material.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
@@ -116,7 +116,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                       border: Border.all(
                         color:
                             _selectedChapters[chapter.name]!
-                                ? BBColors.primaryBlue
+                                ? BBColors.secondaryColor
                                 : Colors.transparent,
                         width: 2,
                       ),
@@ -128,7 +128,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                           fontSize: 16,
                           color:
                               _selectedChapters[chapter.name]!
-                                  ? BBColors.primaryBlue
+                                  ? BBColors.secondaryColor
                                   : Colors.black,
                         ),
                       ),
@@ -140,7 +140,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                         });
                       },
                       checkColor: BBColors.white,
-                      activeColor: BBColors.primaryBlue,
+                      activeColor: BBColors.secondaryColor,
                     ),
                   ),
                 );
@@ -174,35 +174,45 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                   ],
                 ),
 
-                ElevatedButton(
-                  onPressed:
-                      _selectedChapters.values.contains(true)
-                          ? () {
-                            showInvitationPopUp(
-                              context: context,
-                              title: "Invite Friends",
-                              desc: "Are you ready?",
-                              button1Label: "Share invitation code",
-                              button2Label: "Random Match",
-                              subject: widget.subject,
-                            );
-                          }
-                          : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BBColors.primaryBlue,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [BBColors.primaryColor, BBColors.secondaryColor],
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: BBText(
-                    data: 'Start Match',
-                    style: context.textStyle.titleSmall?.copyWith(
-                      color: BBColors.white,
-                      fontWeight: FontWeight.bold,
+                  child: ElevatedButton(
+                    onPressed:
+                        _selectedChapters.values.contains(true)
+                            ? () {
+                              showInvitationPopUp(
+                                context: context,
+                                title: "Invite Friends",
+                                desc: "Are you ready?",
+                                button1Label: "Share invitation code",
+                                button2Label: "Random Match",
+                                subject: widget.subject,
+                              );
+                            }
+                            : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: BBText(
+                      data: 'Start Match',
+                      style: context.textStyle.titleSmall?.copyWith(
+                        color: BBColors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),

@@ -3,7 +3,6 @@ import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/presentation/views/class/bb_class_details.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class EnrolledClass {
   final int id;

@@ -2,7 +2,6 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
-import 'package:brainbee/presentation/views/dashboard/bb_dashboard.dart';
 import 'package:flutter/material.dart';
 
 class GoalOption {
