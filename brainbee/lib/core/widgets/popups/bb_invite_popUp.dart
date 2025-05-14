@@ -143,7 +143,7 @@ void showInvitationPopUp({
                     child: const Icon(
                       Icons.close,
                       size: 20,
-                      color: BBColors.secondaryColor,
+                      color: BBColors.primaryColor,
                     ),
                   ),
                 ),

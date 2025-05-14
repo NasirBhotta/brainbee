@@ -14,9 +14,7 @@ Widget buildStudyModeButton(
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [BBColors.primaryColor, BBColors.secondaryColor],
-        ),
+        color: BBColors.primaryColor,
         borderRadius: BorderRadius.circular(10),
 
         boxShadow: const [

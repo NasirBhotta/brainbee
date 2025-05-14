@@ -61,3 +61,10 @@ why widgetsBinding is necessary?
 -> 
 
 how will you work with drag and drop in flutter?
+
+Why we need use FocusNode?
+-> Check if the TextField is Focused
+-> Manually Request or Remove Focus
+->  Listen for Focus Changes
+You can attach a listener to perform actions when the focus state change
+->  Move Focus Between Multiple Fields (like login or forms

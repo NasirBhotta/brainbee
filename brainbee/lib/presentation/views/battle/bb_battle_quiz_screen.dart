@@ -3,6 +3,7 @@ import 'package:brainbee/core/models/bb_question.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
+import 'package:brainbee/presentation/views/battle/bb_battle_report_card.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -20,6 +21,9 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   bool isCorrectAnswer = false;
   int score = 0;
   int opponentScore = 0;
+  bool won = false;
+  int timeSpent = 0;
+  List<int?> answers = [];
 
   int timeRemaining = 15;
   late Timer timer;
@@ -70,6 +74,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         setState(() {
           if (timeRemaining > 0) {
             timeRemaining--;
+            timeSpent = timeSpent + (15 - timeRemaining);
           } else {
             if (!isAnswerSubmitted) {
               submitAnswer(null);
@@ -87,6 +92,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   }
 
   void submitAnswer(int? optionIndex) {
+    answers.add(optionIndex);
     if (isAnswerSubmitted) return;
 
     timer.cancel();
@@ -99,8 +105,8 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
       isCorrectAnswer = selectedOptionIndex == correctIndex;
 
       if (isCorrectAnswer) {
-        int timeBonus = (timeRemaining / 15 * 50).round();
-        score += 50 + timeBonus;
+        // int timeBonus = (timeRemaining / 15 * 50).round();
+        score += 20;
       }
 
       if (currentQuestionIndex < questions.length - 1) {
@@ -108,7 +114,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
           int opponentTimeBonus =
               ((10 + (DateTime.now().millisecondsSinceEpoch % 5)) / 15 * 50)
                   .round();
-          opponentScore += 50 + opponentTimeBonus;
+          opponentScore += 20;
         }
       }
     });
@@ -311,8 +317,21 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(50),
                                   onTap: () {
-                                    Navigator.pop(context);
-                                    Navigator.pop(context);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (context) =>
+                                                BBBattleReportCardScreen(
+                                                  score: score,
+                                                  opponentScore: opponentScore,
+                                                  won: true,
+                                                  questions: questions,
+                                                  userAnswers: answers,
+                                                  timeSpent: timeSpent,
+                                                ),
+                                      ),
+                                    );
                                   },
                                   child: Center(
                                     child: BBText(
@@ -379,36 +398,36 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
     );
   }
 
-  Widget _buildScoreCard(String label, int scoreValue, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: color, width: 2),
-      ),
-      child: Column(
-        children: [
-          BBText(
-            data: label,
-            style: context.textStyle.labelMedium?.copyWith(
-              fontSize: 16,
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(height: 5),
-          BBText(
-            data: scoreValue.toString(),
-            style: context.textStyle.labelMedium?.copyWith(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildScoreCard(String label, int scoreValue, Color color) {
+  //   return Container(
+  //     padding: const EdgeInsets.all(10),
+  //     decoration: BoxDecoration(
+  //       color: color.withValues(alpha: 0.2),
+  //       borderRadius: BorderRadius.circular(15),
+  //       border: Border.all(color: color, width: 2),
+  //     ),
+  //     child: Column(
+  //       children: [
+  //         BBText(
+  //           data: label,
+  //           style: context.textStyle.labelMedium?.copyWith(
+  //             fontSize: 16,
+  //             color: Colors.white70,
+  //           ),
+  //         ),
+  //         const SizedBox(height: 5),
+  //         BBText(
+  //           data: scoreValue.toString(),
+  //           style: context.textStyle.labelMedium?.copyWith(
+  //             fontSize: 24,
+  //             fontWeight: FontWeight.bold,
+  //             color: Colors.white,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -428,7 +447,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
               context: context,
               builder:
                   (context) => AlertDialog(
-                    backgroundColor: BBColors.secondaryColor,
+                    backgroundColor: BBColors.primaryColor,
                     title: BBText(
                       data: "Quit Battle?",
                       style: context.textStyle.labelMedium?.copyWith(
@@ -500,7 +519,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: BBColors.secondaryColor,
+            color: BBColors.primaryColor,
             borderRadius: BorderRadius.circular(20),
           ),
           child: BBText(
@@ -523,7 +542,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
 
-                color: BBColors.secondaryColor,
+                color: BBColors.primaryColor,
               ),
               child: Center(
                 child: BBText(
@@ -618,9 +637,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [BBColors.primaryColor, BBColors.secondaryColor],
-        ),
+        color: BBColors.primaryColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -711,7 +728,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
                                   : BBColors.primaryColor)
                               : (isAnswerSubmitted && isCorrect
                                   ? Colors.green
-                                  : BBColors.secondaryColor),
+                                  : BBColors.primaryColor),
                     ),
                     child: Center(
                       child: BBText(

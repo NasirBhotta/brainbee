@@ -116,7 +116,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                       border: Border.all(
                         color:
                             _selectedChapters[chapter.name]!
-                                ? BBColors.secondaryColor
+                                ? BBColors.primaryColor
                                 : Colors.transparent,
                         width: 2,
                       ),
@@ -128,7 +128,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                           fontSize: 16,
                           color:
                               _selectedChapters[chapter.name]!
-                                  ? BBColors.secondaryColor
+                                  ? BBColors.primaryColor
                                   : Colors.black,
                         ),
                       ),
@@ -140,7 +140,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                         });
                       },
                       checkColor: BBColors.white,
-                      activeColor: BBColors.secondaryColor,
+                      activeColor: BBColors.primaryColor,
                     ),
                   ),
                 );
@@ -176,9 +176,10 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
 
                 Container(
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [BBColors.primaryColor, BBColors.secondaryColor],
-                    ),
+                    color:
+                        _selectedChapters.values.contains(true)
+                            ? BBColors.primaryColor
+                            : BBColors.lightGrayBG,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: ElevatedButton(
