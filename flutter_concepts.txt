@@ -57,8 +57,24 @@ what is gradle? why do we need it?
 -> gradle is actually a how to. 
 -> dart compiles the code into the native machine code then gradle comes in gradle combines everything and then handle the android plugins and dependencies, it is actually the build process. gives us .apk file. 
 
-why widgetsBinding is necessary?
--> 
+why widgetsBinding is necessary and what is it?
+-> WidgetsBinding is the glue between the Flutter framework and the underlying engine.
+It handles things like:
+
+Rendering the widget tree
+
+Scheduling frames
+
+Handling user input
+
+Lifecycle events
+
+WidgetsBinding.instance.addPostFrameCallback()?
+-> this function is called after the specific widget is rendered. WidgetsBinding works as intermediate between the framework and underlying engine so it has track of widgets rendering and other things.
+
+WidgetsBinding.addPersistentFrameCallback()?
+this function works after every frame renders. 
+
 
 how will you work with drag and drop in flutter?
 
@@ -68,3 +84,13 @@ Why we need use FocusNode?
 ->  Listen for Focus Changes
 You can attach a listener to perform actions when the focus state change
 ->  Move Focus Between Multiple Fields (like login or forms
+
+
+how you will use Slivers and why?
+
+we can use slivers in a custom scroll view, and it used for more customization of the appbar.
+
+
+Function vs Function() ?
+the function without () means that it can take any no of arguments, and can return anything.
+Function()This means: It's a function that takes no parameters. Return type is not specified — it could return anything.

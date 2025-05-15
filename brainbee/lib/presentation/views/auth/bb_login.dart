@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 
 class BbLogin extends StatefulWidget {
   final Function(double offset)? onScroll;
-  const BbLogin({super.key, required this.onScroll});
+
+  const BbLogin({super.key, required this.onScroll, required this.signUp});
+  final Function()? signUp;
 
   @override
   State<BbLogin> createState() => _BbLoginState();
@@ -254,9 +256,7 @@ class _BbLoginState extends State<BbLogin> {
                   ),
                   const SizedBox(width: 5),
                   InkWell(
-                    onTap: () {
-                      // Handle sign up action
-                    },
+                    onTap: widget.signUp,
                     child: Text(
                       'Sign Up',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(

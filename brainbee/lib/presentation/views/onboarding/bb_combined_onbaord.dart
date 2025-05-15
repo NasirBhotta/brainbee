@@ -1,5 +1,6 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/presentation/views/auth/bb_login.dart';
+import 'package:brainbee/presentation/views/auth/bb_signup.dart';
 import 'package:brainbee/presentation/views/onboarding/bb_onboarding.dart';
 import 'package:flutter/material.dart';
 
@@ -13,6 +14,7 @@ class BbCombinedOnbaord extends StatefulWidget {
 class _BbCombinedOnbaordState extends State<BbCombinedOnbaord> {
   // ScrollController scrollController = ScrollController();
   double currentOffset = 0;
+  bool isLogin = false;
   // @override
   // void initState() {
   //   super.initState();
@@ -22,7 +24,7 @@ class _BbCombinedOnbaordState extends State<BbCombinedOnbaord> {
   //       setState(() {});
   //     }
   //   });
-  // }
+  // }.
 
   @override
   Widget build(BuildContext context) {
@@ -51,13 +53,34 @@ class _BbCombinedOnbaordState extends State<BbCombinedOnbaord> {
               child: SizedBox(
                 height: size.height * 0.5,
                 width: size.width,
-                child: BbLogin(
-                  onScroll: (offset) {
-                    setState(() {
-                      currentOffset = offset;
-                    });
-                  },
-                ),
+                child:
+                    isLogin
+                        ? BbLogin(
+                          onScroll: (offset) {
+                            setState(() {
+                              currentOffset = offset;
+                            });
+                          },
+                          signUp: () {
+                            setState(() {
+                              isLogin = !isLogin;
+                              currentOffset = 0;
+                            });
+                          },
+                        )
+                        : BbSignup(
+                          onScroll: (offset) {
+                            setState(() {
+                              currentOffset = offset;
+                            });
+                          },
+                          login: () {
+                            setState(() {
+                              isLogin = !isLogin;
+                              currentOffset = 0;
+                            });
+                          },
+                        ),
               ),
             ),
             Text(currentOffset.toString()),

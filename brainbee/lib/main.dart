@@ -1,9 +1,5 @@
-import 'package:brainbee/core/models/bb_question.dart';
 import 'package:brainbee/core/theme/bb_theme.dart';
 import 'package:brainbee/presentation/splashscreen/splash_screen.dart';
-import 'package:brainbee/presentation/views/battle/bb_battle.dart';
-import 'package:brainbee/presentation/views/battle/bb_battle_quiz_screen.dart';
-import 'package:brainbee/presentation/views/battle/bb_battle_report_card.dart';
 import 'package:flutter/material.dart';
 
 void main(List<String> args) async {

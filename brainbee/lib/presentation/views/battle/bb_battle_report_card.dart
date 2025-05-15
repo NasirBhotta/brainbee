@@ -274,7 +274,11 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            Navigator.pop(context);
+            Navigator.pop(context);
+            Navigator.pop(context);
+          },
         ),
         actions: [
           IconButton(onPressed: () {}, icon: const Icon(Icons.download)),
