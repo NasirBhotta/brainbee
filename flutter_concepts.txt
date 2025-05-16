@@ -94,3 +94,5 @@ we can use slivers in a custom scroll view, and it used for more customization o
 Function vs Function() ?
 the function without () means that it can take any no of arguments, and can return anything.
 Function()This means: It's a function that takes no parameters. Return type is not specified — it could return anything.
+
+stateful builder?
