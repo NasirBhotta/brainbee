@@ -96,3 +96,9 @@ the function without () means that it can take any no of arguments, and can retu
 Function()This means: It's a function that takes no parameters. Return type is not specified — it could return anything.
 
 stateful builder?
+-> if there is a small portion of you whole screen needs to be updated then instead of using stateful widget which will create overhead, so for that issue we will use stateful builder, it will only rebuild a portion of screen.
+
+Tickerproviderstatemixin?
+
+how draggable works?
+dIn Flutter, the Draggable widget allows users to drag a widget across the screen. It requires a child (what you see initially), a feedback widget (what follows the finger while dragging), and optionally a childWhenDragging (what appears in place of the child when it's being dragged). To receive the dropped item, a DragTarget widget is used, which handles the logic for accepting and responding to the dropped data.
