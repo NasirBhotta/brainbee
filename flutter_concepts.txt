@@ -102,3 +102,10 @@ Tickerproviderstatemixin?
 
 how draggable works?
 dIn Flutter, the Draggable widget allows users to drag a widget across the screen. It requires a child (what you see initially), a feedback widget (what follows the finger while dragging), and optionally a childWhenDragging (what appears in place of the child when it's being dragged). To receive the dropped item, a DragTarget widget is used, which handles the logic for accepting and responding to the dropped data.
+
+
+what is mounted concept in flutter and why we need that?
+-> "Mounted" means that a widget is currently in the widget tree and is attached to the BuildContext and Element tree.
+   -> where we need it?
+        -> If the user navigates away before the delay of async function finishes, the widget is disposed, and setState() throws an error. To avoid this situation we need to check if widget is still mounted or not...
+
