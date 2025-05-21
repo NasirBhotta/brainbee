@@ -24,7 +24,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   bool won = false;
   int timeSpent = 0;
   List<int?> answers = [];
-
+  // doing this for only github submissions
   int timeRemaining = 15;
   late Timer timer;
 
