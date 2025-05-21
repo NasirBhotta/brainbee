@@ -198,8 +198,8 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers> {
                   shape: BoxShape.circle,
                 ),
                 child: const Center(
-                  child: Text(
-                    'VS',
+                  child: BBText(
+                    data: 'VS',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -229,8 +229,8 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers> {
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      'Cancel',
+                    child: const BBText(
+                      data: 'Cancel',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -266,10 +266,11 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers> {
                       ),
                       elevation: WidgetStateProperty.all(0),
                     ),
-                    child: Text(
-                      countdown > 0
-                          ? 'Ready (00:0${countdown > 0 ? countdown : 0})'
-                          : 'Ready',
+                    child: BBText(
+                      data:
+                          countdown > 0
+                              ? 'Ready (00:0${countdown > 0 ? countdown : 0})'
+                              : 'Ready',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -293,8 +294,8 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers> {
           height: 80,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           child: Center(
-            child: Text(
-              firstLetter,
+            child: BBText(
+              data: firstLetter,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 36,
@@ -304,8 +305,8 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers> {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          '@$fullName',
+        BBText(
+          data: '@$fullName',
           style: const TextStyle(color: Colors.black54, fontSize: 14),
         ),
       ],
