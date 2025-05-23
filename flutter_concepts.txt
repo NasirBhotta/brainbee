@@ -111,4 +111,31 @@ what is mounted concept in flutter and why we need that?
 
 
 
+-> what do you think about the flutter how it solves the problems? how it is superior then others? why we have to choose it?
 
+hotrestart and hotreload?
+drawbacks and limitations?
+event loop in flutter?
+how does const work in flutter?
+what is build method why it is overrided?
+what are immutable objects?
+why we use global key in the form? instead of using other keys? address the other uses of keys.
+inherited widget?
+how constraints works in flutter?
+render tree?
+element tree?
+how flutter decides to create a new widget or update it or just hold the older one? 
+if there is a key in the parent widget that is passed to the child widget, and the parent widget rebuilds then what happen to the child widget?
+how flutter communicates with the native code?
+what is flavor how do we use in android and ios?
+how to configure payment through strap?
+strap has two key private and public you have to store the public on the client side how will you store it in flutter and how it will be secured?
+any default feature of flutter and dart?
+security packages?
+how to prevent reverse engineering of your application?
+how you manage the stream coming from firebase?
+how to maintain stream data?
+what are clean architecture principles in flutter?
+how does dependency injection works?
+//   //       //    inversion   // ?
+what is composite design pattern?
