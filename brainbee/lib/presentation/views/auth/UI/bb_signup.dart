@@ -1,20 +1,21 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/scroll_controller.dart';
-import 'package:brainbee/presentation/views/dashboard/bb_dashboard.dart';
+import 'package:brainbee/presentation/views/auth/UI/bb_forgot_password.dart';
+import 'package:brainbee/presentation/views/dashboard/UI/bb_dashboard.dart';
 
 import 'package:flutter/material.dart';
 
-class BbLogin extends StatefulWidget {
-  final Function(double offset)? onScroll;
+class BbSignup extends StatefulWidget {
+  final Function(double offset) onScroll;
+  final Function() login;
 
-  const BbLogin({super.key, required this.onScroll, required this.signUp});
-  final Function()? signUp;
+  const BbSignup({super.key, required this.onScroll, required this.login});
 
   @override
-  State<BbLogin> createState() => _BbLoginState();
+  State<BbSignup> createState() => _BbSignupState();
 }
 
-class _BbLoginState extends State<BbLogin> {
+class _BbSignupState extends State<BbSignup> {
   ScrollController scrollController = ScrollController();
   double offset = 0;
   @override
@@ -24,7 +25,7 @@ class _BbLoginState extends State<BbLogin> {
       scrollController.addListener(() {
         if (scrollController.offset >= 0) {
           offset = scrollController.hasClients ? scrollController.offset : 0;
-          widget.onScroll?.call(scrollController.offset);
+          widget.onScroll.call(scrollController.offset);
 
           setState(() {});
         }
@@ -38,7 +39,7 @@ class _BbLoginState extends State<BbLogin> {
     var size = MediaQuery.of(context).size;
     return SingleChildScrollView(
       controller: scrollController,
-      physics: const SlowMaxScrollPhysics(maxOffset: 400),
+      physics: const SlowMaxScrollPhysics(maxOffset: 550),
       child: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -55,7 +56,7 @@ class _BbLoginState extends State<BbLogin> {
             children: [
               Center(
                 child: Text(
-                  'Login',
+                  'Sign Up',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
@@ -63,6 +64,30 @@ class _BbLoginState extends State<BbLogin> {
                 ),
               ),
               const SizedBox(height: 20),
+              Text(
+                "Full Name",
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontSize: 12,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 2,
+                  ),
+                  hintText: 'Enter your Full Name',
+
+                  hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 12,
+                    color: BBColors.bodyText,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
               Text(
                 "Username / Email",
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -111,27 +136,7 @@ class _BbLoginState extends State<BbLogin> {
                 obscureText: true,
               ),
               const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Expanded(child: SizedBox.shrink()),
-                  InkWell(
-                    onTap: () {
-                      // Handle forgot password action
-                    },
-                    child: Text(
-                      'Forgot Password?',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.underline,
-                        decorationColor: BBColors.secondaryColor,
-                        decorationThickness: 2,
-                        color: BBColors.secondaryColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+
               const SizedBox(height: 20),
               Container(
                 decoration: BoxDecoration(
@@ -156,7 +161,7 @@ class _BbLoginState extends State<BbLogin> {
                     shadowColor: Colors.transparent,
                   ),
                   child: Text(
-                    'Sign In',
+                    'SignUp',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -256,9 +261,9 @@ class _BbLoginState extends State<BbLogin> {
                   ),
                   const SizedBox(width: 5),
                   InkWell(
-                    onTap: widget.signUp,
+                    onTap: widget.login,
                     child: Text(
-                      'Sign Up',
+                      'Log In',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,

@@ -1,9 +1,9 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/widgets/popups/bb_model_button.dart';
-import 'package:brainbee/presentation/views/battle/bb_battle_quiz_screen.dart';
-import 'package:brainbee/presentation/views/battle/bb_book_selection.dart';
-import 'package:brainbee/presentation/views/battle/bb_chap_selection.dart';
+import 'package:brainbee/presentation/views/learn/battle/bb_battle_quiz_screen.dart';
+import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
+import 'package:brainbee/presentation/views/learn/battle/bb_chap_selection.dart';
 import 'package:flutter/material.dart';
 
 export 'bb_invite_popUp.dart';

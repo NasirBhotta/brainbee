@@ -1,7 +1,7 @@
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
-import 'package:brainbee/presentation/views/Books/bb_books.dart';
-import 'package:brainbee/presentation/views/battle/bb_battle.dart';
+import 'package:brainbee/presentation/views/learn/Books/bb_books.dart';
+import 'package:brainbee/presentation/views/learn/battle/bb_battle.dart';
 import 'package:brainbee/presentation/views/extras/Certificates/bb_certificates.dart';
 import 'package:brainbee/presentation/views/extras/Rewards/bb_rewards.dart';
 import 'package:brainbee/presentation/views/extras/badges/bb_badges.dart';
@@ -9,7 +9,7 @@ import 'package:brainbee/presentation/views/extras/coinquests/bb_coin_quests.dar
 import 'package:brainbee/presentation/views/extras/leaderboard/bb_leaderboard.dart';
 import 'package:brainbee/presentation/views/extras/reportcard/bb_reportcard.dart';
 import 'package:brainbee/presentation/views/extras/scorecard/bb_scorecard.dart';
-import 'package:brainbee/presentation/views/flashcards/bb_flashcards.dart';
+import 'package:brainbee/presentation/views/learn/flashcards/bb_selectBook_flashcards.dart';
 import 'package:brainbee/presentation/views/practice/bb_practice.dart';
 import 'package:flutter/material.dart';
 

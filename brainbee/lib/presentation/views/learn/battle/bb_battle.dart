@@ -3,7 +3,7 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/widgets/popups/bb_enter_invitation_code.dart';
-import 'package:brainbee/presentation/views/battle/bb_book_selection.dart';
+import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
 import 'package:flutter/material.dart';
 
 class BBBattle extends StatefulWidget {

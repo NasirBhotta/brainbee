@@ -1,6 +1,6 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
-import 'package:brainbee/presentation/views/auth/bb_login.dart';
-import 'package:brainbee/presentation/views/auth/bb_signup.dart';
+import 'package:brainbee/presentation/views/auth/UI/bb_login.dart';
+import 'package:brainbee/presentation/views/auth/UI/bb_signup.dart';
 import 'package:brainbee/presentation/views/onboarding/bb_onboarding.dart';
 import 'package:flutter/material.dart';
 

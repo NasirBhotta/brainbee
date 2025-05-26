@@ -1,7 +1,7 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 
-import 'package:brainbee/presentation/views/class/bb_class.dart';
+import 'package:brainbee/presentation/views/class/UI/bb_class.dart';
 import 'package:brainbee/presentation/views/extras/bb_extrapopup.dart';
 
 import 'package:brainbee/presentation/views/home/bb_home.dart';

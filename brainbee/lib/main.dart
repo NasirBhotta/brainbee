@@ -1,6 +1,8 @@
 import 'package:brainbee/core/theme/bb_theme.dart';
 import 'package:brainbee/presentation/splashscreen/splash_screen.dart';
-import 'package:brainbee/presentation/views/battle/bb_searching_players.dart';
+import 'package:brainbee/presentation/views/auth/UI/bb_forgot_password.dart';
+import 'package:brainbee/presentation/views/learn/battle/bb_searching_players.dart';
+import 'package:brainbee/presentation/views/dashboard/UI/bb_dashboard.dart';
 import 'package:flutter/material.dart';
 
 void main(List<String> args) async {
@@ -44,7 +46,7 @@ class BrainBeeApp extends StatelessWidget {
       theme: BrainBeeTheme.lightTheme,
       debugShowCheckedModeBanner: false,
 
-      home: const BbSearchingPlayers(),
+      home: const SplashScreen(),
     );
   }
 }

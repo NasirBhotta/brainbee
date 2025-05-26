@@ -139,3 +139,13 @@ what are clean architecture principles in flutter?
 how does dependency injection works?
 //   //       //    inversion   // ?
 what is composite design pattern?
+
+
+for converting map to list?
+var values = _selectedChapter.entries.map((e)=> e.value).toList();
+this will convert the map into list
+
+-> firstWhere() if doesn't find any Element it will throw excetion unless we implement orElse: property of firstWhere().
+
+
+

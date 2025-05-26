@@ -3,7 +3,7 @@ import 'package:brainbee/core/models/bb_question.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
-import 'package:brainbee/presentation/views/battle/bb_battle_report_card.dart';
+import 'package:brainbee/presentation/views/learn/battle/bb_battle_report_card.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 

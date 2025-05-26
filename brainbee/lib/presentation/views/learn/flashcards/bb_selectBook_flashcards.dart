@@ -1,13 +1,15 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
+import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
+import 'package:brainbee/presentation/views/learn/flashcards/bb_selectChap_flashcards.dart';
 import 'package:flutter/material.dart';
 
 class BBFlashcards extends StatelessWidget {
   final List<Subject> subjects = [
     Subject(
       name: 'English',
-      flashcardCount: 104,
+      flashcardCount: 105,
       imgPath: 'assets/text-book.png',
       color: Colors.red,
     ),
@@ -84,13 +86,20 @@ class BBFlashcards extends StatelessWidget {
                   style: context.textStyle.titleMedium?.copyWith(fontSize: 16),
                 ),
                 subtitle: BBText(
-                  data: "${subject.flashcardCount} Flashcard",
+                  data: "${subject.flashcardCount} Flashcards",
                   style: context.textStyle.bodySmall?.copyWith(
                     color: BBColors.bodyText,
                   ),
                 ),
                 onTap: () {
-                  // Handle subject selection
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => BbSelectchapFlashcards(subject: subject),
+                    ),
+                  );
+                  print("object");
                 },
               ),
             ),
@@ -99,18 +108,4 @@ class BBFlashcards extends StatelessWidget {
       ),
     );
   }
-}
-
-class Subject {
-  final String name;
-  final int flashcardCount;
-  final String imgPath;
-  final Color color;
-
-  Subject({
-    required this.name,
-    required this.flashcardCount,
-    required this.imgPath,
-    required this.color,
-  });
 }

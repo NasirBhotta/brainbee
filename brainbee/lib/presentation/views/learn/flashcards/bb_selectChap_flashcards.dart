@@ -1,25 +1,27 @@
+import 'dart:math';
+
 import 'package:brainbee/core/models/bb_chapter.dart';
 import 'package:brainbee/core/widgets/popups/bb_invite_popUp.dart';
 
-import 'package:brainbee/presentation/views/battle/bb_book_selection.dart';
+import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
 import 'package:flutter/material.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 
-class BBChapterSelectionScreen extends StatefulWidget {
+class BbSelectchapFlashcards extends StatefulWidget {
   final Subject subject;
 
-  const BBChapterSelectionScreen({super.key, required this.subject});
+  const BbSelectchapFlashcards({super.key, required this.subject});
 
   @override
-  _BBChapterSelectionScreenState createState() =>
-      _BBChapterSelectionScreenState();
+  _BbSelectchapFlashcardsState createState() => _BbSelectchapFlashcardsState();
 }
 
-class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
+class _BbSelectchapFlashcardsState extends State<BbSelectchapFlashcards> {
   final Map<String, bool> _selectedChapters = {};
-
+  final List<String> trackChapSelection = [];
+  String previousChapName = '';
   late List<Chapter> _chapters;
 
   @override
@@ -136,7 +138,30 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                       value: _selectedChapters[chapter.name] ?? false,
                       onChanged: (bool? value) {
                         setState(() {
-                          _selectedChapters[chapter.name] = value ?? false;
+                          if (!trackChapSelection.contains(chapter.name)) {
+                            trackChapSelection.add(chapter.name);
+                          }
+
+                          if (trackChapSelection.length > 1) {
+                            previousChapName = trackChapSelection[0];
+                            trackChapSelection.removeAt(0);
+                          }
+
+                          final isAnySelected = _selectedChapters.containsValue(
+                            true,
+                          );
+
+                          if (isAnySelected &&
+                              previousChapName != chapter.name &&
+                              previousChapName.isNotEmpty) {
+                            _selectedChapters[previousChapName] = false;
+                            _selectedChapters[chapter.name] = true;
+                          } else if (chapter.name == previousChapName) {
+                            _selectedChapters[chapter.name] = value ?? false;
+                            previousChapName = '';
+                          } else {
+                            _selectedChapters[chapter.name] = true;
+                          }
                         });
                       },
                       checkColor: BBColors.white,
@@ -209,7 +234,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                       ),
                     ),
                     child: BBText(
-                      data: 'Start Match',
+                      data: 'Generate FlashCards',
                       style: context.textStyle.titleSmall?.copyWith(
                         color: BBColors.white,
                         fontWeight: FontWeight.bold,

@@ -1,20 +1,20 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/scroll_controller.dart';
-import 'package:brainbee/presentation/views/dashboard/bb_dashboard.dart';
+import 'package:brainbee/presentation/views/dashboard/UI/bb_dashboard.dart';
 
 import 'package:flutter/material.dart';
 
-class BbSignup extends StatefulWidget {
-  final Function(double offset) onScroll;
-  final Function() login;
+class BbLogin extends StatefulWidget {
+  final Function(double offset)? onScroll;
 
-  const BbSignup({super.key, required this.onScroll, required this.login});
+  const BbLogin({super.key, required this.onScroll, required this.signUp});
+  final Function()? signUp;
 
   @override
-  State<BbSignup> createState() => _BbSignupState();
+  State<BbLogin> createState() => _BbLoginState();
 }
 
-class _BbSignupState extends State<BbSignup> {
+class _BbLoginState extends State<BbLogin> {
   ScrollController scrollController = ScrollController();
   double offset = 0;
   @override
@@ -24,7 +24,7 @@ class _BbSignupState extends State<BbSignup> {
       scrollController.addListener(() {
         if (scrollController.offset >= 0) {
           offset = scrollController.hasClients ? scrollController.offset : 0;
-          widget.onScroll.call(scrollController.offset);
+          widget.onScroll?.call(scrollController.offset);
 
           setState(() {});
         }
@@ -38,7 +38,7 @@ class _BbSignupState extends State<BbSignup> {
     var size = MediaQuery.of(context).size;
     return SingleChildScrollView(
       controller: scrollController,
-      physics: const SlowMaxScrollPhysics(maxOffset: 550),
+      physics: const SlowMaxScrollPhysics(maxOffset: 400),
       child: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -55,7 +55,7 @@ class _BbSignupState extends State<BbSignup> {
             children: [
               Center(
                 child: Text(
-                  'Sign Up',
+                  'Login',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
@@ -63,30 +63,6 @@ class _BbSignupState extends State<BbSignup> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text(
-                "Full Name",
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontSize: 12,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 2,
-                  ),
-                  hintText: 'Enter your Full Name',
-
-                  hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: 12,
-                    color: BBColors.bodyText,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-
               Text(
                 "Username / Email",
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -139,9 +115,7 @@ class _BbSignupState extends State<BbSignup> {
                 children: [
                   const Expanded(child: SizedBox.shrink()),
                   InkWell(
-                    onTap: () {
-                      // Handle forgot password action
-                    },
+                    onTap: () {},
                     child: Text(
                       'Forgot Password?',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -180,7 +154,7 @@ class _BbSignupState extends State<BbSignup> {
                     shadowColor: Colors.transparent,
                   ),
                   child: Text(
-                    'SignUp',
+                    'Sign In',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -280,9 +254,9 @@ class _BbSignupState extends State<BbSignup> {
                   ),
                   const SizedBox(width: 5),
                   InkWell(
-                    onTap: widget.login,
+                    onTap: widget.signUp,
                     child: Text(
-                      'Log In',
+                      'Sign Up',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
