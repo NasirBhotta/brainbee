@@ -148,4 +148,13 @@ this will convert the map into list
 -> firstWhere() if doesn't find any Element it will throw excetion unless we implement orElse: property of firstWhere().
 
 
+////////////////////////////////////////////// Flutter Bloc ////////////////////////////////////////////////////////////
+
+
+-> In the state_bloc.dart file we will define the states of the widgets(screens). For that states we will do what we will define two abstracts state one for widget rebuilds and one for other events/actionable States.
+we will define the action_state for the events like navigation, and we will define the non_action_States for widget rebuilds.
+
+-> in dart by default when we compare two objects the tend to be equal only if they point to same instance(memory location) even if there properties are exactly same.
+
+
 

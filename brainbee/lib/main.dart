@@ -1,13 +1,13 @@
 import 'package:brainbee/core/theme/bb_theme.dart';
 import 'package:brainbee/presentation/splashscreen/splash_screen.dart';
-import 'package:brainbee/presentation/views/auth/UI/bb_forgot_password.dart';
-import 'package:brainbee/presentation/views/learn/battle/bb_searching_players.dart';
-import 'package:brainbee/presentation/views/dashboard/UI/bb_dashboard.dart';
+import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const BrainBeeApp());
+  runApp(BlocProvider(create: (_) => AuthBloc(), child: const BrainBeeApp()));
 }
 
 class BrainBeeApp extends StatelessWidget {

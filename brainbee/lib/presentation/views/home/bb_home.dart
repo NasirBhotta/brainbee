@@ -4,6 +4,7 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
+import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
 import 'package:brainbee/presentation/views/dashboard/UI/bb_progress_bar.dart';
 import 'package:brainbee/presentation/views/dashboard/UI/bb_quizzes_display.dart';
 import 'package:brainbee/presentation/views/home/bb_coin_popup.dart';
@@ -13,6 +14,7 @@ import 'package:brainbee/presentation/views/home/bb_score_popup.dart';
 import 'package:brainbee/presentation/views/home/bb_streak_popup.dart';
 import 'package:brainbee/presentation/views/settings/bb_settings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class BBhome extends StatefulWidget {
   const BBhome({super.key});

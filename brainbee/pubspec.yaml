@@ -40,7 +40,9 @@ dependencies:
   flutter_svg: ^2.1.0
   flutter_charts: ^0.5.2
   bloc:    
-  flutter_bloc:
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.7
+  http: ^1.4.0
 
 
 dev_dependencies:
