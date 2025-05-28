@@ -2,13 +2,39 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
+import 'package:brainbee/core/utils/helper/bb_getinitials.dart';
+import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
+import 'package:brainbee/presentation/views/auth/models/user_model.dart';
+import 'package:brainbee/presentation/views/settings/UI/bb_app_settings.dart';
+import 'package:brainbee/presentation/views/settings/UI/bb_change_password.dart';
+import 'package:brainbee/presentation/views/settings/UI/bb_learn_and_earn.dart';
+import 'package:brainbee/presentation/views/settings/UI/bb_manage_profile.dart';
+import 'package:brainbee/presentation/views/settings/UI/bb_select_grade.dart';
+import 'package:brainbee/presentation/views/settings/UI/bb_select_subject.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class BBSettings extends StatelessWidget {
+class BBSettings extends StatefulWidget {
   const BBSettings({super.key});
 
   @override
+  State<BBSettings> createState() => _BBSettingsState();
+}
+
+class _BBSettingsState extends State<BBSettings> {
+  UserModel authenticatedUser = UserModel(
+    id: '',
+    email: '',
+    name: '',
+    token: '',
+    status: '',
+  );
+  @override
   Widget build(BuildContext context) {
+    final user = context.watch<AuthBloc>().user;
+    if (user != null) {
+      authenticatedUser = user;
+    }
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: context.screenHeight * 0.05,
@@ -46,20 +72,31 @@ class BBSettings extends StatelessWidget {
                     radius: 15,
                     backgroundColor: Colors.green[700],
                     child: BBText(
-                      data: 'N',
+                      data: getIntials(authenticatedUser.name),
                       style: Theme.of(
                         context,
                       ).textTheme.titleSmall?.copyWith(color: BBColors.white),
                     ),
                   ),
                   title: BBText(
-                    data: 'Nasir Bhutta',
+                    data:
+                        authenticatedUser.name != ''
+                            ? authenticatedUser.name
+                            : 'UserName',
                     style: context.textStyle.bodyMedium,
                   ),
                   horizontalTitleGap: 13,
                 ),
                 const Divider(),
                 ListTile(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BbManageProfile(),
+                      ),
+                    );
+                  },
                   leading: const Icon(
                     Icons.people,
                     color: BBColors.secondaryColor,
@@ -70,32 +107,18 @@ class BBSettings extends StatelessWidget {
                   ),
                   visualDensity: const VisualDensity(vertical: -4),
                 ),
+
                 const Divider(),
+
                 ListTile(
-                  leading: const Icon(
-                    Icons.star,
-                    color: BBColors.secondaryColor,
-                  ),
-                  title: BBText(
-                    data: 'Upgrade to Premium Free',
-                    style: context.textStyle.bodyMedium,
-                  ),
-                  visualDensity: const VisualDensity(vertical: -4),
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(
-                    Icons.language,
-                    color: BBColors.secondaryColor,
-                  ),
-                  title: BBText(
-                    data: 'Select Language',
-                    style: context.textStyle.bodyMedium,
-                  ),
-                  visualDensity: const VisualDensity(vertical: -4),
-                ),
-                const Divider(),
-                ListTile(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SelectYearGradeScreen(),
+                      ),
+                    );
+                  },
                   leading: const Icon(
                     Icons.calendar_today,
                     color: BBColors.secondaryColor,
@@ -108,6 +131,17 @@ class BBSettings extends StatelessWidget {
                 ),
                 const Divider(),
                 ListTile(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => const SelectSubjectsScreen(
+                              selectedGrade: "9th Grade",
+                            ),
+                      ),
+                    );
+                  },
                   leading: const Icon(
                     Icons.book,
                     color: BBColors.secondaryColor,
@@ -119,10 +153,24 @@ class BBSettings extends StatelessWidget {
                   visualDensity: const VisualDensity(vertical: -4),
                 ),
                 const Divider(),
-                const ListTile(
-                  leading: Icon(Icons.lock, color: BBColors.secondaryColor),
-                  title: BBText(data: 'Change Password'),
-                  visualDensity: VisualDensity(vertical: -4),
+                ListTile(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ChangePasswordScreen(),
+                      ),
+                    );
+                  },
+                  leading: const Icon(
+                    Icons.lock,
+                    color: BBColors.secondaryColor,
+                  ),
+                  title: BBText(
+                    data: 'Change Password',
+                    style: context.textStyle.bodyMedium,
+                  ),
+                  visualDensity: const VisualDensity(vertical: -4),
                 ),
                 const Divider(),
                 ListTile(
@@ -138,6 +186,14 @@ class BBSettings extends StatelessWidget {
                 ),
                 const Divider(),
                 ListTile(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AppSettingsScreen(),
+                      ),
+                    );
+                  },
                   leading: const Icon(
                     Icons.settings,
                     color: BBColors.secondaryColor,
@@ -150,6 +206,14 @@ class BBSettings extends StatelessWidget {
                 ),
                 const Divider(),
                 ListTile(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LearnAndEarnScreen(),
+                      ),
+                    );
+                  },
                   leading: const Icon(
                     Icons.card_giftcard,
                     color: BBColors.secondaryColor,

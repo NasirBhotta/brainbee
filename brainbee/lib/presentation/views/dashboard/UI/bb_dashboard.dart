@@ -1,5 +1,6 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
+import 'package:brainbee/presentation/views/bot/UI/bb_initial_bot_screen.dart';
 
 import 'package:brainbee/presentation/views/class/UI/bb_class.dart';
 import 'package:brainbee/presentation/views/extras/bb_extrapopup.dart';
@@ -22,12 +23,12 @@ class _BBDashboardState extends State<BBDashboard> {
   List<Widget> dashBoardScreens = [
     const BBhome(),
     const BBhome(),
+    const BbInitialBotScreen(),
     const BBClass(),
     const BBhome(),
   ];
   List<Map<String, String>> learnPopUp = [
     {'title': 'Battle', 'imgPath': 'assets/battle.png'},
-    {'title': 'Practice', 'imgPath': 'assets/exercise.png'},
     {'title': 'FlashCards', 'imgPath': 'assets/flash-card.png'},
     {'title': 'Books', 'imgPath': 'assets/text-book.png'},
   ];
@@ -43,93 +44,147 @@ class _BBDashboardState extends State<BBDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: BBColors.white,
-        elevation: 0,
-        onTap: (value) {
-          setState(() {
-            previousScreen = selectedScreen;
-            selectedScreen = value;
-          });
-          if (value == 1) {
-            showSlidingPopup(
-              context,
-              learnPopUp,
-              onDismiss: () {
+      body: Stack(
+        children: [
+          Positioned.fill(
+            bottom: kBottomNavigationBarHeight,
+            child:
+                selectedScreen == 0 ||
+                        selectedScreen == 3 ||
+                        selectedScreen == 2
+                    ? dashBoardScreens[selectedScreen]
+                    : dashBoardScreens[previousScreen],
+          ),
+
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: BottomNavigationBar(
+              currentIndex: selectedScreen,
+              backgroundColor: BBColors.white,
+              elevation: 0,
+              onTap: (value) {
                 setState(() {
-                  selectedScreen = previousScreen;
+                  previousScreen = selectedScreen;
+                  selectedScreen = value;
+                });
+                if (value == 1) {
+                  showSlidingPopup(
+                    context,
+                    learnPopUp,
+                    onDismiss: () {
+                      setState(() {
+                        selectedScreen = previousScreen;
+                      });
+                    },
+                  );
+                } else if (value == 4) {
+                  showExtraPopup(
+                    context,
+                    extraPopUP,
+                    onDismiss: () {
+                      setState(() {
+                        selectedScreen = previousScreen;
+                      });
+                    },
+                  );
+                }
+              },
+              selectedLabelStyle: GoogleFonts.poppins(fontSize: 10),
+              showUnselectedLabels: true,
+              unselectedLabelStyle: GoogleFonts.poppins(fontSize: 10),
+              unselectedItemColor: BBColors.bodyText,
+              selectedItemColor: BBColors.bodyText,
+              type: BottomNavigationBarType.fixed,
+              items: [
+                BottomNavigationBarItem(
+                  icon: Image(
+                    image: const AssetImage("assets/home.png"),
+                    height: context.screenHeight * 0.025,
+                    color:
+                        selectedScreen == 0
+                            ? BBColors.primaryColor
+                            : BBColors.borderGray,
+                  ),
+                  label: "Home",
+                ),
+                BottomNavigationBarItem(
+                  icon: Image(
+                    image: const AssetImage("assets/open-book.png"),
+                    height: context.screenHeight * 0.025,
+                    color:
+                        selectedScreen == 1
+                            ? BBColors.primaryColor
+                            : BBColors.borderGray,
+                  ),
+                  label: "Learn",
+                ),
+                BottomNavigationBarItem(
+                  icon: Container(
+                    height: context.screenHeight * 0.025,
+                    width: context.screenHeight * 0.025,
+                    color: Colors.transparent,
+                  ),
+                  label: '',
+                ),
+                BottomNavigationBarItem(
+                  icon: Image(
+                    image: const AssetImage("assets/presentation.png"),
+                    height: context.screenHeight * 0.025,
+                    color:
+                        selectedScreen == 3
+                            ? BBColors.primaryColor
+                            : BBColors.borderGray,
+                  ),
+                  label: "Class",
+                ),
+                BottomNavigationBarItem(
+                  icon: Image(
+                    image: const AssetImage("assets/badge.png"),
+                    height: context.screenHeight * 0.025,
+                    color:
+                        selectedScreen == 4
+                            ? BBColors.primaryColor
+                            : BBColors.borderGray,
+                  ),
+                  label: "Extras",
+                ),
+              ],
+            ),
+          ),
+
+          Positioned(
+            bottom: kBottomNavigationBarHeight - 45,
+            left: MediaQuery.of(context).size.width / 2 - 35,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  previousScreen = selectedScreen;
+                  selectedScreen = 2;
                 });
               },
-            );
-          } else if (value == 3) {
-            showExtraPopup(
-              context,
-              extraPopUP,
-              onDismiss: () {
-                setState(() {
-                  selectedScreen = previousScreen;
-                });
-              },
-            );
-          }
-        },
-        selectedLabelStyle: GoogleFonts.poppins(fontSize: 10),
-        showUnselectedLabels: true,
-        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 10),
-        unselectedItemColor: BBColors.bodyText,
-        selectedItemColor: BBColors.bodyText,
-        type: BottomNavigationBarType.fixed,
-        items: [
-          BottomNavigationBarItem(
-            icon: Image(
-              image: const AssetImage("assets/home.png"),
-              height: context.screenHeight * 0.025,
-              color:
-                  selectedScreen == 0
-                      ? BBColors.primaryColor
-                      : BBColors.darkHeading,
+              child: Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Center(child: Image.asset('assets/Bot.png')),
+              ),
             ),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Image(
-              image: const AssetImage("assets/open-book.png"),
-              height: context.screenHeight * 0.025,
-              color:
-                  selectedScreen == 1
-                      ? BBColors.primaryColor
-                      : BBColors.darkHeading,
-            ),
-            label: "Learn",
-          ),
-          BottomNavigationBarItem(
-            icon: Image(
-              image: const AssetImage("assets/presentation.png"),
-              height: context.screenHeight * 0.025,
-              color:
-                  selectedScreen == 2
-                      ? BBColors.primaryColor
-                      : BBColors.darkHeading,
-            ),
-            label: "Class",
-          ),
-          BottomNavigationBarItem(
-            icon: Image(
-              image: const AssetImage("assets/badge.png"),
-              height: context.screenHeight * 0.025,
-              color:
-                  selectedScreen == 3
-                      ? BBColors.primaryColor
-                      : BBColors.darkHeading,
-            ),
-            label: "Extras",
           ),
         ],
       ),
-      body:
-          selectedScreen == 0 || selectedScreen == 2
-              ? dashBoardScreens[selectedScreen]
-              : dashBoardScreens[previousScreen],
     );
   }
 }

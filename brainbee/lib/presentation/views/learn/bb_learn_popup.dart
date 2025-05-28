@@ -49,8 +49,11 @@ void showSlidingPopup(
                   SizedBox(
                     width: context.screenWidth,
                     child: Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      children: List.generate(4, (index) {
+                      alignment:
+                          items[0]['title']!.startsWith('Battle')
+                              ? WrapAlignment.spaceAround
+                              : WrapAlignment.spaceBetween,
+                      children: List.generate(3, (index) {
                         return BBPopupItems(
                           barType: BottomBarType.learn,
                           index: index,

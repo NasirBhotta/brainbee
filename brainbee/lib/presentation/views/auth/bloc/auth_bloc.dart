@@ -11,6 +11,9 @@ part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
+  UserModel? _user;
+  UserModel? get user => _user;
+
   AuthBloc() : super(AuthInitial()) {
     on<AuthLoginRequested>(authLoginRequested);
     on<AuthSignupRequested>(authSignupRequested);
@@ -36,12 +39,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       final data = jsonDecode(response.body);
 
-      print(data);
-      // if (response.statusCode == 200) {
-      //   emit(NavigateToDashboardActionState());
-      // }
+      if (response.statusCode == 200) {
+        emit(NavigateToDashboardActionState());
+        try {
+          _user = UserModel.fromJson(data);
+        } catch (e) {
+          emit(AuthFailureState(message: "Error writing data ${e.toString()}"));
+        }
+      } else {
+        emit(AuthFailureState(message: data['status'] ?? "Signin failed"));
+      }
     } catch (e) {
-      // emit(AuthFailureState(message: e.toString()));
+      emit(AuthFailureState(message: "Login Failed ${e.toString()}"));
     }
   }
 
@@ -67,8 +76,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       if (response.statusCode == 201) {
         emit(NavigateToDashboardActionState());
+        try {
+          _user = UserModel.fromJson(data);
+        } catch (e) {
+          emit(AuthFailureState(message: "error writing data ${e.toString()}"));
+        }
       } else {
-        emit(AuthFailureState(message: data['message'] ?? "Signup failed"));
+        emit(AuthFailureState(message: data['status'] ?? "Signup failed"));
       }
     } catch (e) {
       emit(AuthFailureState(message: "Signup error: ${e.toString()}"));

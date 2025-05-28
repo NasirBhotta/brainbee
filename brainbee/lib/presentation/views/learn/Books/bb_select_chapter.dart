@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:brainbee/core/models/bb_chapter.dart';
 import 'package:brainbee/core/widgets/popups/bb_invite_popUp.dart';
+import 'package:brainbee/presentation/views/learn/Books/bb_view_chapter.dart';
 
 import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
 import 'package:brainbee/presentation/views/learn/flashcards/bb_generate_flashcards.dart';
@@ -10,16 +11,16 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 
-class BbSelectchapFlashcards extends StatefulWidget {
+class BbSelectChapter extends StatefulWidget {
   final Subject subject;
 
-  const BbSelectchapFlashcards({super.key, required this.subject});
+  const BbSelectChapter({super.key, required this.subject});
 
   @override
-  _BbSelectchapFlashcardsState createState() => _BbSelectchapFlashcardsState();
+  _BbSelectChapterState createState() => _BbSelectChapterState();
 }
 
-class _BbSelectchapFlashcardsState extends State<BbSelectchapFlashcards> {
+class _BbSelectChapterState extends State<BbSelectChapter> {
   final Map<String, bool> _selectedChapters = {};
   final List<String> trackChapSelection = [];
   String previousChapName = '';
@@ -216,7 +217,12 @@ class _BbSelectchapFlashcardsState extends State<BbSelectchapFlashcards> {
                                 context,
                                 MaterialPageRoute(
                                   builder:
-                                      (context) => const BBFlashCardsScreen(),
+                                      (context) => const BbViewChapter(
+                                        bookTitle: "Your Book Title",
+                                        chapterTitle: "Chapter Name",
+                                        chapterText:
+                                            "The full chapter content...",
+                                      ),
                                 ),
                               );
                             }
@@ -234,7 +240,7 @@ class _BbSelectchapFlashcardsState extends State<BbSelectchapFlashcards> {
                       ),
                     ),
                     child: BBText(
-                      data: 'Generate FlashCards',
+                      data: 'View Chapter',
                       style: context.textStyle.titleSmall?.copyWith(
                         color: BBColors.white,
                         fontWeight: FontWeight.bold,

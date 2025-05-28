@@ -1,6 +1,7 @@
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
-import 'package:brainbee/presentation/views/learn/Books/bb_books.dart';
+
+import 'package:brainbee/presentation/views/learn/Books/bb_select_book.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_battle.dart';
 import 'package:brainbee/presentation/views/extras/Certificates/bb_certificates.dart';
 import 'package:brainbee/presentation/views/extras/Rewards/bb_rewards.dart';
@@ -10,7 +11,7 @@ import 'package:brainbee/presentation/views/extras/leaderboard/bb_leaderboard.da
 import 'package:brainbee/presentation/views/extras/reportcard/bb_reportcard.dart';
 import 'package:brainbee/presentation/views/extras/scorecard/bb_scorecard.dart';
 import 'package:brainbee/presentation/views/learn/flashcards/bb_selectBook_flashcards.dart';
-import 'package:brainbee/presentation/views/practice/bb_practice.dart';
+
 import 'package:flutter/material.dart';
 
 enum BottomBarType { learn, extra }
@@ -30,9 +31,8 @@ class BBPopupItems extends StatelessWidget {
 
   List<Widget> learnPopUpWidgets = [
     const BBBattle(),
-    const BBPractice(),
     BBFlashcards(),
-    const BBBooks(),
+    BbSelectBook(),
   ];
   List<Widget> extraPopUpWidgets = [
     const BBOverallScoreScreen(),

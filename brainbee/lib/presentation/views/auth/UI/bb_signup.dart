@@ -93,6 +93,10 @@ class _BbSignupState extends State<BbSignup> {
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontSize: 12,
+                      color: Colors.black,
+                    ),
                     controller: fullNameController,
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
@@ -118,6 +122,10 @@ class _BbSignupState extends State<BbSignup> {
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontSize: 12,
+                      color: Colors.black,
+                    ),
                     controller: emailController,
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
@@ -141,6 +149,10 @@ class _BbSignupState extends State<BbSignup> {
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontSize: 12,
+                      color: Colors.black,
+                    ),
                     controller: passwordController,
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
@@ -193,14 +205,22 @@ class _BbSignupState extends State<BbSignup> {
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
                       ),
-                      child: Text(
-                        'SignUp',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: BBColors.white,
-                        ),
-                      ),
+                      child:
+                          (state is AuthLoadingState)
+                              ? const CircularProgressIndicator(
+                                color: BBColors.white,
+                                strokeWidth: 1.5,
+                              )
+                              : Text(
+                                'Sign Up',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium?.copyWith(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: BBColors.white,
+                                ),
+                              ),
                     ),
                   ),
                   const SizedBox(height: 15),
@@ -226,38 +246,7 @@ class _BbSignupState extends State<BbSignup> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 15),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BBColors.darkHeading,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          'assets/apple.png',
-                          height: 20,
-                          width: 20,
-                          color: BBColors.white,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Login with Apple',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: BBColors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+
                   const SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: () {},

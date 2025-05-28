@@ -41,7 +41,7 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
 
           children: [
-            Image.asset('assets/main_logo.png', width: 300, height: 300),
+            Image.asset('assets/Bot.png', width: 150, height: 150),
             const SizedBox(height: 10),
             const CircularProgressIndicator(
               color: BBColors.white,
