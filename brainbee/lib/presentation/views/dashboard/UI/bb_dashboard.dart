@@ -6,7 +6,11 @@ import 'package:brainbee/presentation/views/class/UI/bb_class.dart';
 import 'package:brainbee/presentation/views/extras/bb_extrapopup.dart';
 
 import 'package:brainbee/presentation/views/home/bb_home.dart';
+import 'package:brainbee/presentation/views/learn/Books/bb_select_book.dart';
+
+import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
 import 'package:brainbee/presentation/views/learn/bb_learn_popup.dart';
+import 'package:brainbee/presentation/views/learn/flashcards/bb_selectBook_flashcards.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -27,10 +31,22 @@ class _BBDashboardState extends State<BBDashboard> {
     const BBClass(),
     const BBhome(),
   ];
-  List<Map<String, String>> learnPopUp = [
-    {'title': 'Battle', 'imgPath': 'assets/battle.png'},
-    {'title': 'FlashCards', 'imgPath': 'assets/flash-card.png'},
-    {'title': 'Books', 'imgPath': 'assets/text-book.png'},
+  List<Map<String, dynamic>> learnPopUp = [
+    {
+      'title': 'Battle',
+      'imgPath': 'assets/battle.png',
+      'navigateTo': BBBookSelectionForBattle(),
+    },
+    {
+      'title': 'FlashCards',
+      'imgPath': 'assets/flash-card.png',
+      'navigateTo': BBFlashcards(),
+    },
+    {
+      'title': 'Books',
+      'imgPath': 'assets/text-book.png',
+      'navigateTo': BbSelectBook(),
+    },
   ];
   List<Map<String, String>> extraPopUP = [
     {'title': 'Score', 'imgPath': 'assets/battle.png'},

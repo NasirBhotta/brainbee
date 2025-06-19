@@ -1,4 +1,5 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
+import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/scroll_controller.dart';
 import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
 import 'package:brainbee/presentation/views/dashboard/UI/bb_dashboard.dart';
@@ -17,10 +18,14 @@ class BbLogin extends StatefulWidget {
 }
 
 class _BbLoginState extends State<BbLogin> {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
+  final emailController = TextEditingController(text: "jawad1@gmail.com");
+  final passwordController = TextEditingController(text: "Jawad123");
   ScrollController scrollController = ScrollController();
+
+  final emailFocus = FocusNode();
+  final passwordFocus = FocusNode();
   double offset = 0;
+  double maxOffset = 400;
   @override
   void initState() {
     super.initState();
@@ -34,6 +39,26 @@ class _BbLoginState extends State<BbLogin> {
         }
       });
     });
+
+    emailFocus.addListener(() {
+      if (emailFocus.hasFocus) {
+        scrollController.jumpTo(200);
+      }
+    });
+    passwordFocus.addListener(() {
+      if (passwordFocus.hasFocus) {
+        scrollController.jumpTo(350);
+        setState(() {
+          maxOffset += 150;
+        });
+      }
+      if (!passwordFocus.hasFocus) {
+        setState(() {
+          scrollController.jumpTo(267);
+          maxOffset -= 150;
+        });
+      }
+    });
   }
 
   final formKey = GlobalKey<FormState>();
@@ -42,7 +67,7 @@ class _BbLoginState extends State<BbLogin> {
     var size = MediaQuery.of(context).size;
     return SingleChildScrollView(
       controller: scrollController,
-      physics: const SlowMaxScrollPhysics(maxOffset: 400),
+      physics: SlowMaxScrollPhysics(maxOffset: maxOffset),
       child: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthFailureState) {
@@ -90,6 +115,7 @@ class _BbLoginState extends State<BbLogin> {
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
+                    focusNode: emailFocus,
                     controller: emailController,
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
@@ -101,6 +127,10 @@ class _BbLoginState extends State<BbLogin> {
                       hintStyle: Theme.of(context).textTheme.bodyMedium
                           ?.copyWith(fontSize: 12, color: BBColors.bodyText),
                     ),
+                    onFieldSubmitted: (value) {
+                      emailFocus.unfocus();
+                      FocusScope.of(context).requestFocus(passwordFocus);
+                    },
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -112,6 +142,7 @@ class _BbLoginState extends State<BbLogin> {
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
+                    focusNode: passwordFocus,
                     controller: passwordController,
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
@@ -305,7 +336,12 @@ class _BbLoginState extends State<BbLogin> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(
+                    height:
+                        passwordFocus.hasFocus
+                            ? context.screenHeight * 0.1
+                            : 20,
+                  ),
                 ],
               ),
             ),

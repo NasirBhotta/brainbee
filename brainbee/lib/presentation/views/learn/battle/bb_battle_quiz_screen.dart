@@ -3,6 +3,9 @@ import 'package:brainbee/core/models/bb_question.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
+import 'package:brainbee/core/widgets/popups/bb_confirmation_dialog.dart';
+import 'package:brainbee/core/widgets/popups/bb_model_button.dart';
+import 'package:brainbee/core/widgets/popups/bb_result_dialog.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_battle_report_card.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -141,262 +144,76 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   }
 
   void _showResultDialog() {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: "Dismiss",
-      barrierColor: Colors.black.withValues(alpha: 0.7),
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return Center(
-          child: AnimatedBuilder(
-            animation: animation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: Curves.easeOutBack.transform(animation.value),
-                child: Opacity(opacity: animation.value, child: child),
-              );
-            },
-            child: Material(
-              color: Colors.transparent,
-              elevation: 0,
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.85,
-                constraints: const BoxConstraints(maxWidth: 400),
-                decoration: BoxDecoration(
-                  color: BBColors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
+    // Determine result type
+    ResultType resultType;
+    if (score > opponentScore) {
+      resultType = ResultType.win;
+    } else if (score == opponentScore) {
+      resultType = ResultType.tie;
+    } else {
+      resultType = ResultType.lose;
+    }
+
+    context.showResultDialog(
+      title: "Battle Result",
+      resultType: resultType,
+      userScore: score,
+      opponentScore: opponentScore,
+      headerIcon: const Icon(Icons.emoji_events, color: Colors.white, size: 40),
+      onActionPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => BBBattleReportCardScreen(
+                  score: score,
+                  opponentScore: opponentScore,
+                  won: score > opponentScore,
+                  questions: questions,
+                  userAnswers: answers,
+                  timeSpent: timeSpent,
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        decoration: const BoxDecoration(
-                          color: BBColors.primaryColor,
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Positioned(
-                              right: 15,
-                              top: 0,
-                              bottom: 0,
-                              child: Icon(
-                                Icons.emoji_events,
-                                color: Colors.white.withValues(alpha: 0.2),
-                                size: 40,
-                              ),
-                            ),
-                            BBText(
-                              data: "Battle Result",
-                              style: context.textStyle.titleMedium?.copyWith(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 0.5,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 25, 24, 15),
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 12,
-                                horizontal: 24,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    score > opponentScore
-                                        ? Colors.green.withValues(alpha: 0.1)
-                                        : score == opponentScore
-                                        ? Colors.amber.withValues(alpha: 0.1)
-                                        : Colors.red.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(50),
-                                border: Border.all(
-                                  color:
-                                      score > opponentScore
-                                          ? Colors.green.withValues(alpha: 0.3)
-                                          : score == opponentScore
-                                          ? Colors.amber.withValues(alpha: 0.3)
-                                          : Colors.red.withValues(alpha: 0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: BBText(
-                                data:
-                                    score > opponentScore
-                                        ? "You Win! 🏆"
-                                        : score == opponentScore
-                                        ? "It's a Tie!"
-                                        : "You Lost! 😔",
-                                style: context.textStyle.labelMedium?.copyWith(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                  color:
-                                      score > opponentScore
-                                          ? Colors.green.shade700
-                                          : score == opponentScore
-                                          ? Colors.amber.shade700
-                                          : Colors.red.shade700,
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 25),
-
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildEnhancedScoreCard(
-                                  "Your Score",
-                                  score,
-                                  Colors.blue,
-                                ),
-                                Container(
-                                  height: 70,
-                                  width: 1,
-                                  color: Colors.grey.withValues(alpha: 0.2),
-                                ),
-                                _buildEnhancedScoreCard(
-                                  "Opponent",
-                                  opponentScore,
-                                  Colors.red,
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 25),
-
-                            Container(
-                              width: double.infinity,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    BBColors.primaryColor,
-                                    BBColors.primaryColor.withValues(
-                                      alpha: 0.8,
-                                    ),
-                                    BBColors.primaryColor.withValues(
-                                      alpha: 0.9,
-                                    ),
-                                  ],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                ),
-                                borderRadius: BorderRadius.circular(50),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: BBColors.primaryColor.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(50),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (context) =>
-                                                BBBattleReportCardScreen(
-                                                  score: score,
-                                                  opponentScore: opponentScore,
-                                                  won: true,
-                                                  questions: questions,
-                                                  userAnswers: answers,
-                                                  timeSpent: timeSpent,
-                                                ),
-                                      ),
-                                    );
-                                  },
-                                  child: Center(
-                                    child: BBText(
-                                      data: "Done",
-                                      style: context.textStyle.labelSmall
-                                          ?.copyWith(
-                                            fontSize: 16,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 0.5,
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildEnhancedScoreCard(String label, int scoreValue, Color color) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        BBText(
-          data: label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color.withValues(alpha: 0.1),
-            border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
-          ),
-          child: Center(
-            child: BBText(
-              data: scoreValue.toString(),
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  // Widget _buildEnhancedScoreCard(String label, int scoreValue, Color color) {
+  //   return Column(
+  //     mainAxisSize: MainAxisSize.min,
+  //     children: [
+  //       BBText(
+  //         data: label,
+  //         style: TextStyle(
+  //           fontSize: 14,
+  //           fontWeight: FontWeight.w500,
+  //           color: Colors.grey.shade600,
+  //         ),
+  //       ),
+  //       const SizedBox(height: 8),
+  //       Container(
+  //         width: 60,
+  //         height: 60,
+  //         decoration: BoxDecoration(
+  //           shape: BoxShape.circle,
+  //           color: color.withValues(alpha: 0.1),
+  //           border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
+  //         ),
+  //         child: Center(
+  //           child: BBText(
+  //             data: scoreValue.toString(),
+  //             style: TextStyle(
+  //               fontSize: 24,
+  //               fontWeight: FontWeight.bold,
+  //               color: color,
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   // Widget _buildScoreCard(String label, int scoreValue, Color color) {
   //   return Container(
@@ -443,52 +260,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            showDialog(
-              context: context,
-              builder:
-                  (context) => AlertDialog(
-                    backgroundColor: BBColors.primaryColor,
-                    title: BBText(
-                      data: "Quit Battle?",
-                      style: context.textStyle.labelMedium?.copyWith(
-                        color: Colors.white,
-                      ),
-                    ),
-                    content: BBText(
-                      data:
-                          "Are you sure you want to quit? You'll lose this battle.",
-                      style: context.textStyle.labelMedium?.copyWith(
-                        color: Colors.white,
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: BBText(
-                          data: "Cancel",
-                          style: context.textStyle.labelMedium?.copyWith(
-                            color: BBColors.primaryColor,
-                          ),
-                        ),
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: BBColors.primaryColor,
-                        ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.pop(context);
-                        },
-                        child: BBText(
-                          data: "Quit",
-                          style: context.textStyle.labelMedium?.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-            );
+            showQuitDialog(context);
           },
         ),
       ),
@@ -774,4 +546,131 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
       ),
     );
   }
+
+  // Usage Examples:
+
+  // Basic usage with extension method:
+  void showQuitDialog(BuildContext context) {
+    context.showConfirmationDialog(
+      title: "Quit Battle?",
+      message: "Are you sure you want to quit? You'll lose this battle.",
+      confirmButtonText: "Quit",
+      cancelButtonText: "Cancel",
+      onConfirm: () {
+        Navigator.pop(context); // Navigate back to previous screen
+      },
+    );
+  }
+
+  //   void showQuitDialouge() {
+  //     showGeneralDialog(
+  //       context: context,
+  //       barrierDismissible: true,
+  //       barrierLabel: "quit_battle",
+  //       pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+  //       transitionBuilder: (context, animation, secondaryAnimation, child) {
+  //         return SlideTransition(
+  //           position: Tween<Offset>(
+  //             begin: const Offset(0, 0.2),
+  //             end: const Offset(0, 0),
+  //           ).animate(
+  //             CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+  //           ),
+  //           child: Material(
+  //             type: MaterialType.transparency,
+  //             child: Stack(
+  //               children: [
+  //                 Center(
+  //                   child: Container(
+  //                     margin: const EdgeInsets.symmetric(horizontal: 20),
+  //                     padding: const EdgeInsets.symmetric(
+  //                       horizontal: 10,
+  //                       vertical: 10,
+  //                     ),
+  //                     decoration: BoxDecoration(
+  //                       color: BBColors.lightGrayBG,
+  //                       borderRadius: BorderRadius.circular(10),
+  //                     ),
+  //                     child: Column(
+  //                       mainAxisSize: MainAxisSize.min,
+  //                       crossAxisAlignment: CrossAxisAlignment.center,
+  //                       children: [
+  //                         Center(
+  //                           child: BBText(
+  //                             data: "Quit Battle?",
+  //                             style: Theme.of(context).textTheme.titleLarge
+  //                                 ?.copyWith(fontWeight: FontWeight.bold),
+  //                           ),
+  //                         ),
+  //                         const Divider(color: BBColors.borderGray),
+  //                         Text(
+  //                           "Are you sure you want to quit? You'll lose this battle.",
+  //                           style: Theme.of(context).textTheme.bodyMedium,
+  //                           textAlign: TextAlign.center,
+  //                         ),
+  //                         const SizedBox(height: 20),
+  //                         Row(
+  //                           children: [
+  //                             const Expanded(child: SizedBox.shrink()),
+  //                             buildStudyModeButton(
+  //                               context,
+  //                               label: "Cancel",
+  //                               onTap: () {
+  //                                 Navigator.pop(context);
+  //                               },
+  //                             ),
+  //                             const SizedBox(width: 20),
+  //                             buildStudyModeButton(
+  //                               context,
+  //                               label: "Quit",
+  //                               onTap: () {
+  //                                 Navigator.pop(context);
+  //                                 Navigator.pop(context);
+  //                               },
+  //                             ),
+  //                             const Expanded(child: SizedBox.shrink()),
+  //                           ],
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 Align(
+  //                   alignment: const Alignment(0.95, -0.145),
+  //                   child: InkWell(
+  //                     onTap: () {
+  //                       Navigator.pop(context);
+  //                     },
+  //                     child: Container(
+  //                       padding: const EdgeInsets.symmetric(
+  //                         horizontal: 5,
+  //                         vertical: 5,
+  //                       ),
+  //                       decoration: BoxDecoration(
+  //                         color: BBColors.lightGrayBG,
+  //                         borderRadius: BorderRadius.circular(2),
+  //                         boxShadow: const [
+  //                           BoxShadow(
+  //                             color: BBColors.disabledText,
+  //                             spreadRadius: 0.5,
+  //                             blurRadius: 10,
+  //                           ),
+  //                         ],
+  //                       ),
+  //                       child: const Icon(
+  //                         Icons.close,
+  //                         size: 20,
+  //                         color: BBColors.primaryColor,
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         );
+  //       },
+  //     );
+  //   }
+  // }
 }

@@ -22,8 +22,12 @@ class _BbSignupState extends State<BbSignup> {
   final fullNameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final fullNameFocus = FocusNode();
+  final emailFocus = FocusNode();
+  final passwordFocus = FocusNode();
 
   double offset = 0;
+  double maxOffset = 550;
   @override
   void initState() {
     super.initState();
@@ -37,6 +41,47 @@ class _BbSignupState extends State<BbSignup> {
         }
       });
     });
+
+    fullNameFocus.addListener(() {
+      if (fullNameFocus.hasFocus) {
+        setState(() {
+          scrollController.jumpTo(200);
+        });
+      }
+    });
+    emailFocus.addListener(() {
+      if (emailFocus.hasFocus) {
+        setState(() {
+          scrollController.jumpTo(350);
+        });
+      }
+    });
+    passwordFocus.addListener(() {
+      if (passwordFocus.hasFocus) {
+        setState(() {
+          scrollController.jumpTo(600);
+          maxOffset += 150;
+        });
+      }
+      if (!passwordFocus.hasFocus) {
+        scrollController.jumpTo(400);
+        maxOffset -= 150;
+      }
+    });
+  }
+
+  List<String> firstName(String fullName) {
+    var listOfName = fullName.trim().split(" ");
+
+    return listOfName;
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    emailFocus.dispose();
+    passwordFocus.dispose();
+    fullNameFocus.dispose();
   }
 
   final formKey = GlobalKey<FormState>();
@@ -45,7 +90,7 @@ class _BbSignupState extends State<BbSignup> {
     var size = MediaQuery.of(context).size;
     return SingleChildScrollView(
       controller: scrollController,
-      physics: const SlowMaxScrollPhysics(maxOffset: 550),
+      physics: SlowMaxScrollPhysics(maxOffset: maxOffset),
       child: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthFailureState) {
@@ -93,6 +138,7 @@ class _BbSignupState extends State<BbSignup> {
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
+                    focusNode: fullNameFocus,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontSize: 12,
                       color: Colors.black,
@@ -110,6 +156,10 @@ class _BbSignupState extends State<BbSignup> {
                     ),
                     validator:
                         (value) => value!.isEmpty ? 'Enter Full Name' : null,
+                    onFieldSubmitted: (__) {
+                      fullNameFocus.unfocus();
+                      FocusScope.of(context).requestFocus(emailFocus);
+                    },
                   ),
                   const SizedBox(height: 10),
 
@@ -122,6 +172,7 @@ class _BbSignupState extends State<BbSignup> {
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
+                    focusNode: emailFocus,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontSize: 12,
                       color: Colors.black,
@@ -138,6 +189,10 @@ class _BbSignupState extends State<BbSignup> {
                           ?.copyWith(fontSize: 12, color: BBColors.bodyText),
                     ),
                     validator: (value) => value!.isEmpty ? 'Enter Email' : null,
+                    onFieldSubmitted: (__) {
+                      emailFocus.unfocus();
+                      FocusScope.of(context).requestFocus(passwordFocus);
+                    },
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -149,6 +204,7 @@ class _BbSignupState extends State<BbSignup> {
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
+                    focusNode: passwordFocus,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontSize: 12,
                       color: Colors.black,
@@ -191,6 +247,8 @@ class _BbSignupState extends State<BbSignup> {
                             fullName: fullNameController.text,
                             email: emailController.text,
                             password: passwordController.text,
+                            firstName: firstName(fullNameController.text)[0],
+                            lastName: firstName(fullNameController.text)[1],
                           ),
                         );
 
@@ -336,7 +394,7 @@ class _BbSignupState extends State<BbSignup> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: passwordFocus.hasFocus ? 180 : 20),
                 ],
               ),
             ),

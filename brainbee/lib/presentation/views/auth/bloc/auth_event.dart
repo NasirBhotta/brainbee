@@ -34,11 +34,15 @@ class AuthForgotPasswordRequested extends AuthEvent {
 
 class AuthSignupRequested extends AuthEvent {
   final String fullName;
+  final String firstName;
+  final String lastName;
   final String email;
   final String password;
   final String role;
 
   AuthSignupRequested({
+    required this.firstName,
+    required this.lastName,
     required this.fullName,
     required this.email,
     required this.password,

@@ -18,7 +18,7 @@ class Subject {
   });
 }
 
-class BBBookSelection extends StatelessWidget {
+class BBBookSelectionForBattle extends StatelessWidget {
   final List<Subject> subjects = [
     Subject(
       name: 'English',
@@ -52,7 +52,7 @@ class BBBookSelection extends StatelessWidget {
     ),
   ];
 
-  BBBookSelection({super.key});
+  BBBookSelectionForBattle({super.key});
 
   @override
   Widget build(BuildContext context) {

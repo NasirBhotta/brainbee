@@ -161,7 +161,9 @@ class _BBBattleState extends State<BBBattle> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => BBBookSelection(),
+                                      builder:
+                                          (context) =>
+                                              BBBookSelectionForBattle(),
                                     ),
                                   );
                                 },

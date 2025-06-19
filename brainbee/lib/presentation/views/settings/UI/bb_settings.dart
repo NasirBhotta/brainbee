@@ -25,9 +25,11 @@ class _BBSettingsState extends State<BBSettings> {
   UserModel authenticatedUser = UserModel(
     id: '',
     email: '',
-    name: '',
+
     token: '',
     status: '',
+    firstName: '',
+    lastName: '',
   );
   @override
   Widget build(BuildContext context) {
@@ -72,7 +74,7 @@ class _BBSettingsState extends State<BBSettings> {
                     radius: 15,
                     backgroundColor: Colors.green[700],
                     child: BBText(
-                      data: getIntials(authenticatedUser.name),
+                      data: getIntials(authenticatedUser.firstName),
                       style: Theme.of(
                         context,
                       ).textTheme.titleSmall?.copyWith(color: BBColors.white),
@@ -80,8 +82,8 @@ class _BBSettingsState extends State<BBSettings> {
                   ),
                   title: BBText(
                     data:
-                        authenticatedUser.name != ''
-                            ? authenticatedUser.name
+                        authenticatedUser.firstName != ''
+                            ? "${authenticatedUser.firstName} ${authenticatedUser.lastName}"
                             : 'UserName',
                     style: context.textStyle.bodyMedium,
                   ),

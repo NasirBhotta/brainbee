@@ -29,9 +29,11 @@ class _BBhomeState extends State<BBhome> {
   UserModel authenticatedUser = UserModel(
     id: '',
     email: '',
-    name: '',
+
     token: '',
     status: '',
+    firstName: '',
+    lastName: '',
   );
   List<String> imgPath = [
     'assets/trophy.png',
@@ -121,8 +123,8 @@ class _BBhomeState extends State<BBhome> {
                           ),
                           const Expanded(child: SizedBox.shrink()),
                           Text(
-                            authenticatedUser.name != ''
-                                ? authenticatedUser.name
+                            authenticatedUser.firstName != ''
+                                ? "${authenticatedUser.firstName} ${authenticatedUser.lastName}"
                                 : 'UserName',
                             style: Theme.of(context).textTheme.headlineSmall,
                           ),
@@ -166,8 +168,10 @@ class _BBhomeState extends State<BBhome> {
                                 child: CircleAvatar(
                                   backgroundColor: Colors.green[700],
                                   child: Text(
-                                    authenticatedUser.name != ''
-                                        ? getIntials(authenticatedUser.name)
+                                    authenticatedUser.firstName != ''
+                                        ? getIntials(
+                                          authenticatedUser.firstName,
+                                        )
                                         : 'U',
                                     style: const TextStyle(color: Colors.white),
                                   ),

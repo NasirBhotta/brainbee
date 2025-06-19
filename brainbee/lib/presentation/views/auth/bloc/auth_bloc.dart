@@ -63,17 +63,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final response = await http.post(
         Uri.parse("http://10.0.2.2:5000/api/auth/register"),
+        // Uri.parse("http://16.170.203.154:5000/api/auth/register"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "email": event.email,
           "fullName": event.fullName,
+          "firstName": event.firstName,
+          "lastName": event.lastName,
           "password": event.password,
           "role": event.role,
         }),
       );
 
       Map<String, dynamic> data = jsonDecode(response.body);
-
+      print(data);
       if (response.statusCode == 201) {
         emit(NavigateToDashboardActionState());
         try {
