@@ -161,6 +161,39 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
       opponentScore: opponentScore,
       headerIcon: const Icon(Icons.emoji_events, color: Colors.white, size: 40),
       onActionPressed: () {
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => BBBattleReportCardScreen(
+                  score: score,
+                  opponentScore: opponentScore,
+                  won: score > opponentScore,
+                  questions: questions,
+                  userAnswers: answers,
+                  timeSpent: timeSpent,
+                ),
+          ),
+        );
+      },
+      onCrossPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => BBBattleReportCardScreen(
+                  score: score,
+                  opponentScore: opponentScore,
+                  won: score > opponentScore,
+                  questions: questions,
+                  userAnswers: answers,
+                  timeSpent: timeSpent,
+                ),
+          ),
+        );
+      },
+      onPressedOutside: () {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -557,7 +590,30 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
       confirmButtonText: "Quit",
       cancelButtonText: "Cancel",
       onConfirm: () {
-        Navigator.pop(context); // Navigate back to previous screen
+        // print(score);
+        // print(opponentScore);
+        // print(questions);
+        // print(answers);
+        // print(timeSpent);
+        // print(score > opponentScore);
+
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => BBBattleReportCardScreen(
+                  score: score,
+                  opponentScore: opponentScore,
+                  won: score > opponentScore,
+                  questions: questions,
+                  userAnswers: answers,
+                  timeSpent: timeSpent,
+                ),
+          ),
+        );
+
+        // Navigate back to previous screen
       },
     );
   }

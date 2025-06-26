@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:brainbee/presentation/views/auth/models/user_model.dart';
@@ -28,15 +29,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoadingState());
     try {
-      final response = await http.post(
-        Uri.parse("http://10.0.2.2:5000/api/auth/login"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "email": event.email,
-          "password": event.password,
-          "role": event.role,
-        }),
-      );
+      final response = await http
+          .post(
+            Uri.parse("http://10.0.2.2:5000/api/auth/login"),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode({
+              "email": event.email,
+              "password": event.password,
+              "role": event.role,
+            }),
+          )
+          .timeout(const Duration(seconds: 5));
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
@@ -49,6 +52,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(AuthFailureState(message: data['status'] ?? "Signin failed"));
       }
+    } on SocketException {
+      emit(
+        AuthFailureState(
+          message: "❌ Server not reachable. Please start the server.",
+        ),
+      );
+    } on TimeoutException {
+      emit(AuthFailureState(message: "⏰ Server timeout. Check your internet"));
     } catch (e) {
       emit(AuthFailureState(message: "Login Failed ${e.toString()}"));
     }
@@ -87,6 +98,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(AuthFailureState(message: data['status'] ?? "Signup failed"));
       }
+    } on SocketException {
+      emit(
+        AuthFailureState(
+          message: "❌ Server not reachable. Please start the server.",
+        ),
+      );
+    } on TimeoutException {
+      emit(AuthFailureState(message: "⏰ Server timeout. Check your internet"));
     } catch (e) {
       emit(AuthFailureState(message: "Signup error: ${e.toString()}"));
     }

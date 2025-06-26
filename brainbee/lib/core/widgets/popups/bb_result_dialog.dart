@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:brainbee/core/constants/bb_colors.dart';
+import 'package:brainbee/core/utils/bb_text.dart';
+import 'package:brainbee/core/widgets/popups/bb_model_button.dart';
 
 enum ResultType { win, lose, tie }
 
@@ -11,12 +14,10 @@ class ResultDialog extends StatelessWidget {
   final String opponentScoreLabel;
   final String actionButtonText;
   final VoidCallback onActionPressed;
+  final VoidCallback onCrossPressed;
   final Color? primaryColor;
-  final Color? backgroundColor;
   final Widget? headerIcon;
   final String? customResultMessage;
-  final double? dialogWidth;
-  final double? maxWidth;
 
   const ResultDialog({
     super.key,
@@ -29,87 +30,118 @@ class ResultDialog extends StatelessWidget {
     this.opponentScoreLabel = "Opponent",
     this.actionButtonText = "Done",
     this.primaryColor,
-    this.backgroundColor,
     this.headerIcon,
     this.customResultMessage,
-    this.dialogWidth = 0.85,
-    this.maxWidth = 400,
+    required this.onCrossPressed,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        elevation: 0,
-        child: Container(
-          width: MediaQuery.of(context).size.width * (dialogWidth ?? 0.85),
-          constraints: BoxConstraints(maxWidth: maxWidth ?? 400),
-          decoration: BoxDecoration(
-            color: backgroundColor ?? Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [_buildHeader(context), _buildContent(context)],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 15),
-      decoration: BoxDecoration(
-        color: primaryColor ?? Theme.of(context).primaryColor,
-      ),
+    return Material(
+      type: MaterialType.transparency,
       child: Stack(
-        alignment: Alignment.center,
         children: [
-          if (headerIcon != null)
-            Positioned(
-              right: 15,
-              top: 0,
-              bottom: 0,
-              child: Opacity(opacity: 0.2, child: headerIcon!),
-            ),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              letterSpacing: 0.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
+          Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              decoration: BoxDecoration(
+                color: BBColors.lightGrayBG,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Title
+                  Center(
+                    child: BBText(
+                      data: title,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
 
-  Widget _buildContent(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 25, 24, 15),
-      child: Column(
-        children: [
-          _buildResultBadge(context),
-          const SizedBox(height: 25),
-          _buildScoreSection(context),
-          const SizedBox(height: 25),
-          _buildActionButton(context),
+                  // Result Badge
+                  Center(child: _buildResultBadge(context)),
+                  const SizedBox(height: 20),
+
+                  // Score Section
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: (primaryColor ?? BBColors.primaryColor)
+                            .withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        BBText(
+                          data: "Final Scores",
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: primaryColor ?? BBColors.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildScoreRows(context),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Action Button
+                  Row(
+                    children: [
+                      const Expanded(child: SizedBox.shrink()),
+                      buildStudyModeButton(
+                        context,
+                        label: actionButtonText,
+                        onTap: onActionPressed,
+                      ),
+                      const Expanded(child: SizedBox.shrink()),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Close Button
+          Align(
+            alignment: const Alignment(0.95, -0.145),
+            child: InkWell(
+              onTap: onCrossPressed,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                decoration: BoxDecoration(
+                  color: BBColors.lightGrayBG,
+                  borderRadius: BorderRadius.circular(2),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: BBColors.disabledText,
+                      spreadRadius: 0.5,
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.close,
+                  size: 20,
+                  color: BBColors.primaryColor,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -119,16 +151,16 @@ class ResultDialog extends StatelessWidget {
     final ResultConfig config = _getResultConfig();
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: BoxDecoration(
         color: config.backgroundColor,
-        borderRadius: BorderRadius.circular(50),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: config.borderColor, width: 1),
       ),
-      child: Text(
-        customResultMessage ?? config.message,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          fontSize: 20,
+      child: BBText(
+        data: customResultMessage ?? config.message,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontSize: 16,
           fontWeight: FontWeight.w600,
           color: config.textColor,
         ),
@@ -136,96 +168,49 @@ class ResultDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildScoreSection(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  Widget _buildScoreRows(BuildContext context) {
+    return Column(
       children: [
-        _buildScoreCard(userScoreLabel, userScore, Colors.blue),
-        Container(
-          height: 70,
-          width: 1,
-          color: Colors.grey.withValues(alpha: 0.2),
-        ),
-        _buildScoreCard(opponentScoreLabel, opponentScore, Colors.red),
+        _buildScoreRow(context, userScoreLabel, userScore, Colors.blue),
+        const SizedBox(height: 12),
+        _buildScoreRow(context, opponentScoreLabel, opponentScore, Colors.red),
       ],
     );
   }
 
-  Widget _buildScoreCard(String label, int score, Color color) {
-    return Column(
+  Widget _buildScoreRow(
+    BuildContext context,
+    String label,
+    int score,
+    Color color,
+  ) {
+    return Row(
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
+        Expanded(
+          child: BBText(
+            data: "$label:",
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
           ),
         ),
-        const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
           ),
-          child: Text(
-            score.toString(),
-            style: TextStyle(
-              fontSize: 24,
+          child: BBText(
+            data: score.toString(),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildActionButton(BuildContext context) {
-    final Color buttonColor = primaryColor ?? Theme.of(context).primaryColor;
-
-    return Container(
-      width: double.infinity,
-      height: 50,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            buttonColor,
-            buttonColor.withValues(alpha: 0.8),
-            buttonColor.withValues(alpha: 0.9),
-          ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(50),
-        boxShadow: [
-          BoxShadow(
-            color: buttonColor.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(50),
-          onTap: onActionPressed,
-          child: Center(
-            child: Text(
-              actionButtonText,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                fontSize: 16,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -240,7 +225,7 @@ class ResultDialog extends StatelessWidget {
         );
       case ResultType.tie:
         return ResultConfig(
-          message: "It's a Tie!",
+          message: "It's a Tie! 🤝",
           backgroundColor: Colors.amber.withValues(alpha: 0.1),
           borderColor: Colors.amber.withValues(alpha: 0.3),
           textColor: Colors.amber.shade700,
@@ -278,33 +263,30 @@ extension ResultDialogExtension on BuildContext {
     required int userScore,
     required int opponentScore,
     required VoidCallback onActionPressed,
+    required VoidCallback onCrossPressed,
+    required VoidCallback onPressedOutside,
     String userScoreLabel = "Your Score",
     String opponentScoreLabel = "Opponent",
     String actionButtonText = "Done",
     Color? primaryColor,
-    Color? backgroundColor,
     Widget? headerIcon,
     String? customResultMessage,
-    double? dialogWidth,
-    double? maxWidth,
     bool barrierDismissible = true,
     Duration transitionDuration = const Duration(milliseconds: 300),
   }) {
     return showGeneralDialog(
       context: this,
       barrierDismissible: barrierDismissible,
-      barrierLabel: "Dismiss",
-      barrierColor: Colors.black.withValues(alpha: 0.7),
-      transitionDuration: transitionDuration,
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return AnimatedBuilder(
-          animation: animation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: Curves.easeOutBack.transform(animation.value),
-              child: Opacity(opacity: animation.value, child: child),
-            );
-          },
+      barrierLabel: "result",
+      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.2),
+            end: const Offset(0, 0),
+          ).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+          ),
           child: ResultDialog(
             title: title,
             resultType: resultType,
@@ -315,14 +297,14 @@ extension ResultDialogExtension on BuildContext {
             opponentScoreLabel: opponentScoreLabel,
             actionButtonText: actionButtonText,
             primaryColor: primaryColor,
-            backgroundColor: backgroundColor,
             headerIcon: headerIcon,
             customResultMessage: customResultMessage,
-            dialogWidth: dialogWidth,
-            maxWidth: maxWidth,
+            onCrossPressed: onCrossPressed,
           ),
         );
       },
-    );
+    ).then((_) {
+      onPressedOutside();
+    });
   }
 }

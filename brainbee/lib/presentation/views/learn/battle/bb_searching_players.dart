@@ -3,6 +3,7 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
+import 'package:brainbee/presentation/views/learn/battle/bb_battle_quiz_screen.dart';
 import 'package:flutter/material.dart';
 
 class BbSearchingPlayers extends StatefulWidget {
@@ -51,7 +52,9 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers> {
         ),
         centerTitle: true,
         leading: IconButton(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.pop(context);
+          },
           icon: const Icon(Icons.arrow_back),
         ),
         backgroundColor: BBColors.white,
@@ -243,7 +246,18 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers> {
 
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: countdown > 0 ? null : () {},
+                    onPressed:
+                        countdown > 0
+                            ? null
+                            : () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => const BBBattleQuizScreen(),
+                                ),
+                              );
+                            },
                     style: ButtonStyle(
                       backgroundColor: WidgetStateProperty.resolveWith<Color>((
                         states,

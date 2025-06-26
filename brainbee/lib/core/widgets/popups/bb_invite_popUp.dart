@@ -4,6 +4,7 @@ import 'package:brainbee/core/widgets/popups/bb_model_button.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_battle_quiz_screen.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_chap_selection.dart';
+import 'package:brainbee/presentation/views/learn/battle/bb_searching_players.dart';
 import 'package:flutter/material.dart';
 
 export 'bb_invite_popUp.dart';
@@ -86,10 +87,12 @@ void showInvitationPopUp({
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: BBColors.primaryColor.withOpacity(0.2),
+                                  color: BBColors.primaryColor.withValues(
+                                    alpha: 0.2,
+                                  ),
                                   width: 1,
                                 ),
                               ),
@@ -185,7 +188,7 @@ void showInvitationPopUp({
                                         decoration: BoxDecoration(
                                           border: Border.all(
                                             color: BBColors.primaryColor
-                                                .withOpacity(0.3),
+                                                .withValues(alpha: 0.3),
                                           ),
                                           borderRadius: BorderRadius.circular(
                                             6,
@@ -245,7 +248,7 @@ void showInvitationPopUp({
                                         decoration: BoxDecoration(
                                           border: Border.all(
                                             color: BBColors.primaryColor
-                                                .withOpacity(0.3),
+                                                .withValues(alpha: 0.3),
                                           ),
                                           borderRadius: BorderRadius.circular(
                                             6,
@@ -306,7 +309,7 @@ void showInvitationPopUp({
                                         decoration: BoxDecoration(
                                           border: Border.all(
                                             color: BBColors.primaryColor
-                                                .withOpacity(0.3),
+                                                .withValues(alpha: 0.3),
                                           ),
                                           borderRadius: BorderRadius.circular(
                                             6,
@@ -422,7 +425,7 @@ void showInvitationPopUp({
                                           MaterialPageRoute(
                                             builder:
                                                 (context) =>
-                                                    const BBBattleQuizScreen(),
+                                                    const BbSearchingPlayers(),
                                           ),
                                         );
                                       }
@@ -529,12 +532,6 @@ void _handleRandomMatch(
   // Example: Navigate to battle quiz with parameters
   Navigator.push(
     context,
-    MaterialPageRoute(
-      builder:
-          (context) => const BBBattleQuizScreen(
-            // Pass your parameters here if the screen accepts them
-            // quizParameters: quizParameters,
-          ),
-    ),
+    MaterialPageRoute(builder: (context) => const BbSearchingPlayers()),
   );
 }
