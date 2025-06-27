@@ -1,3 +1,4 @@
+import 'package:brainbee/presentation/views/learn/battle/bb_reportcard_pdf.dart';
 import 'package:flutter/material.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
@@ -361,7 +362,23 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
           },
         ),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.download)),
+          IconButton(
+            onPressed: () {
+              ReportCardPDFGenerator.generatePDF(
+                score: widget.score,
+                opponentScore: widget.opponentScore,
+                won: widget.won,
+                questions: widget.questions,
+                userAnswers: widget.userAnswers,
+                timeSpent: widget.timeSpent,
+                quizAnalytics: quizAnalytics,
+                questionAnalysis: questionAnalysis,
+                performanceMetrics: performanceMetrics,
+                improvements: improvements,
+              );
+            },
+            icon: const Icon(Icons.download),
+          ),
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () {

@@ -44,6 +44,8 @@ dependencies:
   equatable: ^2.0.7
   http: ^1.4.0
   flutter_math_fork: ^0.7.4
+  share_plus: ^11.0.0
+  pdf: ^3.11.3
 
 
 dev_dependencies:
@@ -71,6 +73,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/
+    - assets/fonts
     - assets/main_logo.png
     - assets/google.png
     - assets/apple.png

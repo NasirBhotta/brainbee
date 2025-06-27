@@ -419,15 +419,6 @@ void showInvitationPopUp({
                                           selectedQuestionType,
                                           selectedTimeLimit,
                                         );
-                                      } else {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder:
-                                                (context) =>
-                                                    const BbSearchingPlayers(),
-                                          ),
-                                        );
                                       }
                                     },
                                   )
@@ -502,6 +493,20 @@ void _handleShareInvitation(
   // You can pass quizParameters to your AI service or sharing mechanism
   print('Sharing invitation with parameters: $quizParameters');
 
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder:
+          (context) => const BbSearchingPlayers(
+            matchType: MatchType.invitation,
+            currentPlayerName: 'nasirbhotta', // Get from user profile
+            currentPlayerInitial: 'N',
+            currentPlayerColor: Color(0xFF8CAA56),
+            // invitationCode is null, so it will generate a new code
+          ),
+    ),
+  );
+
   // Example: Generate invitation code and share
   // String invitationCode = generateInvitationCode(quizParameters);
   // shareInvitationCode(invitationCode);
@@ -532,6 +537,14 @@ void _handleRandomMatch(
   // Example: Navigate to battle quiz with parameters
   Navigator.push(
     context,
-    MaterialPageRoute(builder: (context) => const BbSearchingPlayers()),
+    MaterialPageRoute(
+      builder:
+          (context) => const BbSearchingPlayers(
+            matchType: MatchType.random,
+            currentPlayerName: 'nasirbhotta', // Get from user profile
+            currentPlayerInitial: 'N',
+            currentPlayerColor: Color(0xFF8CAA56),
+          ),
+    ),
   );
 }
