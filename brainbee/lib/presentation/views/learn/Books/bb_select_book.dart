@@ -3,7 +3,6 @@ import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/presentation/views/learn/Books/bb_select_chapter.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
-import 'package:brainbee/presentation/views/learn/flashcards/bb_selectChap_flashcards.dart';
 import 'package:flutter/material.dart';
 
 class BbSelectBook extends StatelessWidget {

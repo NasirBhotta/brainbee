@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
-import 'package:brainbee/core/utils/bb_screen_extension.dart';
 
 class BBFlashCardsScreen extends StatefulWidget {
   const BBFlashCardsScreen({super.key});

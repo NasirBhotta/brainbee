@@ -118,7 +118,7 @@ class ResultDialog extends StatelessWidget {
 
           // Close Button
           Align(
-            alignment: const Alignment(0.95, -0.145),
+            alignment: const Alignment(0.95, -0.375),
             child: InkWell(
               onTap: onCrossPressed,
               child: Container(

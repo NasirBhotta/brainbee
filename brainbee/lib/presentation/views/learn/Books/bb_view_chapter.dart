@@ -146,11 +146,12 @@ class _BbViewChapterState extends State<BbViewChapter> {
           children: [
             // Main content
             Container(
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
+              height: double.infinity,
+              width: double.infinity,
+              decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
+
+                boxShadow: [
                   BoxShadow(
                     color: Colors.black26,
                     blurRadius: 10,
@@ -158,69 +159,23 @@ class _BbViewChapterState extends State<BbViewChapter> {
                   ),
                 ],
               ),
-              child: Column(
-                children: [
-                  // Header
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: const BoxDecoration(
-                      color: BBColors.primaryColor,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.menu_book, color: Colors.white, size: 28),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Reading Mode',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'Select text to interact',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: SelectableText(
+                  widget.chapterText,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.6,
+                    color: Colors.black87,
                   ),
-                  // Book content
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: SelectableText(
-                        widget.chapterText,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          height: 1.6,
-                          color: Colors.black87,
-                        ),
-                        onSelectionChanged: (selection, cause) {
-                          final text = widget.chapterText.substring(
-                            selection.start,
-                            selection.end,
-                          );
-                          _handleTextSelection(text);
-                        },
-                      ),
-                    ),
-                  ),
-                ],
+                  onSelectionChanged: (selection, cause) {
+                    final text = widget.chapterText.substring(
+                      selection.start,
+                      selection.end,
+                    );
+                    _handleTextSelection(text);
+                  },
+                ),
               ),
             ),
             // Floating action options

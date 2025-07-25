@@ -1,7 +1,6 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/widgets/popups/bb_model_button.dart';
-import 'package:brainbee/presentation/views/learn/battle/bb_battle_quiz_screen.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_chap_selection.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_searching_players.dart';
@@ -432,7 +431,11 @@ void showInvitationPopUp({
                   ),
 
                   Align(
-                    alignment: const Alignment(0.95, -0.145),
+                    alignment:
+                        title.toLowerCase() == "invite friends" &&
+                                button2Label!.toLowerCase().contains('random')
+                            ? const Alignment(0.95, -0.515)
+                            : const Alignment(0.95, -0.145),
                     child: InkWell(
                       onTap: () {
                         Navigator.pop(context);

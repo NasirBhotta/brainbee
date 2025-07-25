@@ -4,7 +4,6 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/widgets/popups/bb_confirmation_dialog.dart';
-import 'package:brainbee/core/widgets/popups/bb_model_button.dart';
 import 'package:brainbee/core/widgets/popups/bb_result_dialog.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_battle_report_card.dart';
 import 'package:flutter/material.dart';

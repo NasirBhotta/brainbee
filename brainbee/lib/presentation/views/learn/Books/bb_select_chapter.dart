@@ -1,11 +1,7 @@
-import 'dart:math';
-
 import 'package:brainbee/core/models/bb_chapter.dart';
-import 'package:brainbee/core/widgets/popups/bb_invite_popUp.dart';
 import 'package:brainbee/presentation/views/learn/Books/bb_view_chapter.dart';
 
 import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
-import 'package:brainbee/presentation/views/learn/flashcards/bb_generate_flashcards.dart';
 import 'package:flutter/material.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';

@@ -1,11 +1,11 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
-import 'package:intl/intl.dart';
+import 'package:open_filex/open_filex.dart'; // Add this import
 import 'package:brainbee/core/models/bb_question.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ReportCardPDFGenerator {
   static Future<File> generatePDF({
@@ -19,6 +19,8 @@ class ReportCardPDFGenerator {
     required List<Map<String, dynamic>> questionAnalysis,
     required Map<String, dynamic> performanceMetrics,
     required List<Map<String, dynamic>> improvements,
+    required autoOpen, // Add this parameter
+    required bool shareFile,
   }) async {
     final pdf = pw.Document();
 
@@ -59,8 +61,32 @@ class ReportCardPDFGenerator {
     );
     await file.writeAsBytes(await pdf.save());
 
+    // Automatically open the PDF if requested
+    if (autoOpen && !shareFile) {
+      final result = await OpenFilex.open(file.path);
+      if (result.type != ResultType.done) {
+        print('Error opening PDF: ${result.message}');
+        // Optionally show a snackbar or dialog to the user
+      }
+    }
+
+    if (shareFile && !autoOpen) {
+      try {
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text:
+              'Check out my Quiz Report Card! 📊\n\nScore: $score/${quizAnalytics['totalQuestions']}\nAccuracy: ${quizAnalytics['accuracy']}%\nResult: ${won ? "Victory! 🎉" : "Good effort! 💪"}',
+          subject: 'Quiz Report Card - ${won ? "Victory!" : "Report"}',
+        );
+      } catch (e) {
+        print('Error sharing PDF: $e');
+      }
+    }
+
     return file;
   }
+
+  // ... rest of your existing methods remain the same ...
 
   static pw.Widget _buildHeader(
     bool won,

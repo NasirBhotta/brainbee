@@ -1,9 +1,6 @@
 import 'package:brainbee/core/theme/bb_theme.dart';
 import 'package:brainbee/presentation/splashscreen/splash_screen.dart';
 import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
-import 'package:brainbee/presentation/views/bot/UI/bb_initial_bot_screen.dart';
-import 'package:brainbee/presentation/views/dashboard/UI/bb_dashboard.dart';
-import 'package:brainbee/presentation/views/settings/UI/bb_manage_profile.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

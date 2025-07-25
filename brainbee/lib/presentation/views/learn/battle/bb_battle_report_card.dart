@@ -1,7 +1,6 @@
 import 'package:brainbee/presentation/views/learn/battle/bb_reportcard_pdf.dart';
 import 'package:flutter/material.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
-import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/models/bb_question.dart';
@@ -375,6 +374,8 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
                 questionAnalysis: questionAnalysis,
                 performanceMetrics: performanceMetrics,
                 improvements: improvements,
+                autoOpen: true,
+                shareFile: false,
               );
             },
             icon: const Icon(Icons.download),
@@ -382,7 +383,20 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () {
-              // Share functionality
+              ReportCardPDFGenerator.generatePDF(
+                score: widget.score,
+                opponentScore: widget.opponentScore,
+                won: widget.won,
+                questions: widget.questions,
+                userAnswers: widget.userAnswers,
+                timeSpent: widget.timeSpent,
+                quizAnalytics: quizAnalytics,
+                questionAnalysis: questionAnalysis,
+                performanceMetrics: performanceMetrics,
+                improvements: improvements,
+                autoOpen: false,
+                shareFile: true,
+              );
             },
           ),
         ],
@@ -1426,80 +1440,25 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
   }
 
   Widget _buildActionButtons() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // Navigate to quiz practice
-                },
-                icon: const Icon(Icons.quiz, color: Colors.white),
-                label: const BBText(
-                  data: "Practice More",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BBColors.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  // Navigate to battle arena
-                },
-                icon: const Icon(
-                  Icons.sports_esports,
-                  color: BBColors.primaryColor,
-                ),
-                label: const BBText(
-                  data: "Battle Again",
-                  style: TextStyle(
-                    color: BBColors.primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: BBColors.primaryColor),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ],
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton.icon(
+        onPressed: () {
+          Navigator.pop(context);
+          Navigator.pop(context);
+          Navigator.pop(context);
+          Navigator.pop(context);
+          Navigator.pop(context);
+        },
+        icon: const Icon(Icons.home, color: Colors.grey),
+        label: const BBText(
+          data: "Back to Home",
+          style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
         ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: TextButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            icon: const Icon(Icons.home, color: Colors.grey),
-            label: const BBText(
-              data: "Back to Home",
-              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
-            ),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-          ),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
         ),
-      ],
+      ),
     );
   }
 }

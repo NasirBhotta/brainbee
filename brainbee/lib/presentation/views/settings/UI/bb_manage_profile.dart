@@ -1,5 +1,4 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
-import 'package:brainbee/core/constants/bb_states_cities.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:flutter/material.dart';

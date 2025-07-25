@@ -1,8 +1,6 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/widgets/AI/bb_chat_widget.dart';
-import 'package:brainbee/presentation/views/bot/UI/bb_history_chat.dart';
-import 'package:brainbee/presentation/views/dashboard/UI/bb_dashboard.dart';
 import 'package:flutter/material.dart';
 
 enum ChatType { newChat, historyChat }

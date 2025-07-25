@@ -1,6 +1,5 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/scroll_controller.dart';
-import 'package:brainbee/presentation/views/auth/UI/bb_forgot_password.dart';
 import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
 import 'package:brainbee/presentation/views/dashboard/UI/bb_dashboard.dart';
 

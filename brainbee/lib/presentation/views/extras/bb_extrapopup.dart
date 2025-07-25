@@ -1,5 +1,3 @@
-import 'package:brainbee/core/utils/bb_screen_extension.dart';
-import 'package:brainbee/presentation/views/learn/bb_popup_items.dart';
 import 'package:flutter/material.dart';
 
 void showExtraPopup(
