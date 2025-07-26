@@ -1,3 +1,7 @@
+// screens/class_forum_screen.dart
+import 'package:flutter/material.dart';
+import 'package:brainbee/core/constants/bb_colors.dart';
+
 // models/discussion_models.dart
 class DiscussionMessage {
   final String id;
@@ -35,10 +39,6 @@ class DiscussionTopic {
   });
 }
 
-// screens/class_forum_screen.dart
-import 'package:flutter/material.dart';
-import 'package:brainbee/core/constants/bb_colors.dart';
-
 class ClassForumScreen extends StatefulWidget {
   final String classId;
   final String className;
@@ -59,11 +59,26 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
   bool _isLoading = false;
   bool _hasError = false;
   List<DiscussionTopic> _topics = [];
+  late DiscussionTopic _generalTopic;
 
   @override
   void initState() {
     super.initState();
+    _initializeGeneralTopic();
     _loadDiscussions();
+  }
+
+  void _initializeGeneralTopic() {
+    // Built-in General Discussion - always available
+    _generalTopic = DiscussionTopic(
+      id: 'general_${widget.classId}',
+      title: 'General Discussion',
+      createdBy: 'System',
+      createdAt: DateTime.now().subtract(
+        const Duration(days: 30),
+      ), // Created when class was made
+      messageCount: 0, // Will be updated from API
+    );
   }
 
   Future<void> _loadDiscussions() async {
@@ -75,8 +90,8 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
     try {
       // Simulate API call
       await Future.delayed(const Duration(seconds: 1));
-      
-      // Mock data
+
+      // Mock data - only teacher-created topics
       _topics = [
         DiscussionTopic(
           id: '1',
@@ -87,19 +102,28 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
         ),
         DiscussionTopic(
           id: '2',
-          title: 'Homework Discussion',
-          createdBy: 'Sarah Ahmed',
+          title: 'Homework Assignment - Due Friday',
+          createdBy: 'Mr. Johnson',
           createdAt: DateTime.now().subtract(const Duration(hours: 5)),
           messageCount: 8,
         ),
         DiscussionTopic(
           id: '3',
-          title: 'General Discussion',
+          title: 'Midterm Exam Preparation',
           createdBy: 'Mr. Johnson',
-          createdAt: DateTime.now().subtract(const Duration(days: 7)),
-          messageCount: 25,
+          createdAt: DateTime.now().subtract(const Duration(days: 1)),
+          messageCount: 15,
         ),
       ];
+
+      // Update general topic message count (simulate API response)
+      _generalTopic = DiscussionTopic(
+        id: _generalTopic.id,
+        title: _generalTopic.title,
+        createdBy: _generalTopic.createdBy,
+        createdAt: _generalTopic.createdAt,
+        messageCount: 25, // Updated from API
+      );
 
       setState(() {
         _isLoading = false;
@@ -113,72 +137,84 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
   }
 
   void _showNewTopicDialog() {
-    final TextEditingController controller = TextEditingController();
-    
+    // Show message that only teachers can create topics
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Start New Topic',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: BBColors.darkHeading,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'Enter topic title...',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                // Create new topic
-                Navigator.pop(context);
-                _createNewTopic(controller.text.trim());
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: BBColors.primaryColor,
+      builder:
+          (context) => AlertDialog(
+            title: Row(
+              children: [
+                const Icon(
+                  Icons.info_outline,
+                  color: BBColors.primaryBlue,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Information',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: BBColors.darkHeading,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-            child: const Text('Create'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Only teachers can create new discussion topics.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'You can participate in existing discussions or use the General Discussion for open conversations.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: BBColors.bodyText),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Got it',
+                  style: TextStyle(color: BBColors.primaryColor),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Navigate to General Discussion
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => ClassDiscussionScreen(
+                            classId: widget.classId,
+                            className: widget.className,
+                            topic: _generalTopic,
+                          ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BBColors.primaryColor,
+                ),
+                child: const Text('Go to General Discussion'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   void _createNewTopic(String title) {
-    final newTopic = DiscussionTopic(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      createdBy: 'Current User', // Replace with actual user
-      createdAt: DateTime.now(),
-      messageCount: 0,
-    );
-
-    setState(() {
-      _topics.insert(0, newTopic);
-    });
-
-    // Navigate to discussion
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ClassDiscussionScreen(
-          classId: widget.classId,
-          className: widget.className,
-          topic: newTopic,
-        ),
-      ),
-    );
+    // This method is now unused since students can't create topics
+    // Keeping for potential future use or teacher app integration
   }
 
   @override
@@ -204,9 +240,9 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
             ),
             Text(
               'Teacher: ${widget.teacherName}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white70,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.white70),
             ),
           ],
         ),
@@ -214,10 +250,10 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
       body: _buildBody(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showNewTopicDialog,
-        backgroundColor: BBColors.primaryColor,
-        icon: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: BBColors.primaryBlue.withOpacity(0.8),
+        icon: const Icon(Icons.info_outline, color: Colors.white),
         label: Text(
-          'New Topic',
+          'New Topic?',
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.w500,
@@ -249,9 +285,13 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
       color: BBColors.primaryColor,
       child: ListView.builder(
         padding: const EdgeInsets.all(16.0),
-        itemCount: _topics.length,
+        itemCount: _topics.length + 1, // +1 for General Discussion
         itemBuilder: (context, index) {
-          return _buildTopicCard(_topics[index]);
+          if (index == 0) {
+            // Always show General Discussion first
+            return _buildGeneralTopicCard();
+          }
+          return _buildTopicCard(_topics[index - 1]);
         },
       ),
     );
@@ -262,24 +302,20 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: BBColors.alertRed,
-          ),
+          const Icon(Icons.error_outline, size: 64, color: BBColors.alertRed),
           const SizedBox(height: 16),
           Text(
             'Failed to load discussions',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: BBColors.darkHeading,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: BBColors.darkHeading),
           ),
           const SizedBox(height: 8),
           Text(
             'Please check your connection and try again',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: BBColors.bodyText,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -306,31 +342,174 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return RefreshIndicator(
+      onRefresh: _loadDiscussions,
+      color: BBColors.primaryColor,
+      child: ListView(
+        padding: const EdgeInsets.all(16.0),
         children: [
-          const Icon(
-            Icons.forum_outlined,
-            size: 64,
-            color: BBColors.disabledText,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No discussions yet',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: BBColors.darkHeading,
+          // Always show General Discussion even when no other topics
+          _buildGeneralTopicCard(),
+          const SizedBox(height: 32),
+          Center(
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.school_outlined,
+                  size: 64,
+                  color: BBColors.disabledText,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No specific topics yet',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: BBColors.darkHeading,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your teacher will create discussion topics\nMeanwhile, use General Discussion to chat!',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Start a new topic to begin the conversation',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: BBColors.bodyText,
-            ),
-            textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGeneralTopicCard() {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12.0),
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: BBColors.primaryColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) => ClassDiscussionScreen(
+                    classId: widget.classId,
+                    className: widget.className,
+                    topic: _generalTopic,
+                  ),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              colors: [
+                BBColors.primaryColor.withOpacity(0.05),
+                BBColors.secondaryColor.withOpacity(0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: BBColors.primaryColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.forum,
+                        color: BBColors.primaryColor,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _generalTopic.title,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleMedium?.copyWith(
+                              color: BBColors.darkHeading,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            'Open discussion for all students',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: BBColors.bodyText),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: BBColors.primaryColor,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.people,
+                          size: 16,
+                          color: BBColors.bodyText,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'All students can participate',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: BBColors.bodyText),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: BBColors.primaryColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${_generalTopic.messageCount} messages',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: BBColors.primaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -339,19 +518,18 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12.0),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ClassDiscussionScreen(
-                classId: widget.classId,
-                className: widget.className,
-                topic: topic,
-              ),
+              builder:
+                  (context) => ClassDiscussionScreen(
+                    classId: widget.classId,
+                    className: widget.className,
+                    topic: topic,
+                  ),
             ),
           );
         },
@@ -382,17 +560,13 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(
-                    Icons.person,
-                    size: 16,
-                    color: BBColors.bodyText,
-                  ),
+                  const Icon(Icons.person, size: 16, color: BBColors.bodyText),
                   const SizedBox(width: 4),
                   Text(
                     'Started by ${topic.createdBy}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: BBColors.bodyText,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: BBColors.bodyText),
                   ),
                 ],
               ),
@@ -504,7 +678,7 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
     try {
       // Simulate API call
       await Future.delayed(const Duration(seconds: 1));
-      
+
       // Mock messages
       _messages = [
         DiscussionMessage(
@@ -512,28 +686,72 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
           senderId: 'teacher1',
           senderName: 'Mr. Johnson',
           senderRole: 'teacher',
-          message: 'Welcome to our discussion forum! Feel free to ask any questions about the chapter.',
+          message:
+              widget.topic.id.contains('general')
+                  ? 'Welcome to the general discussion! Feel free to ask questions, share thoughts, or help each other with studies.'
+                  : 'Welcome to our discussion forum! Feel free to ask any questions about the chapter.',
           timestamp: DateTime.now().subtract(const Duration(hours: 2)),
           topicId: widget.topic.id,
         ),
-        DiscussionMessage(
-          id: '2',
-          senderId: 'student1',
-          senderName: 'Sarah Ahmed',
-          senderRole: 'student',
-          message: 'Thank you sir! I have a question about quadratic equations.',
-          timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 30)),
-          topicId: widget.topic.id,
-        ),
-        DiscussionMessage(
-          id: '3',
-          senderId: 'teacher1',
-          senderName: 'Mr. Johnson',
-          senderRole: 'teacher',
-          message: 'Sure Sarah, go ahead with your question.',
-          timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 25)),
-          topicId: widget.topic.id,
-        ),
+        if (widget.topic.id.contains('general')) ...[
+          DiscussionMessage(
+            id: '2',
+            senderId: 'student1',
+            senderName: 'Sarah Ahmed',
+            senderRole: 'student',
+            message:
+                'Hi everyone! Can someone help me understand the homework from yesterday?',
+            timestamp: DateTime.now().subtract(
+              const Duration(hours: 1, minutes: 30),
+            ),
+            topicId: widget.topic.id,
+          ),
+          DiscussionMessage(
+            id: '3',
+            senderId: 'student2',
+            senderName: 'Ahmed Ali',
+            senderRole: 'student',
+            message: 'Sure Sarah! Which part are you having trouble with?',
+            timestamp: DateTime.now().subtract(
+              const Duration(hours: 1, minutes: 25),
+            ),
+            topicId: widget.topic.id,
+          ),
+          DiscussionMessage(
+            id: '4',
+            senderId: 'student1',
+            senderName: 'Sarah Ahmed',
+            senderRole: 'student',
+            message:
+                'The quadratic equations part. I keep getting confused with the formula.',
+            timestamp: DateTime.now().subtract(const Duration(minutes: 45)),
+            topicId: widget.topic.id,
+          ),
+        ] else ...[
+          DiscussionMessage(
+            id: '2',
+            senderId: 'student1',
+            senderName: 'Sarah Ahmed',
+            senderRole: 'student',
+            message:
+                'Thank you sir! I have a question about quadratic equations.',
+            timestamp: DateTime.now().subtract(
+              const Duration(hours: 1, minutes: 30),
+            ),
+            topicId: widget.topic.id,
+          ),
+          DiscussionMessage(
+            id: '3',
+            senderId: 'teacher1',
+            senderName: 'Mr. Johnson',
+            senderRole: 'teacher',
+            message: 'Sure Sarah, go ahead with your question.',
+            timestamp: DateTime.now().subtract(
+              const Duration(hours: 1, minutes: 25),
+            ),
+            topicId: widget.topic.id,
+          ),
+        ],
       ];
 
       setState(() {
@@ -581,7 +799,7 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
     });
 
     _messageController.clear();
-    
+
     // Scroll to bottom after adding message
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
@@ -614,18 +832,15 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
             ),
             Text(
               widget.className,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white70,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.white70),
             ),
           ],
         ),
       ),
       body: Column(
-        children: [
-          Expanded(child: _buildMessagesList()),
-          _buildMessageInput(),
-        ],
+        children: [Expanded(child: _buildMessagesList()), _buildMessageInput()],
       ),
     );
   }
@@ -658,17 +873,13 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: BBColors.alertRed,
-          ),
+          const Icon(Icons.error_outline, size: 64, color: BBColors.alertRed),
           const SizedBox(height: 16),
           Text(
             'Failed to load messages',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: BBColors.darkHeading,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: BBColors.darkHeading),
           ),
           const SizedBox(height: 24),
           ElevatedButton(
@@ -695,7 +906,8 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
           if (!isCurrentUser) ...[
             CircleAvatar(
               radius: 20,
-              backgroundColor: isTeacher ? BBColors.primaryBlue : BBColors.primaryColor,
+              backgroundColor:
+                  isTeacher ? BBColors.primaryBlue : BBColors.primaryColor,
               child: Text(
                 message.senderName[0].toUpperCase(),
                 style: const TextStyle(
@@ -708,9 +920,10 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
           ],
           Expanded(
             child: Column(
-              crossAxisAlignment: isCurrentUser 
-                  ? CrossAxisAlignment.end 
-                  : CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  isCurrentUser
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
               children: [
                 if (!isCurrentUser)
                   Row(
@@ -735,7 +948,9 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
                           ),
                           child: Text(
                             'Teacher',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodySmall?.copyWith(
                               color: BBColors.primaryBlue,
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
@@ -749,9 +964,7 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isCurrentUser 
-                        ? BBColors.primaryColor 
-                        : Colors.white,
+                    color: isCurrentUser ? BBColors.primaryColor : Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
@@ -764,7 +977,8 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
                   child: Text(
                     message.message,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: isCurrentUser ? Colors.white : BBColors.darkHeading,
+                      color:
+                          isCurrentUser ? Colors.white : BBColors.darkHeading,
                     ),
                   ),
                 ),
@@ -803,9 +1017,7 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
       padding: const EdgeInsets.all(16.0),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: BBColors.borderGray, width: 1),
-        ),
+        border: Border(top: BorderSide(color: BBColors.borderGray, width: 1)),
       ),
       child: Row(
         children: [
@@ -824,7 +1036,10 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
-                  borderSide: const BorderSide(color: BBColors.primaryColor, width: 2),
+                  borderSide: const BorderSide(
+                    color: BBColors.primaryColor,
+                    width: 2,
+                  ),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,

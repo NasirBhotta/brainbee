@@ -1,6 +1,10 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
+import 'package:brainbee/presentation/views/class/UI/assignment/bb_class_assignment.dart';
 import 'package:brainbee/presentation/views/class/UI/bb_class.dart';
+import 'package:brainbee/presentation/views/class/UI/discussion/bb_discussion.dart';
+import 'package:brainbee/presentation/views/class/UI/material/bb_class_material.dart';
+import 'package:brainbee/presentation/views/class/UI/quiz/bb_class_quiz.dart';
 import 'package:flutter/material.dart';
 
 class ClassDetailScreen extends StatelessWidget {
@@ -96,7 +100,19 @@ class ClassDetailScreen extends StatelessWidget {
                     'View Materials',
                     Icons.book,
                     Colors.blueAccent,
-                    () {},
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => const ClassMaterialsScreen(
+                                classId: 'your_class_id',
+                                className: 'Mathematics',
+                                teacherName: 'Mr. Johnson',
+                              ),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                   _buildActionButton(
@@ -104,7 +120,20 @@ class ClassDetailScreen extends StatelessWidget {
                     'Assignments',
                     Icons.assignment,
                     Colors.orangeAccent,
-                    () {},
+                    () {
+                      // In your class details screen, add this to the assignments button:
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => const ClassAssignmentsScreen(
+                                classId: 'your_class_id',
+                                className: 'Mathematics',
+                                teacherName: 'Mr. Johnson',
+                              ),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                   _buildActionButton(
@@ -112,7 +141,19 @@ class ClassDetailScreen extends StatelessWidget {
                     'Forum',
                     Icons.forum,
                     Colors.purpleAccent,
-                    () {},
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => const ClassForumScreen(
+                                classId: 'your_class_id',
+                                className: 'Mathematics',
+                                teacherName: 'Mr. Johnson',
+                              ),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                   _buildActionButton(
@@ -121,6 +162,25 @@ class ClassDetailScreen extends StatelessWidget {
                     Icons.email,
                     Colors.green,
                     () {},
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionButton(
+                    context,
+                    'Quizzes',
+                    Icons.quiz,
+                    Colors.red,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => const QuizListScreen(
+                                classId: 'your_class_id',
+                                className: 'Mathematics',
+                              ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
