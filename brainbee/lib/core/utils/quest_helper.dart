@@ -154,5 +154,7 @@ class QuestHelper {
   /// Enable or disable notifications
   Future<void> setNotificationsEnabled(bool enabled) async {
     await _notificationService.setNotificationsEnabled(enabled);
+    // Also update backend with preference
+    await _notificationService.updateNotificationPreferences(enabled);
   }
 }

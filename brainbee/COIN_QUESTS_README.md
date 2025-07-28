@@ -86,13 +86,17 @@ Navigator.push(
 );
 ```
 
-### 2. Initialize Notifications (in main.dart)
+### 2. Initialize Firebase & Notifications (in main.dart)
 
 ```dart
+import 'package:firebase_core/firebase_core.dart';
 import 'lib/core/utils/quest_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase (required for FCM)
+  await Firebase.initializeApp();
   
   // Initialize quest notifications
   await QuestHelper.instance.initializeNotifications();
@@ -279,19 +283,29 @@ Make sure these are in your `pubspec.yaml`:
 ```yaml
 dependencies:
   shared_preferences: ^2.3.3
-  flutter_local_notifications: ^18.0.1
+  firebase_core: ^3.6.0
+  firebase_messaging: ^15.1.3
   flutter_bloc: ^9.1.1
   equatable: ^2.0.7
   json_annotation: ^4.9.0
+  dio: ^5.8.0+1
 
 dev_dependencies:
   build_runner: ^2.6.0
 ```
 
-### Permissions
-For notifications to work, ensure your app has notification permissions:
+### Firebase Setup
+For notifications to work, you need to set up Firebase:
+- Follow the complete `FIREBASE_SETUP_GUIDE.md` for detailed instructions
+- Configure FCM tokens and backend integration
 - The code automatically requests permissions
 - Users can disable notifications in quest settings
+
+### Backend Configuration
+Update `lib/core/utils/api_config.dart` with your actual backend URL:
+```dart
+static const String baseUrl = 'https://your-backend-api.com';
+```
 
 ### Asset Requirements
 Make sure you have coin icons in your assets folder:

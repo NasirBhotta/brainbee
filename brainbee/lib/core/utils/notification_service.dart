@@ -1,47 +1,146 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import '../models/quest_model.dart';
+import 'api_config.dart';
 
 class NotificationService {
   static const String _notificationsEnabledKey = 'quest_notifications_enabled';
   static const String _sentNotificationsKey = 'sent_notifications';
+  static const String _fcmTokenKey = 'fcm_token';
   
   static NotificationService? _instance;
   static NotificationService get instance => _instance ??= NotificationService._();
   NotificationService._();
 
-  final FlutterLocalNotificationsPlugin _notificationsPlugin = 
-      FlutterLocalNotificationsPlugin();
-
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  late final Dio _dio;
   bool _isInitialized = false;
+  String? _currentToken;
+
+  NotificationService._() {
+    _dio = Dio(BaseOptions(
+      baseUrl: ApiConfig.baseUrl,
+      headers: ApiConfig.defaultHeaders,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+    ));
+  }
 
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
-      requestSoundPermission: true,
-      requestBadgePermission: true,
-      requestAlertPermission: true,
-    );
+    // Request notification permissions
+    await _requestPermissions();
 
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
+    // Get FCM token
+    await _getFCMToken();
 
-    await _notificationsPlugin.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: _onNotificationTapped,
-    );
+    // Set up message handlers
+    _setupMessageHandlers();
 
     _isInitialized = true;
   }
 
-  Future<void> _onNotificationTapped(NotificationResponse response) async {
-    // Handle notification tap - could navigate to quest screen
+  Future<void> _requestPermissions() async {
+    NotificationSettings settings = await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+    );
+
+    print('Notification permission status: ${settings.authorizationStatus}');
+  }
+
+  Future<void> _getFCMToken() async {
+    try {
+      _currentToken = await _messaging.getToken();
+      if (_currentToken != null) {
+        await _saveFCMToken(_currentToken!);
+        // Send token to your backend
+        await _sendTokenToBackend(_currentToken!);
+      }
+
+      // Listen for token refresh
+      _messaging.onTokenRefresh.listen((newToken) async {
+        _currentToken = newToken;
+        await _saveFCMToken(newToken);
+        await _sendTokenToBackend(newToken);
+      });
+    } catch (e) {
+      print('Error getting FCM token: $e');
+    }
+  }
+
+  Future<void> _saveFCMToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_fcmTokenKey, token);
+  }
+
+  Future<String?> getFCMToken() async {
+    if (_currentToken != null) return _currentToken;
+    
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_fcmTokenKey);
+  }
+
+  Future<void> _sendTokenToBackend(String token) async {
+    try {
+      await _dio.post(
+        ApiConfig.fcmTokenEndpoint,
+        data: {
+          'fcmToken': token,
+          'platform': 'flutter',
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+      print('FCM token sent to backend successfully');
+    } catch (e) {
+      print('Failed to send FCM token to backend: $e');
+    }
+  }
+
+  void _setupMessageHandlers() {
+    // Handle messages when app is in foreground
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('Received foreground message: ${message.notification?.title}');
+      _handleMessage(message);
+    });
+
+    // Handle messages when app is opened from notification
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print('App opened from notification: ${message.notification?.title}');
+      _handleMessageTap(message);
+    });
+
+    // Handle messages when app is opened from terminated state
+    FirebaseMessaging.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+        print('App opened from terminated state: ${message.notification?.title}');
+        _handleMessageTap(message);
+      }
+    });
+  }
+
+  void _handleMessage(RemoteMessage message) {
+    // Handle incoming FCM message when app is in foreground
+    // You can show local notification or update UI here
+    print('Handling message: ${message.data}');
+  }
+
+  void _handleMessageTap(RemoteMessage message) {
+    // Handle notification tap - navigate to quest screen
     // This would be implemented based on your navigation structure
-    print('Notification tapped: ${response.payload}');
+    print('Notification tapped: ${message.data}');
+    
+    // You can add navigation logic here based on message data
+    if (message.data['type'] == 'quest_complete') {
+      // Navigate to quest screen
+      // NavigationService.instance.navigateToQuests();
+    }
   }
 
   Future<bool> areNotificationsEnabled() async {
@@ -60,33 +159,19 @@ class NotificationService {
 
     await _ensureInitialized();
 
-    const androidDetails = AndroidNotificationDetails(
-      'quest_complete',
-      'Quest Complete',
-      channelDescription: 'Notifications for completed quests',
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await _notificationsPlugin.show(
-      quest.id.hashCode,
-      'Quest Complete! 🎉',
-      '${quest.title} is ready to claim ${quest.coinReward} coins!',
-      details,
-      payload: quest.id,
-    );
+    // Send notification request to your backend
+    await _sendNotificationToBackend({
+      'type': 'quest_complete',
+      'questId': quest.id,
+      'title': 'Quest Complete! 🎉',
+      'body': '${quest.title} is ready to claim ${quest.coinReward} coins!',
+      'data': {
+        'questId': quest.id,
+        'questTitle': quest.title,
+        'coinReward': quest.coinReward.toString(),
+        'type': 'quest_complete',
+      },
+    });
 
     await _markNotificationAsSent(quest.id);
   }
@@ -96,32 +181,39 @@ class NotificationService {
 
     await _ensureInitialized();
 
-    const androidDetails = AndroidNotificationDetails(
-      'coin_reward',
-      'Coin Reward',
-      channelDescription: 'Notifications for coin rewards',
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-    );
+    // Send notification request to your backend
+    await _sendNotificationToBackend({
+      'type': 'coin_reward',
+      'title': 'Coins Added! 💰',
+      'body': '+$coins coins added to your wallet!',
+      'data': {
+        'coins': coins.toString(),
+        'type': 'coin_reward',
+      },
+    });
+  }
 
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
+  Future<void> _sendNotificationToBackend(Map<String, dynamic> notificationData) async {
+    try {
+      final token = await getFCMToken();
+      if (token == null) {
+        print('No FCM token available for sending notification');
+        return;
+      }
 
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await _notificationsPlugin.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      'Coins Added! 💰',
-      '+$coins coins added to your wallet!',
-      details,
-    );
+      await _dio.post(
+        ApiConfig.sendNotificationEndpoint,
+        data: {
+          'fcmToken': token,
+          'notification': notificationData,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+      
+      print('Notification sent to backend successfully');
+    } catch (e) {
+      print('Failed to send notification to backend: $e');
+    }
   }
 
   Future<bool> _hasNotificationBeenSent(String questId) async {
@@ -152,19 +244,27 @@ class NotificationService {
 
   Future<void> requestPermissions() async {
     await _ensureInitialized();
-    
-    await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    // Permissions are already requested in _requestPermissions() during initialization
+  }
 
-    await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
+  // Method to update backend with user notification preferences
+  Future<void> updateNotificationPreferences(bool enabled) async {
+    try {
+      final token = await getFCMToken();
+      if (token == null) return;
+
+      await _dio.post(
+        ApiConfig.notificationPreferencesEndpoint,
+        data: {
+          'fcmToken': token,
+          'questNotificationsEnabled': enabled,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+      
+      print('Notification preferences updated on backend');
+    } catch (e) {
+      print('Failed to update notification preferences: $e');
+    }
   }
 }
