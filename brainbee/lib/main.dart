@@ -1,6 +1,7 @@
 import 'package:brainbee/core/theme/bb_theme.dart';
 import 'package:brainbee/presentation/splashscreen/splash_screen.dart';
 import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
+import 'package:brainbee/presentation/views/rewards/reward_demo_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,7 +21,8 @@ class BrainBeeApp extends StatelessWidget {
       theme: BrainBeeTheme.lightTheme,
       debugShowCheckedModeBanner: false,
 
-      home: const SplashScreen(),
+      // Temporarily showing reward demo - change back to SplashScreen() for production
+      home: const RewardDemoScreen(),
     );
   }
 }
