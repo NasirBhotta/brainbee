@@ -4,21 +4,19 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
-        
         {
-            "name": "Debug",
+            "name": "brainbee",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "Profile",
+            "name": "brainbee (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "Release",
+            "name": "brainbee (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

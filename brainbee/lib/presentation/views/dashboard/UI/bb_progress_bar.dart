@@ -24,9 +24,9 @@ class BbProgressBar extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: context.screenWidth * 0.22,
-        height: context.screenHeight * 0.042,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0.5),
+        width: context.screenWidth * 0.225,
+        height: context.screenHeight * 0.05,
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 0.5),
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(20),

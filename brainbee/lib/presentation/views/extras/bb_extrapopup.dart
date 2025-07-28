@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 void showExtraPopup(
   BuildContext context,
-  List<Map<String, String>> items, {
+  List<Map<String, dynamic>> items, {
   VoidCallback? onDismiss,
 }) {
   showModalBottomSheet(
@@ -81,7 +81,7 @@ void showExtraPopup(
   });
 }
 
-Widget _buildItemsGrid(BuildContext context, List<Map<String, String>> items) {
+Widget _buildItemsGrid(BuildContext context, List<Map<String, dynamic>> items) {
   // Determine layout based on item count and content
   final isBattleMode =
       items.isNotEmpty && items[0]['title']?.startsWith('Battle') == true;
@@ -127,7 +127,7 @@ Widget _buildItemsGrid(BuildContext context, List<Map<String, String>> items) {
 Widget _buildEnhancedItem(
   BuildContext context,
   int index,
-  Map<String, String> item,
+  Map<String, dynamic> item,
 ) {
   return Container(
     decoration: BoxDecoration(
@@ -155,7 +155,7 @@ Widget _buildEnhancedItem(
           print(item);
         },
         child: Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(5),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
