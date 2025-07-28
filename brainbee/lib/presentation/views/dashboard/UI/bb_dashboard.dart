@@ -69,13 +69,7 @@ class _BBDashboardState extends State<BBDashboard> {
     {
       'title': 'Leaderboard',
       'imgPath': 'assets/flash-card.png',
-      'navigateTo': LeaderboardEntry(
-        id: 'S001',
-        name: 'Jawad Gandooo',
-        classGrade: 'Grade 6',
-        score: 921,
-        position: 1,
-      ),
+      'navigateTo': BBleaderBoard(),
     },
     {
       'title': 'Rewards',

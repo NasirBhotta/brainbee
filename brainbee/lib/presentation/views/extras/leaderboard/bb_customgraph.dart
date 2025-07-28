@@ -61,10 +61,10 @@ class _PodiumScreenState extends State<PodiumScreen>
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SizedBox(
-        height: context.screenHeight * 0.5,
+        height: context.screenHeight * 0.6,
         child: Column(
           children: [
-            const SizedBox(height: 50),
+            const SizedBox(height: 30),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,

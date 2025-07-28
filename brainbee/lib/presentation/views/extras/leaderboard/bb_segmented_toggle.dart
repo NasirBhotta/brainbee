@@ -74,7 +74,6 @@ class _BBSegmentedToggleState extends State<BBSegmentedToggle> {
           child: BBText(
             data: label,
             style: context.textStyle.labelMedium?.copyWith(
-              fontSize: 16,
               fontWeight: FontWeight.normal,
               color: isSelected ? BBColors.white : BBColors.black,
             ),

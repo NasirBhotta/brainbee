@@ -152,7 +152,9 @@ Widget _buildEnhancedItem(
         onTap: () {
           Navigator.of(context).pop();
 
-          print(item);
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (context) => item['navigateTo']));
         },
         child: Padding(
           padding: const EdgeInsets.all(5),
