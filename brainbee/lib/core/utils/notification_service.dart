@@ -89,6 +89,13 @@ class NotificationService {
 
   Future<void> _sendTokenToBackend(String token) async {
     try {
+      if (!ApiConfig.enableApiCalls) {
+        // Dummy response for development
+        print('DUMMY API: FCM token would be sent to backend: $token');
+        await Future.delayed(const Duration(milliseconds: 500)); // Simulate network delay
+        return;
+      }
+
       await _dio.post(
         ApiConfig.fcmTokenEndpoint,
         data: {
@@ -201,6 +208,18 @@ class NotificationService {
         return;
       }
 
+      if (!ApiConfig.enableApiCalls) {
+        // Dummy response for development
+        print('DUMMY API: Notification would be sent to backend');
+        print('FCM Token: ${token.substring(0, 20)}...');
+        print('Notification Data: ${notificationData['title']} - ${notificationData['body']}');
+        await Future.delayed(const Duration(milliseconds: 800)); // Simulate network delay
+        
+        // Simulate sending FCM notification directly (for testing)
+        await _simulateDirectFCMNotification(notificationData);
+        return;
+      }
+
       await _dio.post(
         ApiConfig.sendNotificationEndpoint,
         data: {
@@ -213,6 +232,19 @@ class NotificationService {
       print('Notification sent to backend successfully');
     } catch (e) {
       print('Failed to send notification to backend: $e');
+    }
+  }
+
+  Future<void> _simulateDirectFCMNotification(Map<String, dynamic> notificationData) async {
+    try {
+      // In development mode, we can simulate notifications
+      // This would be replaced by your backend's FCM implementation
+      print('SIMULATED FCM: ${notificationData['title']} - ${notificationData['body']}');
+      
+      // You could add local notification here if needed for testing
+      // For now, just log the notification that would be sent
+    } catch (e) {
+      print('Failed to simulate FCM notification: $e');
     }
   }
 
@@ -252,6 +284,15 @@ class NotificationService {
     try {
       final token = await getFCMToken();
       if (token == null) return;
+
+      if (!ApiConfig.enableApiCalls) {
+        // Dummy response for development
+        print('DUMMY API: Notification preferences would be updated');
+        print('FCM Token: ${token?.substring(0, 20)}...');
+        print('Quest Notifications Enabled: $enabled');
+        await Future.delayed(const Duration(milliseconds: 300)); // Simulate network delay
+        return;
+      }
 
       await _dio.post(
         ApiConfig.notificationPreferencesEndpoint,
