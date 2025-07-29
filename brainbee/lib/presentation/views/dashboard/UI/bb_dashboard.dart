@@ -4,10 +4,11 @@ import 'package:brainbee/presentation/views/bot/UI/bb_initial_bot_screen.dart';
 
 import 'package:brainbee/presentation/views/class/UI/bb_class.dart';
 import 'package:brainbee/presentation/views/extras/Certificates/bb_certificates.dart';
+import 'package:brainbee/presentation/views/extras/Rewards/UI/reward_catalog.dart';
 import 'package:brainbee/presentation/views/extras/Rewards/bb_rewards.dart';
 import 'package:brainbee/presentation/views/extras/badges/bb_badges.dart';
 import 'package:brainbee/presentation/views/extras/bb_extrapopup.dart';
-import 'package:brainbee/presentation/views/extras/coinquests/bb_coin_quests.dart';
+import 'package:brainbee/presentation/views/extras/coinquests/UI/bb_coin_quests.dart';
 import 'package:brainbee/presentation/views/extras/leaderboard/bb_leaderboard.dart';
 import 'package:brainbee/presentation/views/extras/reportcard/bb_reportcard.dart';
 import 'package:brainbee/presentation/views/extras/scorecard/bb_scorecard.dart';
@@ -74,12 +75,12 @@ class _BBDashboardState extends State<BBDashboard> {
     {
       'title': 'Rewards',
       'imgPath': 'assets/text-book.png',
-      'navigateTo': BbRewards(),
+      'navigateTo': RewardCatalogScreen(),
     },
     {
       'title': 'Coin Quests',
       'imgPath': 'assets/text-book.png',
-      'navigateTo': BbCoinQuests(),
+      'navigateTo': BBCoinQuestScreen(userId: "S001"),
     },
     {
       'title': 'Badges',
