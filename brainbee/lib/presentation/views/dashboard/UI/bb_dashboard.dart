@@ -6,6 +6,7 @@ import 'package:brainbee/presentation/views/class/UI/bb_class.dart';
 import 'package:brainbee/presentation/views/extras/Certificates/bb_certificates.dart';
 import 'package:brainbee/presentation/views/extras/Rewards/UI/reward_catalog.dart';
 import 'package:brainbee/presentation/views/extras/Rewards/bb_rewards.dart';
+import 'package:brainbee/presentation/views/extras/badges/UI/bb_badge_view.dart';
 import 'package:brainbee/presentation/views/extras/badges/bb_badges.dart';
 import 'package:brainbee/presentation/views/extras/bb_extrapopup.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/UI/bb_coin_quests.dart';
@@ -85,7 +86,7 @@ class _BBDashboardState extends State<BBDashboard> {
     {
       'title': 'Badges',
       'imgPath': 'assets/text-book.png',
-      'navigateTo': BbBadges(),
+      'navigateTo': BadgesScreen(studentId: "S001"),
     },
     {
       'title': 'Certificates',
