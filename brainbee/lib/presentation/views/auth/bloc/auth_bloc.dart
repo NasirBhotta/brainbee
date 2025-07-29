@@ -31,9 +31,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final response = await http
           .post(
-            // Uri.parse("http://10.0.2.2:5000/api/auth/login"),
-            Uri.parse("http://192.168.2.101:5000/api/auth/login"),
+            Uri.parse("http://10.0.2.2:5000/api/auth/login"),
 
+            // Uri.parse("http://192.168.2.101:5000/api/auth/login"),
             headers: {"Content-Type": "application/json"},
             body: jsonEncode({
               "email": event.email,
@@ -75,8 +75,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     try {
       final response = await http.post(
-        // Uri.parse("http://10.0.2.2:5000/api/auth/register"),
-        Uri.parse("http://192.168.2.101:5000/api/auth/register"),
+        Uri.parse("http://10.0.2.2:5000/api/auth/register"),
+        // Uri.parse("http://192.168.2.101:5000/api/auth/register"),
         // Uri.parse("http://16.170.203.154:5000/api/auth/register"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({

@@ -3,18 +3,20 @@ import 'package:brainbee/core/utils/quest_extensions.dart';
 import 'package:brainbee/core/widgets/quests/claim_dialog.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/quest.dart';
+import '../bloc/quest_bloc.dart';
+import '../bloc/quest_event.dart';
+import '../bloc/quest_state.dart';
 
 class QuestDetailScreen extends StatelessWidget {
   final Quest quest;
-  final VoidCallback onClaim;
-  final bool isLoading;
+  final String userId;
 
   const QuestDetailScreen({
     super.key,
     required this.quest,
-    required this.onClaim,
-    this.isLoading = false,
+    required this.userId,
   });
 
   @override
@@ -33,92 +35,145 @@ class QuestDetailScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: BBColors.white),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildHeaderSection(context),
-            const SizedBox(height: 16),
-            _buildDetailsSection(context),
-            const SizedBox(height: 16),
-            _buildProgressSection(context),
-            const SizedBox(height: 16),
-            _buildRewardSection(context),
-            const SizedBox(height: 24),
-            _buildActionButton(context),
-            const SizedBox(height: 16),
-          ],
-        ),
+      body: BlocConsumer<QuestBloc, QuestState>(
+        listener: (context, state) {
+          if (state is QuestClaimed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '+${state.coinsAdded} Coins added to your Wallet!',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: BBColors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                backgroundColor: BBColors.successGreen,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            );
+            // Navigate back after successful claim
+            Navigator.of(context).pop();
+          } else if (state is QuestError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: BBColors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                backgroundColor: BBColors.alertRed,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          // Get the current quest from state if available
+          Quest currentQuest = quest;
+          bool isLoading = false;
+
+          if (state is QuestLoaded ||
+              state is QuestClaiming ||
+              state is QuestClaimed) {
+            final quests =
+                state is QuestLoaded
+                    ? state.quests
+                    : state is QuestClaiming
+                    ? state.quests
+                    : (state as QuestClaimed).quests;
+
+            // Find the updated quest in the current state
+            final updatedQuest = quests.firstWhere(
+              (q) => q.id == quest.id,
+              orElse: () => quest,
+            );
+            currentQuest = updatedQuest;
+
+            // Check if this specific quest is being claimed
+            isLoading =
+                state is QuestClaiming && (state).claimingQuestId == quest.id;
+          }
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildHeaderSection(context, currentQuest),
+                const SizedBox(height: 16),
+                _buildDetailsSection(context, currentQuest),
+                const SizedBox(height: 16),
+                _buildProgressSection(context, currentQuest),
+                const SizedBox(height: 16),
+                _buildRewardSection(context, currentQuest),
+                const SizedBox(height: 24),
+                _buildActionButton(context, currentQuest, isLoading),
+                const SizedBox(height: 16),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildHeaderSection(BuildContext context) {
+  Widget _buildHeaderSection(BuildContext context, Quest currentQuest) {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [BBColors.primaryColor, BBColors.secondaryColor],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: BBColors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: BBColors.white.withOpacity(0.3),
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  quest.iconUrl ?? '🎯',
-                  style: const TextStyle(fontSize: 28),
-                ),
-              ),
+      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Simple icon container
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: BBColors.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(height: 12),
-            Text(
-              quest.title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: BBColors.white,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: BBColors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: BBColors.white.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
+            child: Center(
               child: Text(
-                quest.type.displayName,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: BBColors.white,
-                  fontWeight: FontWeight.w500,
-                ),
+                currentQuest.iconUrl ?? '🎯',
+                style: const TextStyle(fontSize: 32),
               ),
             ),
-          ],
-        ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Title
+          Text(
+            currentQuest.title,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
+            ),
+            textAlign: TextAlign.center,
+          ),
+
+          const SizedBox(height: 12),
+
+          // Simple type indicator
+          Text(
+            currentQuest.type.displayName,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: BBColors.primaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildDetailsSection(BuildContext context) {
+  Widget _buildDetailsSection(BuildContext context, Quest currentQuest) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 14),
       padding: const EdgeInsets.all(16),
@@ -151,7 +206,7 @@ class QuestDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            quest.description,
+            currentQuest.description,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: BBColors.bodyText,
               height: 1.4,
@@ -161,40 +216,41 @@ class QuestDetailScreen extends StatelessWidget {
           _buildDetailRow(
             context,
             'Quest Type',
-            quest.type.displayName,
+            currentQuest.type.displayName,
             Icons.category,
           ),
           const SizedBox(height: 10),
           _buildDetailRow(
             context,
             'Status',
-            _getStatusText(),
-            _getStatusIcon(),
+            _getStatusText(currentQuest),
+            _getStatusIcon(currentQuest),
           ),
-          if (quest.completedAt != null) ...[
+          if (currentQuest.completedAt != null) ...[
             const SizedBox(height: 10),
             _buildDetailRow(
               context,
               'Completed At',
-              _formatDateTime(quest.completedAt!),
+              _formatDateTime(currentQuest.completedAt!),
               Icons.check_circle,
             ),
           ],
-          if (quest.claimedAt != null) ...[
+          if (currentQuest.claimedAt != null) ...[
             const SizedBox(height: 10),
             _buildDetailRow(
               context,
               'Claimed At',
-              _formatDateTime(quest.claimedAt!),
+              _formatDateTime(currentQuest.claimedAt!),
               Icons.redeem,
             ),
           ],
-          if (quest.resetTime != null && quest.type != QuestType.oneTime) ...[
+          if (currentQuest.resetTime != null &&
+              currentQuest.type != QuestType.oneTime) ...[
             const SizedBox(height: 10),
             _buildDetailRow(
               context,
               'Resets At',
-              _formatDateTime(quest.resetTime!),
+              _formatDateTime(currentQuest.resetTime!),
               Icons.refresh,
             ),
           ],
@@ -232,7 +288,7 @@ class QuestDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressSection(BuildContext context) {
+  Widget _buildProgressSection(BuildContext context, Quest currentQuest) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 14),
       padding: const EdgeInsets.all(16),
@@ -275,10 +331,10 @@ class QuestDetailScreen extends StatelessWidget {
                   ),
                   child: FractionallySizedBox(
                     alignment: Alignment.centerLeft,
-                    widthFactor: _getProgressValue(),
+                    widthFactor: _getProgressValue(currentQuest),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: _getProgressColor(),
+                        color: _getProgressColor(currentQuest),
                         borderRadius: BorderRadius.circular(3),
                       ),
                     ),
@@ -287,17 +343,17 @@ class QuestDetailScreen extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                '${(_getProgressValue() * 100).toInt()}%',
+                '${(_getProgressValue(currentQuest) * 100).toInt()}%',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: _getProgressColor(),
+                  color: _getProgressColor(currentQuest),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
           Text(
-            _getProgressDescription(),
+            _getProgressDescription(currentQuest),
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: BBColors.bodyText),
@@ -307,7 +363,7 @@ class QuestDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRewardSection(BuildContext context) {
+  Widget _buildRewardSection(BuildContext context, Quest currentQuest) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 14),
       padding: const EdgeInsets.all(16),
@@ -366,7 +422,7 @@ class QuestDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${quest.coinReward} Coins',
+                  '${currentQuest.coinReward} Coins',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: BBColors.darkHeading,
                     fontWeight: FontWeight.bold,
@@ -375,7 +431,7 @@ class QuestDetailScreen extends StatelessWidget {
               ],
             ),
           ),
-          if (quest.isClaimed) ...[
+          if (currentQuest.isClaimed) ...[
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -401,16 +457,24 @@ class QuestDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(BuildContext context) {
+  Widget _buildActionButton(
+    BuildContext context,
+    Quest currentQuest,
+    bool isLoading,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 14),
       width: double.infinity,
-      child: _buildDetailClaimButton(context),
+      child: _buildDetailClaimButton(context, currentQuest, isLoading),
     );
   }
 
-  Widget _buildDetailClaimButton(BuildContext context) {
-    if (quest.isIncomplete) {
+  Widget _buildDetailClaimButton(
+    BuildContext context,
+    Quest currentQuest,
+    bool isLoading,
+  ) {
+    if (currentQuest.isIncomplete) {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
@@ -432,7 +496,7 @@ class QuestDetailScreen extends StatelessWidget {
           ],
         ),
       );
-    } else if (quest.isClaimed) {
+    } else if (currentQuest.isClaimed) {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
@@ -449,7 +513,7 @@ class QuestDetailScreen extends StatelessWidget {
             Icon(Icons.check_circle, color: BBColors.successGreen, size: 20),
             const SizedBox(width: 6),
             Text(
-              quest.type == QuestType.oneTime
+              currentQuest.type == QuestType.oneTime
                   ? 'Quest Completed'
                   : 'Reward Claimed',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -460,9 +524,10 @@ class QuestDetailScreen extends StatelessWidget {
           ],
         ),
       );
-    } else if (quest.canClaim) {
+    } else if (currentQuest.canClaim) {
       return ElevatedButton(
-        onPressed: isLoading ? null : () => _showClaimDialog(context),
+        onPressed:
+            isLoading ? null : () => _showClaimDialog(context, currentQuest),
         style: ElevatedButton.styleFrom(
           backgroundColor: BBColors.primaryColor,
           foregroundColor: BBColors.white,
@@ -503,7 +568,7 @@ class QuestDetailScreen extends StatelessWidget {
                     const Icon(Icons.redeem, size: 20, color: BBColors.white),
                     const SizedBox(width: 6),
                     Text(
-                      'Claim ${quest.coinReward} Coins',
+                      'Claim ${currentQuest.coinReward} Coins',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: BBColors.white,
@@ -517,22 +582,22 @@ class QuestDetailScreen extends StatelessWidget {
     return const SizedBox.shrink();
   }
 
-  void _showClaimDialog(BuildContext context) {
+  void _showClaimDialog(BuildContext context, Quest currentQuest) {
     showDialog(
       context: context,
       builder:
           (context) => ClaimDialog(
-            quest: quest,
+            quest: currentQuest,
             onConfirm: () {
               Navigator.of(context).pop();
-              onClaim();
+              context.read<QuestBloc>().add(ClaimQuest(userId, currentQuest));
             },
           ),
     );
   }
 
-  double _getProgressValue() {
-    switch (quest.status) {
+  double _getProgressValue(Quest currentQuest) {
+    switch (currentQuest.status) {
       case QuestStatus.incomplete:
         return 0.0;
       case QuestStatus.complete:
@@ -542,8 +607,8 @@ class QuestDetailScreen extends StatelessWidget {
     }
   }
 
-  Color _getProgressColor() {
-    switch (quest.status) {
+  Color _getProgressColor(Quest currentQuest) {
+    switch (currentQuest.status) {
       case QuestStatus.incomplete:
         return BBColors.disabledText;
       case QuestStatus.complete:
@@ -553,32 +618,32 @@ class QuestDetailScreen extends StatelessWidget {
     }
   }
 
-  String _getProgressDescription() {
-    switch (quest.status) {
+  String _getProgressDescription(Quest currentQuest) {
+    switch (currentQuest.status) {
       case QuestStatus.incomplete:
         return 'Keep working to complete this quest!';
       case QuestStatus.complete:
         return 'Quest completed! Ready to claim your reward.';
       case QuestStatus.claimed:
-        return quest.type == QuestType.oneTime
+        return currentQuest.type == QuestType.oneTime
             ? 'Quest permanently completed.'
             : 'Reward claimed! Quest will reset according to schedule.';
     }
   }
 
-  String _getStatusText() {
-    switch (quest.status) {
+  String _getStatusText(Quest currentQuest) {
+    switch (currentQuest.status) {
       case QuestStatus.incomplete:
         return 'In Progress';
       case QuestStatus.complete:
         return 'Ready to Claim';
       case QuestStatus.claimed:
-        return quest.type == QuestType.oneTime ? 'Completed' : 'Claimed';
+        return currentQuest.type == QuestType.oneTime ? 'Completed' : 'Claimed';
     }
   }
 
-  IconData _getStatusIcon() {
-    switch (quest.status) {
+  IconData _getStatusIcon(Quest currentQuest) {
+    switch (currentQuest.status) {
       case QuestStatus.incomplete:
         return Icons.hourglass_empty;
       case QuestStatus.complete:

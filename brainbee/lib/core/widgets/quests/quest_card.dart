@@ -30,11 +30,7 @@ class QuestCard extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder:
-                  (context) => QuestDetailScreen(
-                    quest: quest,
-                    onClaim: onClaim,
-                    isLoading: isLoading,
-                  ),
+                  (context) => QuestDetailScreen(quest: quest, userId: 'S001'),
             ),
           );
         },
