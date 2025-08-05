@@ -1,9 +1,12 @@
 import 'package:brainbee/core/theme/bb_theme.dart';
 import 'package:brainbee/presentation/splashscreen/splash_screen.dart';
 import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
+import 'package:brainbee/presentation/views/extras/badges/bloc/badge_bloc.dart';
+import 'package:brainbee/presentation/views/extras/badges/services/badge_api_services.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/bloc/quest_bloc.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/services/api_service.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/services/notification_service.dart';
+import 'package:brainbee/repositories/badge_repository.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,6 +20,14 @@ void main(List<String> args) async {
         BlocProvider(create: (_) => AuthBloc()),
         BlocProvider(
           create: (_) => QuestBloc(ApiService(), NotificationService()),
+        ),
+        BlocProvider(
+          create:
+              (_) => BadgeBloc(
+                repository: BadgeRepositoryImpl(
+                  apiService: BadgeApiServiceImpl(),
+                ),
+              ),
         ),
       ],
       child: const BrainBeeApp(),

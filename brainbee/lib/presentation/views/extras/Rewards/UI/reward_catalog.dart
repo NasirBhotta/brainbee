@@ -167,13 +167,7 @@ class _RewardCatalogScreenState extends State<RewardCatalogScreen> {
           // Header gradient
           Container(
             height: 80,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [BBColors.secondaryColor, BBColors.lightGrayBG],
-              ),
-            ),
+            decoration: const BoxDecoration(),
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),

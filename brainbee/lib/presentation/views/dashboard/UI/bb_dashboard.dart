@@ -88,11 +88,6 @@ class _BBDashboardState extends State<BBDashboard> {
       'imgPath': 'assets/text-book.png',
       'navigateTo': BadgesScreen(studentId: "S001"),
     },
-    {
-      'title': 'Certificates',
-      'imgPath': 'assets/text-book.png',
-      'navigateTo': BbCertificates(),
-    },
   ];
   @override
   Widget build(BuildContext context) {
