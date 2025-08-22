@@ -5,8 +5,6 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/utils/helper/bb_getinitials.dart';
-import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
-import 'package:brainbee/presentation/views/auth/models/user_model.dart';
 import 'package:brainbee/presentation/views/dashboard/UI/bb_progress_bar.dart';
 import 'package:brainbee/presentation/views/dashboard/UI/bb_quizzes_display.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_coin_popup.dart';
@@ -14,27 +12,19 @@ import 'package:brainbee/presentation/views/home/UI/bb_lives_popup.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_notification_center.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_score_popup.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_streak_popup.dart';
+import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 import 'package:brainbee/presentation/views/settings/UI/bb_settings.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class BBhome extends StatefulWidget {
-  const BBhome({super.key});
+  final StudentModel student;
+  const BBhome({super.key, required this.student});
 
   @override
   State<BBhome> createState() => _BBhomeState();
 }
 
 class _BBhomeState extends State<BBhome> {
-  UserModel authenticatedUser = UserModel(
-    id: '',
-    email: '',
-
-    token: '',
-    status: '',
-    firstName: '',
-    lastName: '',
-  );
   List<String> imgPath = [
     'assets/trophy.png',
     'assets/coin.png',
@@ -88,10 +78,6 @@ class _BBhomeState extends State<BBhome> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthBloc>().user;
-    if (user != null) {
-      authenticatedUser = user;
-    }
     return CustomScrollView(
       slivers: [
         SliverAppBar(
@@ -123,8 +109,8 @@ class _BBhomeState extends State<BBhome> {
                           ),
                           const Expanded(child: SizedBox.shrink()),
                           Text(
-                            authenticatedUser.firstName != ''
-                                ? "${authenticatedUser.firstName} ${authenticatedUser.lastName}"
+                            widget.student.firstName != ''
+                                ? "${widget.student.firstName} ${widget.student.lastName}"
                                 : 'UserName',
                             style: Theme.of(context).textTheme.headlineSmall,
                           ),
@@ -168,10 +154,8 @@ class _BBhomeState extends State<BBhome> {
                                 child: CircleAvatar(
                                   backgroundColor: Colors.green[700],
                                   child: Text(
-                                    authenticatedUser.firstName != ''
-                                        ? getIntials(
-                                          authenticatedUser.firstName,
-                                        )
+                                    widget.student.firstName != ''
+                                        ? getIntials(widget.student.firstName)
                                         : 'U',
                                     style: const TextStyle(color: Colors.white),
                                   ),

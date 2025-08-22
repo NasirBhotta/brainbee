@@ -6,6 +6,7 @@ import 'package:brainbee/presentation/views/extras/achievements/badges/services/
 import 'package:brainbee/presentation/views/extras/coinquests/bloc/quest_bloc.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/services/api_service.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/services/notification_service.dart';
+import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/repositories/badge_repository.dart';
 import 'package:brainbee/routes/app_routes.dart';
 
@@ -25,6 +26,8 @@ void main(List<String> args) async {
         BlocProvider(
           create: (context) => AuthBloc()..add(AuthCheckRequested()),
         ),
+
+        BlocProvider(create: (context) => StudentBloc()),
         // Quest feature
         BlocProvider(
           create: (_) => QuestBloc(ApiService(), NotificationService()),

@@ -18,7 +18,7 @@ class StudentModel extends UserModel {
   final List<String> enrolledClasses;
 
   final Map<String, String> chapterLevels;
-  final Map<String, TopicPerformance> topicPerformance;
+  final Map<String, TopicPerformance>? topicPerformance;
 
   StudentModel({
     required super.id,
@@ -42,11 +42,12 @@ class StudentModel extends UserModel {
     required this.battleStats,
     required this.enrolledClasses,
     required this.chapterLevels,
-    required this.topicPerformance,
+    this.topicPerformance,
   });
 
   factory StudentModel.fromJson(Map<String, dynamic> json) {
-    final user = json['user']; // assuming server returns { user: {...}, ... }
+    final user = json['user'];
+
     return StudentModel(
       id: user['_id'] ?? '',
       email: user['email'] ?? '',
@@ -78,10 +79,9 @@ class StudentModel extends UserModel {
       enrolledClasses: List<String>.from(user['enrolledClasses'] ?? []),
 
       chapterLevels: Map<String, String>.from(user['chapter_levels'] ?? {}),
-      topicPerformance: (user['topic_performance'] ?? {})
-          .map<String, TopicPerformance>(
-            (key, value) => MapEntry(key, TopicPerformance.fromJson(value)),
-          ),
+      // topicPerformance: (user['topic_performance'] ?? {}).map<dynamic, dynamic>(
+      //   (key, value) => MapEntry(key, TopicPerformance.fromJson(value)),
+      // ),
     );
   }
 }
