@@ -100,16 +100,16 @@ class _BBhomeState extends State<BBhome> {
   void _onPopupTap(int index) {
     switch (index) {
       case 0:
-        showScoreGoalsPopup(context);
+        showScoreGoalsPopup(context, widget.student);
         break;
       case 1:
-        showCoinsPopup(context);
+        showCoinsPopup(context, widget.student);
         break;
       case 2:
-        showStreakPopup(context);
+        showStreakPopup(context, widget.student.streakScore.toString());
         break;
       case 3:
-        showLivesPopup(context);
+        showLivesPopup(context, widget.student.dailyLives.toString());
         break;
     }
   }

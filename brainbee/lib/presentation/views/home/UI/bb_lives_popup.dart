@@ -3,7 +3,7 @@ import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:flutter/material.dart';
 
-void showLivesPopup(BuildContext context) {
+void showLivesPopup(BuildContext context, String lives) {
   showModalBottomSheet(
     context: context,
     shape: const RoundedRectangleBorder(
@@ -39,7 +39,7 @@ void showLivesPopup(BuildContext context) {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     BBText(
-                      data: '5 Lives',
+                      data: '$lives Lives',
                       style: context.textStyle.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 22,

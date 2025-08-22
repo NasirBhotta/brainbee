@@ -3,9 +3,10 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_edit_goals.dart';
+import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 import 'package:flutter/material.dart';
 
-void showScoreGoalsPopup(BuildContext context) {
+void showScoreGoalsPopup(BuildContext context, StudentModel student) {
   showModalBottomSheet(
     context: context,
 
@@ -54,7 +55,7 @@ void showScoreGoalsPopup(BuildContext context) {
                           const SizedBox(height: 4),
                           const BBText(data: 'Quiz'),
                           BBText(
-                            data: '0/2',
+                            data: '${student.goal.noOfAttempts}/2',
                             style: context.textStyle.titleLarge?.copyWith(
                               fontWeight: FontWeight.w600,
                               fontSize: 27,
@@ -68,7 +69,7 @@ void showScoreGoalsPopup(BuildContext context) {
                     children: [
                       const BBText(data: 'Streak'),
                       BBText(
-                        data: '1 Days',
+                        data: '${student.streakScore} Days',
                         style: context.textStyle.titleLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                           fontSize: 27,
@@ -90,7 +91,7 @@ void showScoreGoalsPopup(BuildContext context) {
                   children: [
                     const BBText(data: "Today's score"),
                     BBText(
-                      data: '5',
+                      data: student.score.toString(),
                       style: context.textStyle.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 27,

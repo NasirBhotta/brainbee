@@ -3,7 +3,7 @@ import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:flutter/material.dart';
 
-void showStreakPopup(BuildContext context) {
+void showStreakPopup(BuildContext context, String streak) {
   showModalBottomSheet(
     context: context,
     shape: const RoundedRectangleBorder(
@@ -39,7 +39,7 @@ void showStreakPopup(BuildContext context) {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     BBText(
-                      data: '0 Day Streak',
+                      data: '$streak Day Streak',
                       style: context.textStyle.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 22,

@@ -105,6 +105,18 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
         "topic_performance": {
           "fractions": {"attempts": 10, "correct": 7},
           "algebra": {"attempts": 5, "correct": 4}
+        },
+        "goal" : {
+          "title": "Casual",
+          "description": "2 Quizzes & Estimate 7 minutes daily",
+          "dueDate": "2025-08-30T00:00:00.000Z",
+          "reminder": [
+            "2025-08-25T00:00:00.000Z",
+            "2025-08-28T00:00:00.000Z"
+          ],
+          "value" : 2,
+          "status" : true,
+          "noOfAttempts": 2
         }
       }
     }

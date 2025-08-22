@@ -8,6 +8,7 @@ class StudentModel extends UserModel {
   final String? parentId;
   final int coins;
   final int streakScore;
+  final Goal goal;
   final DateTime? lastStreakDate;
   final int dailyLives;
   final DateTime? livesResetTime;
@@ -27,7 +28,7 @@ class StudentModel extends UserModel {
     required super.lastName,
     required super.token,
     required super.status,
-
+    required this.goal,
     required this.grade,
     required this.subjects,
     this.parentId,
@@ -56,7 +57,7 @@ class StudentModel extends UserModel {
       lastName: user['lastName'] ?? '',
       token: json['accessToken'] ?? '',
       status: json['status'] ?? '',
-
+      goal: Goal.fromJson(user['goal'] ?? {}),
       grade: user['grade'] ?? 0,
       subjects: List<String>.from(user['subjects'] ?? []),
       parentId: user['parentId'],
@@ -84,6 +85,40 @@ class StudentModel extends UserModel {
       // topicPerformance: (user['topic_performance'] ?? {}).map<dynamic, dynamic>(
       //   (key, value) => MapEntry(key, TopicPerformance.fromJson(value)),
       // ),
+    );
+  }
+}
+
+class Goal {
+  final String title;
+  final String description;
+  final List<DateTime> reminder;
+  final DateTime dueDate;
+  final int value;
+  final bool status;
+  final int noOfAttempts;
+
+  Goal({
+    required this.value,
+    required this.status,
+    required this.title,
+    required this.description,
+    required this.reminder,
+    required this.dueDate,
+    required this.noOfAttempts,
+  });
+
+  factory Goal.fromJson(Map<String, dynamic> json) {
+    return Goal(
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      dueDate: DateTime.parse(json['dueDate'] ?? DateTime.now().toString()),
+      reminder: List<DateTime>.from(
+        json['reminder']?.map((x) => DateTime.parse(x)) ?? [],
+      ),
+      value: json['value'] ?? 0,
+      status: json['status'] ?? false,
+      noOfAttempts: json['noOfAttempts'] ?? 0,
     );
   }
 }
