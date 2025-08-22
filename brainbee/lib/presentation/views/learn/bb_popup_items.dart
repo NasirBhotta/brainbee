@@ -3,9 +3,9 @@ import 'package:brainbee/core/utils/bb_text.dart';
 
 import 'package:brainbee/presentation/views/learn/Books/bb_select_book.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_battle.dart';
-import 'package:brainbee/presentation/views/extras/Certificates/bb_certificates.dart';
+import 'package:brainbee/presentation/views/extras/achievements/Certificates/bb_certificates.dart';
 import 'package:brainbee/presentation/views/extras/Rewards/bb_rewards.dart';
-import 'package:brainbee/presentation/views/extras/badges/bb_badges.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/bb_badges.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/UI/bb_coin_quests.dart';
 import 'package:brainbee/presentation/views/extras/leaderboard/bb_leaderboard.dart';
 import 'package:brainbee/presentation/views/extras/reportcard/bb_reportcard.dart';

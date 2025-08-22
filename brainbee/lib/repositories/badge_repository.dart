@@ -1,8 +1,8 @@
 // lib/repositories/badge_repository.dart
 
-import 'package:brainbee/presentation/views/extras/badges/models/badge_model.dart';
-import 'package:brainbee/presentation/views/extras/badges/models/badge_response.dart';
-import 'package:brainbee/presentation/views/extras/badges/services/badge_api_services.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_response.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/services/badge_api_services.dart';
 
 abstract class BadgeRepository {
   Future<BadgeResponse> getBadges(String studentId);

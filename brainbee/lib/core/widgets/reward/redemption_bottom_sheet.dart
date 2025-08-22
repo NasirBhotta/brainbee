@@ -753,8 +753,9 @@ class _RedemptionBottomSheetState extends State<RedemptionBottomSheet> {
     final label = widget.reward.inputLabel?.toLowerCase() ?? '';
     if (label.contains('email')) return Icons.email_outlined;
     if (label.contains('address')) return Icons.location_on_outlined;
-    if (label.contains('id') || label.contains('username'))
+    if (label.contains('id') || label.contains('username')) {
       return Icons.person_outline;
+    }
     return Icons.text_fields;
   }
 }

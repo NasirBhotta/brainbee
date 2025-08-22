@@ -1,5 +1,5 @@
 // lib/models/badge_response.dart
-import 'package:brainbee/presentation/views/extras/badges/models/badge_model.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
 import 'package:equatable/equatable.dart';
 
 class BadgeResponse extends Equatable {

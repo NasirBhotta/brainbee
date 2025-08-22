@@ -1,7 +1,7 @@
 // lib/services/badge_api_service.dart
 import 'dart:async';
 import 'dart:math';
-import 'package:brainbee/presentation/views/extras/badges/models/badge_response.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_response.dart';
 import 'package:http/http.dart' as http;
 import '../models/badge_model.dart';
 

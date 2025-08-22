@@ -1,6 +1,6 @@
-import 'package:brainbee/presentation/views/extras/badges/UI/navigation/badge_navigator.dart';
-import 'package:brainbee/presentation/views/extras/badges/bloc/badge_bloc.dart';
-import 'package:brainbee/presentation/views/extras/badges/bloc/badge_state.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/UI/navigation/badge_navigator.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/bloc/badge_bloc.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/bloc/badge_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

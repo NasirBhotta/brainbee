@@ -1,5 +1,5 @@
 import 'package:brainbee/core/widgets/badges/badge_item.dart';
-import 'package:brainbee/presentation/views/extras/badges/models/badge_model.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
 import 'package:flutter/material.dart';
 
 class BadgeCategorySection extends StatelessWidget {

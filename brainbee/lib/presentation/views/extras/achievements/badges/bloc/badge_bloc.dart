@@ -1,7 +1,7 @@
 // lib/blocs/badge/badge_bloc.dart
 import 'dart:async';
-import 'package:brainbee/presentation/views/extras/badges/models/badge_model.dart';
-import 'package:brainbee/presentation/views/extras/badges/services/badge_api_services.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/services/badge_api_services.dart';
 import 'package:brainbee/repositories/badge_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

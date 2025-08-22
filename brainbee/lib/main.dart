@@ -1,26 +1,35 @@
 import 'package:brainbee/core/theme/bb_theme.dart';
 import 'package:brainbee/presentation/splashscreen/splash_screen.dart';
 import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
-import 'package:brainbee/presentation/views/extras/badges/bloc/badge_bloc.dart';
-import 'package:brainbee/presentation/views/extras/badges/services/badge_api_services.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/bloc/badge_bloc.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/services/badge_api_services.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/bloc/quest_bloc.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/services/api_service.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/services/notification_service.dart';
 import 'package:brainbee/repositories/badge_repository.dart';
+import 'package:brainbee/routes/app_routes.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Notifications
   await NotificationService().initialize();
+
   runApp(
     MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => AuthBloc()),
+        // AuthBloc will auto-check authentication on app start
+        BlocProvider(
+          create: (context) => AuthBloc()..add(AuthCheckRequested()),
+        ),
+        // Quest feature
         BlocProvider(
           create: (_) => QuestBloc(ApiService(), NotificationService()),
         ),
+        // Badge feature
         BlocProvider(
           create:
               (_) => BadgeBloc(
@@ -45,6 +54,10 @@ class BrainBeeApp extends StatelessWidget {
       theme: BrainBeeTheme.lightTheme,
       debugShowCheckedModeBanner: false,
 
+      // Define routes
+      routes: AppRoutes.getRoutes(),
+
+      // Start with SplashScreen which will handle auth flow
       home: const SplashScreen(),
     );
   }

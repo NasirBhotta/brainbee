@@ -3,18 +3,15 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/presentation/views/bot/UI/bb_initial_bot_screen.dart';
 
 import 'package:brainbee/presentation/views/class/UI/bb_class.dart';
-import 'package:brainbee/presentation/views/extras/Certificates/bb_certificates.dart';
 import 'package:brainbee/presentation/views/extras/Rewards/UI/reward_catalog.dart';
-import 'package:brainbee/presentation/views/extras/Rewards/bb_rewards.dart';
-import 'package:brainbee/presentation/views/extras/badges/UI/bb_badge_view.dart';
-import 'package:brainbee/presentation/views/extras/badges/bb_badges.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/UI/bb_badge_view.dart';
 import 'package:brainbee/presentation/views/extras/bb_extrapopup.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/UI/bb_coin_quests.dart';
 import 'package:brainbee/presentation/views/extras/leaderboard/bb_leaderboard.dart';
 import 'package:brainbee/presentation/views/extras/reportcard/bb_reportcard.dart';
 import 'package:brainbee/presentation/views/extras/scorecard/bb_scorecard.dart';
 
-import 'package:brainbee/presentation/views/home/bb_home.dart';
+import 'package:brainbee/presentation/views/home/UI/bb_home.dart';
 import 'package:brainbee/presentation/views/learn/Books/bb_select_book.dart';
 
 import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';

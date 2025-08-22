@@ -1,4 +1,4 @@
-import 'package:brainbee/presentation/views/extras/badges/models/badge_model.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
 import 'package:brainbee/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 

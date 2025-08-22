@@ -2,7 +2,7 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
-import 'package:brainbee/presentation/views/home/bb_edit_goals.dart';
+import 'package:brainbee/presentation/views/home/UI/bb_edit_goals.dart';
 import 'package:flutter/material.dart';
 
 void showScoreGoalsPopup(BuildContext context) {

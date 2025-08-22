@@ -1,4 +1,4 @@
-import 'package:brainbee/presentation/views/extras/badges/UI/navigation/badge_navigator.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/UI/navigation/badge_navigator.dart';
 import 'package:flutter/material.dart';
 
 class MenuBadgeTile extends StatelessWidget {

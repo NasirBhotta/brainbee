@@ -1,7 +1,7 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/scroll_controller.dart';
 import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
-import 'package:brainbee/presentation/views/dashboard/UI/bb_dashboard.dart';
+import 'package:brainbee/routes/app_routes.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -97,10 +97,7 @@ class _BbSignupState extends State<BbSignup> {
               context,
             ).showSnackBar(SnackBar(content: Text(state.message)));
           } else if (state is NavigateToDashboardActionState) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const BBDashboard()),
-            );
+            Navigator.pushReplacementNamed(context, AppRoutes.home);
           }
         },
         builder: (context, state) {

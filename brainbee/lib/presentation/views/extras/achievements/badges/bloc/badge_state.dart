@@ -1,5 +1,5 @@
 // lib/blocs/badge/badge_state.dart
-import 'package:brainbee/presentation/views/extras/badges/models/badge_model.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class BadgeState extends Equatable {

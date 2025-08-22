@@ -1,6 +1,6 @@
 import 'package:brainbee/core/utils/bb_date_formatter.dart';
 import 'package:flutter/material.dart';
-import 'package:brainbee/presentation/views/extras/badges/models/badge_model.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
 
 class BadgeDetailDialog extends StatelessWidget {
   final BbBadge badge;

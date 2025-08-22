@@ -1,20 +1,37 @@
-import 'package:brainbee/presentation/views/extras/badges/UI/bb_badge_detail.dart';
-import 'package:brainbee/presentation/views/extras/badges/UI/bb_badge_view.dart';
-import 'package:brainbee/presentation/views/extras/badges/models/badge_model.dart';
+import 'package:brainbee/presentation/views/dashboard/UI/bb_dashboard.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/UI/bb_badge_detail.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/UI/bb_badge_view.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
+import 'package:brainbee/presentation/views/onboarding/bb_combined_onbaord.dart';
 import 'package:flutter/material.dart';
 
 class AppRoutes {
+  // Route names
+  static const String splash = '/';
+  static const String auth = '/auth';
+  static const String home = '/home';
   static const String badgeView = '/badge-view';
   static const String badgeDetail = '/badge-detail';
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
+      auth: (context) => const BbCombinedOnbaord(),
+      home: (context) => const BBDashboard(),
       badgeView: (context) => const BadgesScreen(studentId: 'S001'),
       badgeDetail: (context) {
         final badge = ModalRoute.of(context)!.settings.arguments as BbBadge;
         return BadgeDetailScreen(badge: badge);
       },
     };
+  }
+
+  // Navigation methods
+  static void navigateToAuth(BuildContext context) {
+    Navigator.pushReplacementNamed(context, auth);
+  }
+
+  static void navigateToHome(BuildContext context) {
+    Navigator.pushReplacementNamed(context, home);
   }
 
   static void navigateToBadgeView(BuildContext context) {

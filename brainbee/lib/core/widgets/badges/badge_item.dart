@@ -1,5 +1,5 @@
 import 'package:brainbee/core/utils/bb_date_formatter.dart';
-import 'package:brainbee/presentation/views/extras/badges/models/badge_model.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
 import 'package:flutter/material.dart';
 
 class BadgeItem extends StatelessWidget {
