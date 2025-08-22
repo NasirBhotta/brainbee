@@ -25,21 +25,22 @@ class BBhome extends StatefulWidget {
 }
 
 class _BBhomeState extends State<BBhome> {
-  List<String> imgPath = [
+  // Static data - moved to class level for better performance
+  static const List<String> _imgPath = [
     'assets/trophy.png',
     'assets/coin.png',
     'assets/fire.png',
     'assets/heart.png',
   ];
-  List<Color> color = [
+
+  static const List<Color> _color = [
     BBColors.orangeAccent,
     BBColors.yellowAccent,
     BBColors.secondaryColor,
     BBColors.alertRed,
   ];
-  List<String> desc = ['10', '1', '0', '5/5'];
 
-  List<Map<String, dynamic>> quizzes = [
+  static const List<Map<String, dynamic>> _quizzes = [
     {
       'title': 'Mathematics',
       'description': 'Quiz level 1 - Basic and Mixed Operations',
@@ -69,12 +70,49 @@ class _BBhomeState extends State<BBhome> {
       'color': BBColors.progressColor4,
     },
   ];
-  List<Function> popUpFunctions = [
-    showScoreGoalsPopup,
-    showCoinsPopup,
-    showStreakPopup,
-    showLivesPopup,
-  ];
+
+  // Cache these values to avoid recalculating on every build
+  late final List<String> _desc;
+  late final String _displayName;
+  late final String _initials;
+
+  @override
+  void initState() {
+    super.initState();
+    _desc = [
+      widget.student.score.toString(),
+      widget.student.coins.toString(),
+      widget.student.streakScore.toString(),
+      '${widget.student.dailyLives}/10',
+    ];
+
+    _displayName =
+        widget.student.firstName != ''
+            ? "${widget.student.firstName} ${widget.student.lastName}"
+            : 'UserName';
+
+    _initials =
+        widget.student.firstName != ''
+            ? getIntials(widget.student.firstName)
+            : 'U';
+  }
+
+  void _onPopupTap(int index) {
+    switch (index) {
+      case 0:
+        showScoreGoalsPopup(context);
+        break;
+      case 1:
+        showCoinsPopup(context);
+        break;
+      case 2:
+        showStreakPopup(context);
+        break;
+      case 3:
+        showLivesPopup(context);
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,224 +122,229 @@ class _BBhomeState extends State<BBhome> {
           expandedHeight: 130,
           pinned: true,
           floating: false,
-
           backgroundColor: Colors.transparent,
           elevation: 0,
-
           flexibleSpace: ClipRRect(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
               child: FlexibleSpaceBar(
-                background: Container(
-                  padding: const EdgeInsets.only(left: 10, right: 10),
-                  color: Colors.transparent,
-                  child: Row(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 40),
-                          Text(
-                            "Good Evening",
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyMedium?.copyWith(fontSize: 10),
-                          ),
-                          const Expanded(child: SizedBox.shrink()),
-                          Text(
-                            widget.student.firstName != ''
-                                ? "${widget.student.firstName} ${widget.student.lastName}"
-                                : 'UserName',
-                            style: Theme.of(context).textTheme.headlineSmall,
-                          ),
-                          const SizedBox(height: 50),
-                          const Expanded(child: SizedBox.shrink()),
-                        ],
-                      ),
-                      const Expanded(child: SizedBox.shrink()),
-                      Column(
-                        children: [
-                          Row(
-                            children: [
-                              const SizedBox(height: 150),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) =>
-                                              const BBNotificationCenter(),
-                                    ),
-                                  );
-                                },
-                                child: const Icon(
-                                  Icons.notifications,
-                                  size: 20,
-                                  color: BBColors.disabledText,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const BBSettings(),
-                                    ),
-                                  );
-                                },
-                                child: CircleAvatar(
-                                  backgroundColor: Colors.green[700],
-                                  child: Text(
-                                    widget.student.firstName != ''
-                                        ? getIntials(widget.student.firstName)
-                                        : 'U',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                background: _AppBarBackground(
+                  displayName: _displayName,
+                  initials: _initials,
                 ),
                 expandedTitleScale: 1,
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(4, (index) {
-                    return BbProgressBar(
-                      color: color[index],
-                      imgPath: imgPath[index],
-                      desc: desc[index],
-                      index: index,
-                      onTap: () {
-                        popUpFunctions[index](context);
-                      },
-                    );
-                  }),
-                ),
+                title: _ProgressBarRow(desc: _desc, onPopupTap: _onPopupTap),
                 centerTitle: true,
               ),
             ),
           ),
         ),
         SliverList.builder(
-          itemBuilder: (_, index) {
-            return index == 0
-                ? Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return const _PromotionCard();
+            }
 
-                  height: context.screenHeight * 0.25,
-                  width: double.infinity,
-
-                  child: Stack(
-                    children: [
-                      Align(
-                        alignment: Alignment.center,
-                        child: Container(
-                          width: context.screenWidth,
-                          height: context.screenHeight * 0.18,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: BBColors.white,
-                            image: const DecorationImage(
-                              image: AssetImage('assets/promotionbg.png'),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 6,
-                            horizontal: 17,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            spacing: 15,
-                            children: [
-                              SizedBox(
-                                width: context.screenWidth * 0.5,
-                                child: BBText(
-                                  data: "Bookmark 6 Questions",
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleSmall?.copyWith(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
-                                    color: BBColors.white,
-                                  ),
-                                ),
-                              ),
-
-                              // SizedBox(
-                              //   width: context.screenWidth * 0.7,
-                              //   child: LinearProgressIndicator(
-                              //     value: 0.5,
-                              //     backgroundColor: BBColors.lightGrayBG,
-                              //     color: BBColors.primaryColor,
-                              //     borderRadius: BorderRadius.circular(12),
-                              //   ),
-                              // ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(30),
-                                  color: BBColors.white,
-                                ),
-                                child: ElevatedButton(
-                                  onPressed: () {},
-                                  style: ElevatedButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                  ),
-                                  child: BBText(
-                                    data: "Claim Now",
-                                    style: context.textStyle.titleMedium
-                                        ?.copyWith(fontSize: 14),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: SizedBox(
-                          height: context.screenHeight * 0.5,
-                          width: context.screenWidth * 0.5,
-                          child: Image.asset(
-                            'assets/promotion.png',
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-                : BbQuizzesDisplay(
-                  title: quizzes[index - 1]['title']!,
-                  description: quizzes[index - 1]['description']!,
-                  imagePath1: quizzes[index - 1]['imagePath1']!,
-                  imagePath2: quizzes[index - 1]['imagePath2']!,
-                  color: quizzes[index - 1]['color']!,
-                );
+            final quiz = _quizzes[index - 1];
+            return BbQuizzesDisplay(
+              title: quiz['title']!,
+              description: quiz['description']!,
+              imagePath1: quiz['imagePath1']!,
+              imagePath2: quiz['imagePath2']!,
+              color: quiz['color']!,
+            );
           },
-          itemCount: quizzes.length + 1,
+          itemCount: _quizzes.length + 1,
         ),
       ],
+    );
+  }
+}
+
+// Extracted widgets for better performance and cleaner code
+class _AppBarBackground extends StatelessWidget {
+  final String displayName;
+  final String initials;
+
+  const _AppBarBackground({required this.displayName, required this.initials});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.only(left: 10, right: 10),
+      color: Colors.transparent,
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 40),
+              Text(
+                "Good Evening",
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontSize: 10),
+              ),
+              const Expanded(child: SizedBox.shrink()),
+              Text(
+                displayName,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 50),
+              const Expanded(child: SizedBox.shrink()),
+            ],
+          ),
+          const Expanded(child: SizedBox.shrink()),
+          Column(
+            children: [
+              Row(
+                children: [
+                  const SizedBox(height: 150),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BBNotificationCenter(),
+                        ),
+                      );
+                    },
+                    child: const Icon(
+                      Icons.notifications,
+                      size: 20,
+                      color: BBColors.disabledText,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BBSettings(),
+                        ),
+                      );
+                    },
+                    child: CircleAvatar(
+                      backgroundColor: Colors.green[700],
+                      child: Text(
+                        initials,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProgressBarRow extends StatelessWidget {
+  final List<String> desc;
+  final void Function(int) onPopupTap;
+
+  const _ProgressBarRow({required this.desc, required this.onPopupTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: List.generate(4, (index) {
+        return BbProgressBar(
+          color: _BBhomeState._color[index],
+          imgPath: _BBhomeState._imgPath[index],
+          desc: desc[index],
+          index: index,
+          onTap: () => onPopupTap(index),
+        );
+      }),
+    );
+  }
+}
+
+class _PromotionCard extends StatelessWidget {
+  const _PromotionCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      height: context.screenHeight * 0.25,
+      width: double.infinity,
+      child: Stack(
+        children: [
+          Align(
+            alignment: Alignment.center,
+            child: Container(
+              width: context.screenWidth,
+              height: context.screenHeight * 0.18,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: BBColors.white,
+                image: const DecorationImage(
+                  image: AssetImage('assets/promotionbg.png'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 17),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                spacing: 15,
+                children: [
+                  SizedBox(
+                    width: context.screenWidth * 0.5,
+                    child: BBText(
+                      data: "Bookmark 6 Questions",
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: BBColors.white,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      color: BBColors.white,
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: BBText(
+                        data: "Claim Now",
+                        style: context.textStyle.titleMedium?.copyWith(
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: SizedBox(
+              height: context.screenHeight * 0.5,
+              width: context.screenWidth * 0.5,
+              child: Image.asset('assets/promotion.png', fit: BoxFit.contain),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

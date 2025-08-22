@@ -16,7 +16,7 @@ class StudentModel extends UserModel {
   final LeaderboardStats leaderboardStats;
   final BattleStats battleStats;
   final List<String> enrolledClasses;
-
+  final int score;
   final Map<String, String> chapterLevels;
   final Map<String, TopicPerformance>? topicPerformance;
 
@@ -41,6 +41,7 @@ class StudentModel extends UserModel {
     required this.leaderboardStats,
     required this.battleStats,
     required this.enrolledClasses,
+    required this.score,
     required this.chapterLevels,
     this.topicPerformance,
   });
@@ -77,6 +78,7 @@ class StudentModel extends UserModel {
       ),
       battleStats: BattleStats.fromJson(user['battleStats'] ?? {}),
       enrolledClasses: List<String>.from(user['enrolledClasses'] ?? []),
+      score: user['score'] ?? 0,
 
       chapterLevels: Map<String, String>.from(user['chapter_levels'] ?? {}),
       // topicPerformance: (user['topic_performance'] ?? {}).map<dynamic, dynamic>(

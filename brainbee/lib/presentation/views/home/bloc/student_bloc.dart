@@ -101,6 +101,7 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
           "math_ch1": "completed",
           "sci_ch1": "in-progress"
         },
+        "score": 25,
         "topic_performance": {
           "fractions": {"attempts": 10, "correct": 7},
           "algebra": {"attempts": 5, "correct": 4}
