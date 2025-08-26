@@ -27,3 +27,19 @@ final class StudentDataError extends StudentState {
   @override
   List<Object> get props => [message];
 }
+
+final class StudentUpdateGoalsSuccess extends StudentState {
+  final Goal goal;
+  const StudentUpdateGoalsSuccess(this.goal);
+
+  @override
+  List<Object> get props => [goal];
+}
+
+final class StudentUpdateGoalsFailure extends StudentState {
+  final String message;
+  const StudentUpdateGoalsFailure(this.message);
+
+  @override
+  List<Object> get props => [message];
+}

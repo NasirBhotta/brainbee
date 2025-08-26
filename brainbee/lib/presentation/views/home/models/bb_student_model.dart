@@ -51,7 +51,7 @@ class StudentModel extends UserModel {
     final user = json['user'];
 
     return StudentModel(
-      id: user['_id'] ?? '',
+      id: user['id'] ?? user['_id'] ?? '',
       email: user['email'] ?? '',
       firstName: user['firstName'] ?? '',
       lastName: user['lastName'] ?? '',
@@ -87,6 +87,39 @@ class StudentModel extends UserModel {
       // ),
     );
   }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'accessToken': token,
+      'user': {
+        'id': id,
+        'email': email,
+        'firstName': firstName,
+        'lastName': lastName,
+        'grade': grade,
+        'subjects': subjects,
+        'parentId': parentId,
+        'coins': coins,
+        'streakScore': streakScore,
+        'lastStreakDate': lastStreakDate?.toIso8601String(),
+        'dailyLives': dailyLives,
+        'livesResetTime': livesResetTime?.toIso8601String(),
+        'friends': friends,
+        'achievements': achievements.toJson(),
+        'leaderboardStats': leaderboardStats.toJson(),
+        'battleStats': battleStats.toJson(),
+        'enrolledClasses': enrolledClasses,
+        'chapter_levels': chapterLevels,
+        'score': score,
+        'topic_performance': topicPerformance?.map(
+          (key, value) => MapEntry(key, value.toJson()),
+        ),
+        'goal': goal.toJson(),
+      },
+    };
+  }
 }
 
 class Goal {
@@ -121,6 +154,17 @@ class Goal {
       noOfAttempts: json['noOfAttempts'] ?? 0,
     );
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'description': description,
+      'dueDate': dueDate.toIso8601String(),
+      'reminder': reminder.map((x) => x.toIso8601String()).toList(),
+      'value': value,
+      'status': status,
+      'noOfAttempts': noOfAttempts,
+    };
+  }
 }
 
 class BattleStats {
@@ -141,6 +185,9 @@ class BattleStats {
       totalBattles: json['totalBattles'] ?? 0,
     );
   }
+  Map<String, dynamic> toJson() {
+    return {'wins': wins, 'losses': losses, 'totalBattles': totalBattles};
+  }
 }
 
 class TopicPerformance {
@@ -154,5 +201,8 @@ class TopicPerformance {
       attempts: json['attempts'] ?? 0,
       correct: json['correct'] ?? 0,
     );
+  }
+  Map<String, dynamic> toJson() {
+    return {'attempts': attempts, 'correct': correct};
   }
 }

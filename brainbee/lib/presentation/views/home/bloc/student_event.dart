@@ -10,3 +10,9 @@ sealed class StudentEvent extends Equatable {
 final class StudentFetchData extends StudentEvent {
   const StudentFetchData();
 }
+
+final class StudentUpdateGoals extends StudentEvent {
+  final Goal goal;
+
+  const StudentUpdateGoals({required this.goal});
+}

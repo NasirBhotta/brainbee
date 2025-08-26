@@ -12,9 +12,11 @@ import 'package:brainbee/presentation/views/home/UI/bb_lives_popup.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_notification_center.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_score_popup.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_streak_popup.dart';
+import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 import 'package:brainbee/presentation/views/settings/UI/bb_settings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class BBhome extends StatefulWidget {
   final StudentModel student;
@@ -72,7 +74,7 @@ class _BBhomeState extends State<BBhome> {
   ];
 
   // Cache these values to avoid recalculating on every build
-  late final List<String> _desc;
+  late List<String> _desc;
   late final String _displayName;
   late final String _initials;
 
@@ -86,6 +88,7 @@ class _BBhomeState extends State<BBhome> {
       '${widget.student.dailyLives}/10',
     ];
 
+    print("in initstate data is: ${_desc[0]}");
     _displayName =
         widget.student.firstName != ''
             ? "${widget.student.firstName} ${widget.student.lastName}"
@@ -97,66 +100,91 @@ class _BBhomeState extends State<BBhome> {
             : 'U';
   }
 
-  void _onPopupTap(int index) {
+  void _onPopupTap(int index, StudentDataLoaded state) {
     switch (index) {
       case 0:
-        showScoreGoalsPopup(context, widget.student);
+        showScoreGoalsPopup(context, state.student);
         break;
       case 1:
-        showCoinsPopup(context, widget.student);
+        showCoinsPopup(context, state.student);
         break;
       case 2:
-        showStreakPopup(context, widget.student.streakScore.toString());
+        showStreakPopup(context, state.student.streakScore.toString());
         break;
       case 3:
-        showLivesPopup(context, widget.student.dailyLives.toString());
+        showLivesPopup(context, state.student.dailyLives.toString());
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          expandedHeight: 130,
-          pinned: true,
-          floating: false,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          flexibleSpace: ClipRRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-              child: FlexibleSpaceBar(
-                background: _AppBarBackground(
-                  displayName: _displayName,
-                  initials: _initials,
+    return BlocConsumer<StudentBloc, StudentState>(
+      listener: (context, state) {
+        if (state is StudentDataError) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
+        }
+      },
+      builder: (context, state) {
+        if (state is StudentDataLoaded) {
+          print("updated data in ui is ${state.student.goal.toJson()}");
+          _desc = [
+            state.student.score.toString(),
+            state.student.coins.toString(),
+            state.student.streakScore.toString(),
+            '${state.student.dailyLives}/10',
+          ];
+        }
+        return CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 130,
+              pinned: true,
+              floating: false,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              flexibleSpace: ClipRRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                  child: FlexibleSpaceBar(
+                    background: _AppBarBackground(
+                      displayName: _displayName,
+                      initials: _initials,
+                    ),
+                    expandedTitleScale: 1,
+                    title: _ProgressBarRow(
+                      desc: _desc,
+                      onPopupTap: (index) {
+                        _onPopupTap(index, state as StudentDataLoaded);
+                      },
+                    ),
+                    centerTitle: true,
+                  ),
                 ),
-                expandedTitleScale: 1,
-                title: _ProgressBarRow(desc: _desc, onPopupTap: _onPopupTap),
-                centerTitle: true,
               ),
             ),
-          ),
-        ),
-        SliverList.builder(
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return const _PromotionCard();
-            }
+            SliverList.builder(
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return const _PromotionCard();
+                }
 
-            final quiz = _quizzes[index - 1];
-            return BbQuizzesDisplay(
-              title: quiz['title']!,
-              description: quiz['description']!,
-              imagePath1: quiz['imagePath1']!,
-              imagePath2: quiz['imagePath2']!,
-              color: quiz['color']!,
-            );
-          },
-          itemCount: _quizzes.length + 1,
-        ),
-      ],
+                final quiz = _quizzes[index - 1];
+                return BbQuizzesDisplay(
+                  title: quiz['title']!,
+                  description: quiz['description']!,
+                  imagePath1: quiz['imagePath1']!,
+                  imagePath2: quiz['imagePath2']!,
+                  color: quiz['color']!,
+                );
+              },
+              itemCount: _quizzes.length + 1,
+            ),
+          ],
+        );
+      },
     );
   }
 }

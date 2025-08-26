@@ -22,4 +22,13 @@ class Certificate {
       earnedAt: DateTime.parse(json['earnedAt']),
     );
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'certificateId': certificateId,
+      'name': name,
+      'description': description,
+      'imageUrl': imageUrl,
+      'earnedAt': earnedAt.toIso8601String(),
+    };
+  }
 }

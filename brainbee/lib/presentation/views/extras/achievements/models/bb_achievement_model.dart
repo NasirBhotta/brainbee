@@ -19,4 +19,10 @@ class Achievements {
               .toList(),
     );
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'badges': badges.map((b) => b.toJson()).toList(),
+      'certificates': certificates.map((c) => c.toJson()).toList(),
+    };
+  }
 }

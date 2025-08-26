@@ -11,6 +11,42 @@ class BrainBeeTheme {
       backgroundColor: BBColors.secondaryColor,
       elevation: 0,
     ),
+    timePickerTheme: TimePickerThemeData(
+      // Dial hand (the line that moves for hour/minute)
+      dialHandColor: BBColors.primaryColor,
+
+      // Selected hour/minute numbers
+      hourMinuteTextColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return BBColors.primaryColor; // when focused
+        }
+        return BBColors.black; // default
+      }),
+
+      // OK/Cancel button styles
+      cancelButtonStyle: ButtonStyle(
+        foregroundColor: WidgetStateProperty.all(BBColors.secondaryColor),
+      ),
+      confirmButtonStyle: ButtonStyle(
+        foregroundColor: WidgetStateProperty.all(BBColors.secondaryColor),
+      ),
+
+      // AM/PM toggle background
+      dayPeriodColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return BBColors.primaryColor; // focused background
+        }
+        return Colors.grey.shade200; // normal background
+      }),
+
+      // AM/PM toggle text color
+      dayPeriodTextColor: WidgetStateColor.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return Colors.white; // focused text
+        }
+        return BBColors.black; // default text
+      }),
+    ),
     textTheme: TextTheme(
       headlineSmall: GoogleFonts.poppins(
         fontSize: 20,

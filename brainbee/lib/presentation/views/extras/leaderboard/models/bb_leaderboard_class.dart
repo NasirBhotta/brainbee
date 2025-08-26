@@ -22,4 +22,13 @@ class LeaderboardStats {
       yearlyScore: json['yearlyScore'] ?? 0,
     );
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'overallScore': overallScore,
+      'ranking': ranking,
+      'weeklyScore': weeklyScore,
+      'monthlyScore': monthlyScore,
+      'yearlyScore': yearlyScore,
+    };
+  }
 }
