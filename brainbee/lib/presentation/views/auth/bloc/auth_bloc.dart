@@ -90,6 +90,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoadingState());
     try {
+      print("Comming here");
       final response = await http
           .post(
             Uri.parse(
@@ -105,7 +106,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           .timeout(const Duration(seconds: 15)); // Increased timeout
 
       final data = jsonDecode(response.body);
-
+      print("data is: $data");
       if (response.statusCode == 200) {
         try {
           _user = UserModel.fromJson(data);
@@ -150,13 +151,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoadingState());
-
+    // https://fyp-backend-express.onrender.com
     try {
       final response = await http
           .post(
-            Uri.parse(
-              "https://fyp-backend-express.onrender.com/api/auth/register",
-            ),
+            Uri.parse("http://localhost:5000/api/auth/register"),
             headers: {"Content-Type": "application/json"},
             body: jsonEncode({
               "email": event.email,

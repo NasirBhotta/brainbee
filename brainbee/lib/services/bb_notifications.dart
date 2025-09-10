@@ -2,57 +2,58 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 
+/// Unified Notification Service
 class BBNotificationService {
   static final BBNotificationService _instance =
-      BBNotificationService()._internal();
-
+      BBNotificationService._internal();
   factory BBNotificationService() => _instance;
   BBNotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
+  final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+  bool _initialized = false;
 
-  Future<void> Initialize() async {
+  /// Initialize
+  Future<void> initialize() async {
+    if (_initialized) return;
+
     tz.initializeTimeZones();
 
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const DarwinInitializationSettings initializationSettingsIOS =
-        DarwinInitializationSettings(
-          requestSoundPermission: true,
-          requestBadgePermission: true,
-          requestAlertPermission: true,
-        );
-
-    const InitializationSettings initializationSetting = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const ios = DarwinInitializationSettings(
+      requestSoundPermission: true,
+      requestBadgePermission: true,
+      requestAlertPermission: true,
     );
+    const settings = InitializationSettings(android: android, iOS: ios);
 
-    await _flutterLocalNotificationsPlugin.initialize(
-      initializationSetting,
-      onDidReceiveNotificationResponse: (NotificationResponse response) async {
-        // handle notification badge tap here
-
-        print('Notification tapped: ${response.payload}');
-      },
+    await _plugin.initialize(
+      settings,
+      onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
     await _requestPermissions();
+    _initialized = true;
   }
 
+  /// Handle tap
+  Future<void> _onNotificationTapped(NotificationResponse response) async {
+    print('Notification tapped: ${response.payload}');
+    // TODO: Route user to correct screen depending on payload
+  }
+
+  /// Request permissions
   Future<void> _requestPermissions() async {
     if (Platform.isAndroid) {
       await Permission.notification.request();
-
       if (await Permission.scheduleExactAlarm.isDenied) {
         await Permission.scheduleExactAlarm.request();
       }
     } else if (Platform.isIOS) {
-      await _flutterLocalNotificationsPlugin
+      await _plugin
           .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin
           >()
@@ -60,128 +61,211 @@ class BBNotificationService {
     }
   }
 
+  // ============================================================
+  // 🚀 LOCAL NOTIFICATIONS (Goals, Quests, Achievements, Badges)
+  // ============================================================
+
+  /// 🔔 One-time Goal Reminder
   Future<void> scheduleGoalReminder({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledTime,
   }) async {
-    try {
-      final tz.TZDateTime scheduledTZ = tz.TZDateTime.from(
-        scheduledTime,
-        tz.local,
-      );
+    final scheduledTZ = tz.TZDateTime.from(scheduledTime, tz.local);
+    if (scheduledTZ.isBefore(tz.TZDateTime.now(tz.local))) return;
 
-      if (scheduledTZ.isBefore(tz.TZDateTime.now(tz.local))) {
-        print('Cannot schedule notification in the past');
-        return;
-      }
+    const android = AndroidNotificationDetails(
+      'goal_reminders',
+      'Goal Reminders',
+      channelDescription: 'Notifications for daily goal reminders',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      sound: RawResourceAndroidNotificationSound('notification_sound'),
+    );
 
-      const AndroidNotificationDetails androidPlatformChannelSpecifics =
-          AndroidNotificationDetails(
-            'goal_reminders',
-            'Goal Reminders',
-            channelDescription: 'Notifications for daily goal reminders',
-            importance: Importance.high,
-            priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
-            sound: RawResourceAndroidNotificationSound('notification_sound'),
-            enableVibration: true,
-          );
+    const ios = DarwinNotificationDetails(
+      sound: 'default',
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
 
-      const DarwinNotificationDetails iOSPlatformChannelSpecifics =
-          DarwinNotificationDetails(
-            sound: 'default',
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          );
-
-      const NotificationDetails platformChannelSpecifics = NotificationDetails(
-        android: androidPlatformChannelSpecifics,
-        iOS: iOSPlatformChannelSpecifics,
-      );
-
-      await _flutterLocalNotificationsPlugin.zonedSchedule(
-        id,
-        title,
-        body,
-        scheduledTZ,
-        platformChannelSpecifics,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-
-        payload: 'goal_reminder_$id',
-      );
-
-      print('Reminder scheduled for: $scheduledTime');
-    } catch (e) {
-      print('Error scheduling notification: $e');
-    }
+    await _plugin.zonedSchedule(
+      id,
+      title,
+      body,
+      scheduledTZ,
+      const NotificationDetails(android: android, iOS: ios),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: 'goal_reminder_$id',
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
   }
 
+  /// 🔁 Repeating Goal Reminder (Daily, Weekly, etc.)
   Future<void> scheduleRepeatingGoalReminder({
     required int id,
     required String title,
     required String body,
-    required DateTime firstReminderTime,
     required RepeatInterval repeatInterval,
   }) async {
-    try {
-      final tz.TZDateTime scheduledTZ = tz.TZDateTime.from(
-        firstReminderTime,
-        tz.local,
+    const android = AndroidNotificationDetails(
+      'daily_goal_reminders',
+      'Daily Goal Reminders',
+      channelDescription: 'Daily notifications for goal reminders',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+
+    const ios = DarwinNotificationDetails();
+
+    await _plugin.periodicallyShow(
+      id,
+      title,
+      body,
+      repeatInterval,
+      const NotificationDetails(android: android, iOS: ios),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: 'daily_goal_reminder_$id',
+    );
+  }
+
+  /// 🎉 Quest Complete Notification (local-only)
+  Future<void> showQuestCompleteNotification({
+    required String questId,
+    required String title,
+    required int coinReward,
+  }) async {
+    if (!await areQuestNotificationsEnabled()) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final notifiedQuests = prefs.getStringList('notified_quests') ?? [];
+
+    // Prevent duplicate notifications
+    if (notifiedQuests.contains(questId)) return;
+
+    const android = AndroidNotificationDetails(
+      'quest_complete',
+      'Quest Completed',
+      channelDescription: 'Notifications when quests are ready to claim',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+
+    const ios = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    await _plugin.show(
+      questId.hashCode,
+      'Quest Completed! 🎉',
+      '$title - Claim $coinReward coins now!',
+      const NotificationDetails(android: android, iOS: ios),
+      payload: 'quest_$questId',
+    );
+
+    // Mark quest as notified
+    notifiedQuests.add(questId);
+    await prefs.setStringList('notified_quests', notifiedQuests);
+  }
+
+  /// Toggle Quest Notifications
+  Future<bool> areQuestNotificationsEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('quest_notifications_enabled') ?? true;
+  }
+
+  Future<void> setQuestNotificationsEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('quest_notifications_enabled', enabled);
+  }
+
+  // ============================================================
+  // 📡 PUSH + LOCAL HYBRID (Classroom, Battles, Live Classes)
+  // ============================================================
+
+  Future<void> handleFirebaseMessage(Map<String, dynamic> message) async {
+    print('Firebase message received: $message');
+
+    final type = message['type'];
+
+    if (type == 'classroom_update') {
+      await _showInstantNotification(
+        id: DateTime.now().millisecondsSinceEpoch,
+        title: 'New Classroom Update',
+        body: message['body'] ?? 'Check your classroom for updates.',
+        payload: 'classroom_${message['classroomId']}',
       );
-
-      const AndroidNotificationDetails androidPlatformChannelSpecifics =
-          AndroidNotificationDetails(
-            'daily_goal_reminders',
-            'Daily Goal Reminders',
-            channelDescription: 'Daily notifications for goal reminders',
-            importance: Importance.high,
-            priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
-          );
-
-      const DarwinNotificationDetails iOSPlatformChannelSpecifics =
-          DarwinNotificationDetails();
-
-      const NotificationDetails platformChannelSpecifics = NotificationDetails(
-        android: androidPlatformChannelSpecifics,
-        iOS: iOSPlatformChannelSpecifics,
+    } else if (type == 'battle_invite') {
+      await _showInstantNotification(
+        id: DateTime.now().millisecondsSinceEpoch,
+        title: 'New Battle Invite ⚔️',
+        body: '${message['opponent']} challenged you!',
+        payload: 'battle_${message['battleId']}',
       );
-
-      await _flutterLocalNotificationsPlugin.periodicallyShow(
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        id,
-        title,
-        body,
-        repeatInterval,
-        platformChannelSpecifics,
-        payload: 'daily_goal_reminder_$id',
+    } else if (type == 'live_class') {
+      await _showInstantNotification(
+        id: DateTime.now().millisecondsSinceEpoch,
+        title: 'Live Class Starting 📚',
+        body: message['body'] ?? 'Your live class is starting soon!',
+        payload: 'live_${message['classId']}',
       );
-
-      print('Repeating reminder scheduled starting: $firstReminderTime');
-    } catch (e) {
-      print('Error scheduling repeating notification: $e');
     }
   }
 
-  Future<void> cancelReminder(int id) async {
-    await _flutterLocalNotificationsPlugin.cancel(id);
-    print('Cancelled reminder with id: $id');
+  Future<void> _showInstantNotification({
+    required int id,
+    required String title,
+    required String body,
+    required String payload,
+  }) async {
+    const android = AndroidNotificationDetails(
+      'push_channel',
+      'Push Notifications',
+      channelDescription: 'Notifications from the server',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+
+    const ios = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    await _plugin.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(android: android, iOS: ios),
+      payload: payload,
+    );
   }
 
-  Future<void> cancelAllReminders() async {
-    await _flutterLocalNotificationsPlugin.cancelAll();
-    print('Cancelled all reminders');
+  // ============================================================
+  // 🧹 COMMON HELPERS
+  // ============================================================
+
+  Future<void> cancelNotification(int id) async {
+    await _plugin.cancel(id);
+  }
+
+  Future<void> cancelAllNotifications() async {
+    await _plugin.cancelAll();
   }
 
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
-    return await _flutterLocalNotificationsPlugin.pendingNotificationRequests();
+    return await _plugin.pendingNotificationRequests();
   }
 
-  // Helper method to generate unique IDs for notifications
-  static int generateNotificationId(String studentId, DateTime reminderTime) {
-    return '${studentId}_${reminderTime.millisecondsSinceEpoch}'.hashCode.abs();
+  static int generateNotificationId(String key) {
+    return key.hashCode.abs();
   }
 }

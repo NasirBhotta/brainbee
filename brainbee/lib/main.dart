@@ -9,6 +9,7 @@ import 'package:brainbee/presentation/views/extras/coinquests/services/notificat
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/repositories/badge_repository.dart';
 import 'package:brainbee/routes/app_routes.dart';
+import 'package:brainbee/services/bb_notifications.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,6 +18,7 @@ void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Notifications
+  await BBNotificationService().initialize();
   await NotificationService().initialize();
 
   runApp(
