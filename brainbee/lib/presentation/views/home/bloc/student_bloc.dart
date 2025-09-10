@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:bloc/bloc.dart';
 import 'package:brainbee/presentation/views/auth/models/user_model.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
+import 'package:brainbee/services/bb_notifications.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,6 +12,8 @@ part 'student_event.dart';
 part 'student_state.dart';
 
 class StudentBloc extends Bloc<StudentEvent, StudentState> {
+  final BBNotificationService _notificationService = BBNotificationService();
+
   final Map<String, dynamic> response = {
     "status": "success",
     "accessToken": "dummy-token-123",
@@ -186,6 +189,8 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
 
       final int noOfAttempts = response['user']['goal']['noOfAttempts'];
 
+      // before updating the goal we have to remove the existing reminders else it will create a lot reminders with different ids
+      await _cancelExistingReminders(response['user']['id']);
       response['user']['goal'] = {
         "title": event.goal.title,
         "description": event.goal.description,
@@ -199,11 +204,67 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
 
       final studentData = StudentModel.fromJson(response);
 
+      // Schedule new reminders
+      await _scheduleGoalReminders(studentData);
       emit(StudentUpdateGoalsSuccess(studentData.goal));
 
       emit(StudentDataLoaded(studentData));
     } catch (e) {
       emit(StudentDataError(e.toString()));
+    }
+  }
+
+  Future<void> _cancelExistingReminders(String userId) async {
+    try {
+      // Get all pending notifications
+      final pendingNotifications =
+          await _notificationService.getPendingNotifications();
+
+      // Cancel notifications that belong to this user
+      for (final notification in pendingNotifications) {
+        if (notification.payload?.contains('goal_reminder_$userId') == true) {
+          await _notificationService.cancelNotification(notification.id);
+        }
+      }
+    } catch (e) {
+      print('Error cancelling existing reminders: $e');
+    }
+  }
+
+  Future<void> _scheduleGoalReminders(StudentModel student) async {
+    try {
+      final studentId = student.id;
+      final goalTitle = student.goal.title;
+
+      // Schedule notifications for each reminder time
+      for (int i = 0; i < student.goal.reminder.length; i++) {
+        final reminderTime = student.goal.reminder[i];
+
+        // Generate unique ID for each reminder
+        final notificationId = BBNotificationService.generateNotificationId(
+          studentId,
+          reminderTime,
+        );
+
+        // Create notification title and body
+        final title = 'Time for your $goalTitle goal!';
+        final body =
+            'Complete ${student.goal.value} quizzes to stay on track with your daily goal.';
+
+        // Schedule the notification
+        await _notificationService.scheduleGoalReminder(
+          id: notificationId,
+          title: title,
+          body: body,
+          scheduledTime: reminderTime,
+        );
+      }
+
+      print(
+        'Scheduled ${student.goal.reminder.length} reminders for goal: $goalTitle',
+      );
+    } catch (e) {
+      print('Error scheduling goal reminders: $e');
     }
   }
 }

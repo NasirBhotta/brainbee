@@ -265,7 +265,7 @@ class BBNotificationService {
     return await _plugin.pendingNotificationRequests();
   }
 
-  static int generateNotificationId(String key) {
-    return key.hashCode.abs();
+  static int generateNotificationId(String studentId, DateTime reminderTime) {
+    return '${studentId}_${reminderTime.millisecondsSinceEpoch}'.hashCode.abs();
   }
 }

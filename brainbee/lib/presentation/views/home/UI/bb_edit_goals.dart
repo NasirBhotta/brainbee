@@ -81,6 +81,14 @@ class _BBEditGoalsState extends State<BBEditGoals> {
           }
         },
         builder: (context, state) {
+          if (state is StudentDataLoaded) {
+            final student = state.student;
+            _selectedGoalIndex = _goalOptions.indexWhere(
+              (goal) => goal.title == student.goal.title,
+            );
+            _reminderTimes.clear();
+            _reminderTimes.addAll(student.goal.reminder);
+          }
           return SafeArea(
             child: Column(
               children: [
@@ -329,6 +337,9 @@ class _BBEditGoalsState extends State<BBEditGoals> {
                                       onPressed: () {
                                         setState(() {
                                           _reminderTimes.removeAt(index);
+                                          print(
+                                            "reminders times are $_reminderTimes",
+                                          );
                                         });
                                       },
                                     ),
