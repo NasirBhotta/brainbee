@@ -1,3 +1,4 @@
+import 'package:brainbee/services/goalNotificationPrefrences/bb_goal_notification_prefrences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
@@ -20,7 +21,17 @@ class BBNotificationService {
   Future<void> initialize() async {
     if (_initialized) return;
 
+    // Initialize timezone data
     tz.initializeTimeZones();
+
+    // Set local timezone
+
+    //! https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+    tz.setLocalLocation(tz.getLocation('Asia/Karachi'));
+
+    // final String currentTimeZone =
+    //     await FlutterNativeTimezone.getLocalTimezone();
+    // tz.setLocalLocation(tz.getLocation(currentTimeZone));
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings(
@@ -37,6 +48,8 @@ class BBNotificationService {
 
     await _requestPermissions();
     _initialized = true;
+
+    print('BBNotificationService initialized successfully');
   }
 
   /// Handle tap
@@ -48,16 +61,27 @@ class BBNotificationService {
   /// Request permissions
   Future<void> _requestPermissions() async {
     if (Platform.isAndroid) {
-      await Permission.notification.request();
+      // Request notification permission
+      final notificationStatus = await Permission.notification.request();
+      print('Notification permission: $notificationStatus');
+
+      // Request exact alarm permission for Android 12+
       if (await Permission.scheduleExactAlarm.isDenied) {
-        await Permission.scheduleExactAlarm.request();
+        final exactAlarmStatus = await Permission.scheduleExactAlarm.request();
+        print('Exact alarm permission: $exactAlarmStatus');
       }
     } else if (Platform.isIOS) {
-      await _plugin
-          .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin
-          >()
-          ?.requestPermissions(alert: true, badge: true, sound: true);
+      final iosPlugin =
+          _plugin
+              .resolvePlatformSpecificImplementation<
+                IOSFlutterLocalNotificationsPlugin
+              >();
+      final result = await iosPlugin?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      print('iOS notification permission: $result');
     }
   }
 
@@ -66,14 +90,115 @@ class BBNotificationService {
   // ============================================================
 
   /// 🔔 One-time Goal Reminder
+  // Future<void> scheduleGoalReminder({
+  //   required int id,
+  //   required String title,
+  //   required String body,
+  //   required DateTime scheduledTime,
+  // }) async {
+  //   print('=== SCHEDULING NOTIFICATION ===');
+  //   print('ID: $id');
+  //   print('Title: $title');
+  //   print('Body: $body');
+  //   print('Scheduled Time: $scheduledTime');
+  //   print('Current Time: ${DateTime.now()}');
+
+  //   // Convert to timezone aware datetime
+  //   final scheduledTZ = tz.TZDateTime.from(scheduledTime, tz.local);
+  //   final currentTZ = tz.TZDateTime.now(tz.local);
+
+  //   print('Scheduled TZ: $scheduledTZ');
+  //   print('Current TZ: $currentTZ');
+
+  //   // Check if scheduled time is in the future
+  //   if (scheduledTZ.isBefore(currentTZ)) {
+  //     print(
+  //       'ERROR: Scheduled time is in the past! Cannot schedule notification.',
+  //     );
+  //     return;
+  //   }
+
+  //   const android = AndroidNotificationDetails(
+  //     'goal_reminders',
+  //     'Goal Reminders',
+  //     channelDescription: 'Notifications for daily goal reminders',
+  //     importance: Importance.high,
+  //     priority: Priority.high,
+  //     icon: '@mipmap/ic_launcher',
+  //     enableLights: true,
+  //     enableVibration: true,
+  //     playSound: true,
+  //   );
+
+  //   const ios = DarwinNotificationDetails(
+  //     presentAlert: true,
+  //     presentBadge: true,
+  //     presentSound: true,
+  //   );
+
+  //   try {
+  //     await _plugin.zonedSchedule(
+  //       id,
+  //       title,
+  //       body,
+  //       scheduledTZ,
+  //       const NotificationDetails(android: android, iOS: ios),
+  //       androidScheduleMode: AndroidScheduleMode.inexact,
+  //       payload: 'goal_reminder_$id',
+  //       // Remove this line - it causes issues with one-time notifications
+  //       // matchDateTimeComponents: DateTimeComponents.time,
+  //     );
+
+  //     print('✅ Notification scheduled successfully!');
+
+  //     // Verify scheduling
+  //     final pending = await getPendingNotifications();
+  //     final scheduled = pending.where((n) => n.id == id).toList();
+  //     print(
+  //       'Verification: Found ${scheduled.length} pending notifications with ID $id',
+  //     );
+  //   } catch (e) {
+  //     print('❌ Error scheduling notification: $e');
+  //     rethrow;
+  //   }
+  // }
+
   Future<void> scheduleGoalReminder({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledTime,
   }) async {
+    // Check if goal notifications are enabled before scheduling
+    final canSendGoalNotifications =
+        await GoalNotificationPreferences.canSendGoalNotifications();
+
+    if (!canSendGoalNotifications) {
+      print(
+        '❌ Skipping goal reminder: Goal notifications disabled or no system permission',
+      );
+      return;
+    }
+
+    print('=== SCHEDULING GOAL NOTIFICATION ===');
+    print('ID: $id');
+    print('Title: $title');
+    print('Body: $body');
+    print('Scheduled Time: $scheduledTime');
+    print('Current Time: ${DateTime.now()}');
+
     final scheduledTZ = tz.TZDateTime.from(scheduledTime, tz.local);
-    if (scheduledTZ.isBefore(tz.TZDateTime.now(tz.local))) return;
+    final currentTZ = tz.TZDateTime.now(tz.local);
+
+    print('Scheduled TZ: $scheduledTZ');
+    print('Current TZ: $currentTZ');
+
+    if (scheduledTZ.isBefore(currentTZ)) {
+      print(
+        'ERROR: Scheduled time is in the past! Cannot schedule notification.',
+      );
+      return;
+    }
 
     const android = AndroidNotificationDetails(
       'goal_reminders',
@@ -82,27 +207,99 @@ class BBNotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
-      sound: RawResourceAndroidNotificationSound('notification_sound'),
+      enableLights: true,
+      enableVibration: true,
+      playSound: true,
     );
 
     const ios = DarwinNotificationDetails(
-      sound: 'default',
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
     );
 
-    await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      scheduledTZ,
-      const NotificationDetails(android: android, iOS: ios),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      payload: 'goal_reminder_$id',
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledTZ,
+        const NotificationDetails(android: android, iOS: ios),
+        androidScheduleMode: AndroidScheduleMode.inexact,
+        payload: 'goal_reminder_$id',
+      );
+
+      print('✅ Goal notification scheduled successfully!');
+
+      // Verify scheduling
+      final pending = await getPendingNotifications();
+      final scheduled = pending.where((n) => n.id == id).toList();
+      print(
+        'Verification: Found ${scheduled.length} pending notifications with ID $id',
+      );
+    } catch (e) {
+      print('❌ Error scheduling goal notification: $e');
+      rethrow;
+    }
   }
+
+  /// Cancel all goal-specific notifications
+  Future<void> cancelAllGoalNotifications() async {
+    try {
+      final pendingNotifications = await getPendingNotifications();
+
+      int cancelledCount = 0;
+      for (final notification in pendingNotifications) {
+        if (notification.payload?.contains('goal_reminder') == true) {
+          await cancelNotification(notification.id);
+          cancelledCount++;
+        }
+      }
+
+      print('Cancelled $cancelledCount goal notifications');
+    } catch (e) {
+      print('Error cancelling goal notifications: $e');
+    }
+  }
+
+  /// Get count of pending goal notifications
+  Future<int> getPendingGoalNotificationCount() async {
+    try {
+      final pendingNotifications = await getPendingNotifications();
+      return pendingNotifications
+          .where((n) => n.payload?.contains('goal_reminder') == true)
+          .length;
+    } catch (e) {
+      print('Error getting goal notification count: $e');
+      return 0;
+    }
+  }
+
+  /// Debug method to check permissions and pending notifications
+  // Future<void> debugNotificationStatus() async {
+  //   print('=== NOTIFICATION DEBUG INFO ===');
+
+  //   if (Platform.isAndroid) {
+  //     final notificationPermission = await Permission.notification.status;
+  //     final exactAlarmPermission = await Permission.scheduleExactAlarm.status;
+
+  //     print('Android Notification Permission: $notificationPermission');
+  //     print('Android Exact Alarm Permission: $exactAlarmPermission');
+  //   }
+
+  //   final pending = await getPendingNotifications();
+  //   print('Total Pending Notifications: ${pending.length}');
+
+  //   for (final notification in pending) {
+  //     print('- ID: ${notification.id}, Title: ${notification.title}');
+  //     print('  Body: ${notification.body}');
+  //     print('  Payload: ${notification.payload}');
+  //   }
+
+  //   print('Current Time: ${DateTime.now()}');
+  //   print('Current TZ Time: ${tz.TZDateTime.now(tz.local)}');
+  //   print('Local Timezone: ${tz.local.name}');
+  // }
 
   /// 🔁 Repeating Goal Reminder (Daily, Weekly, etc.)
   Future<void> scheduleRepeatingGoalReminder({
@@ -255,10 +452,12 @@ class BBNotificationService {
 
   Future<void> cancelNotification(int id) async {
     await _plugin.cancel(id);
+    print('Cancelled notification with ID: $id');
   }
 
   Future<void> cancelAllNotifications() async {
     await _plugin.cancelAll();
+    print('Cancelled all notifications');
   }
 
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
@@ -266,6 +465,9 @@ class BBNotificationService {
   }
 
   static int generateNotificationId(String studentId, DateTime reminderTime) {
-    return '${studentId}_${reminderTime.millisecondsSinceEpoch}'.hashCode.abs();
+    final idString = '${studentId}_${reminderTime.millisecondsSinceEpoch}';
+    final id = idString.hashCode.abs();
+    print('Generated notification ID: $id for $idString');
+    return id;
   }
 }
