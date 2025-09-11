@@ -1,5 +1,4 @@
 import 'package:brainbee/services/goalNotificationPrefrences/bb_goal_notification_prefrences.dart';
-import 'package:flutter/foundation.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
@@ -36,7 +35,7 @@ class BBEditGoals extends StatefulWidget {
 
 class _BBEditGoalsState extends State<BBEditGoals> with WidgetsBindingObserver {
   int _selectedGoalIndex = 0;
-  bool _goalNotificationsEnabled = false;
+  bool _goalNotificationsEnabled = true;
   final List<DateTime> _reminderTimes = [];
   bool _isInitialized = false;
   bool _hasSystemPermission = false;
@@ -106,9 +105,7 @@ class _BBEditGoalsState extends State<BBEditGoals> with WidgetsBindingObserver {
           _hasSystemPermission = systemPerm;
         });
       }
-    } catch (e) {
-      print('Error loading goal notification preference: $e');
-    }
+    } catch (e) {}
   }
 
   /// Check system permission status (for showing warnings)
@@ -130,7 +127,7 @@ class _BBEditGoalsState extends State<BBEditGoals> with WidgetsBindingObserver {
         }
       }
     } catch (e) {
-      print('Error checking system permission: $e');
+      rethrow;
     }
   }
 
@@ -147,9 +144,7 @@ class _BBEditGoalsState extends State<BBEditGoals> with WidgetsBindingObserver {
           onPressed: () async {
             try {
               await openAppSettings();
-            } catch (e) {
-              print('Error opening settings: $e');
-            }
+            } catch (e) {}
           },
         ),
         duration: const Duration(seconds: 5),
@@ -199,7 +194,6 @@ class _BBEditGoalsState extends State<BBEditGoals> with WidgetsBindingObserver {
         _showSnackbar('Goal notifications disabled');
       }
     } catch (e) {
-      print('Error handling goal notification toggle: $e');
       // Revert state on error
       if (mounted) {
         setState(() {
@@ -230,9 +224,7 @@ class _BBEditGoalsState extends State<BBEditGoals> with WidgetsBindingObserver {
                 Navigator.of(dialogContext).pop();
                 try {
                   await openAppSettings();
-                } catch (e) {
-                  print('Error opening settings: $e');
-                }
+                } catch (e) {}
               },
               child: const Text('Open Settings'),
             ),
@@ -492,9 +484,7 @@ class _BBEditGoalsState extends State<BBEditGoals> with WidgetsBindingObserver {
                                     onPressed: () async {
                                       try {
                                         await openAppSettings();
-                                      } catch (e) {
-                                        print('Error opening settings: $e');
-                                      }
+                                      } catch (e) {}
                                     },
                                     child: Text(
                                       'Settings',

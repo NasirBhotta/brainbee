@@ -19,7 +19,6 @@ void main(List<String> args) async {
 
   // Initialize Notifications
   await BBNotificationService().initialize();
-  // await NotificationService().initialize();
 
   runApp(
     MultiBlocProvider(
