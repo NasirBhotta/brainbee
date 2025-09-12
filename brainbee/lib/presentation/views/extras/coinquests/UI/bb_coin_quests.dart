@@ -19,16 +19,18 @@ class BBCoinQuestScreen extends StatefulWidget {
 }
 
 class _BBCoinQuestScreenState extends State<BBCoinQuestScreen> {
+  late QuestBloc _questBloc;
   @override
   void initState() {
     super.initState();
-    context.read<QuestBloc>().add(LoadQuests(widget.userId));
-    context.read<QuestBloc>().add(StartQuestPolling(widget.userId));
+    _questBloc = context.read<QuestBloc>();
+    _questBloc.add(LoadQuests(widget.userId));
+    _questBloc.add(StartQuestPolling(widget.userId));
   }
 
   @override
   void dispose() {
-    context.read<QuestBloc>().add(StopQuestPolling());
+    _questBloc.add(StopQuestPolling());
     super.dispose();
   }
 
@@ -58,6 +60,9 @@ class _BBCoinQuestScreenState extends State<BBCoinQuestScreen> {
       ),
       body: BlocConsumer<QuestBloc, QuestState>(
         listener: (context, state) {
+          if (!mounted) {
+            return;
+          }
           if (state is QuestClaimed) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

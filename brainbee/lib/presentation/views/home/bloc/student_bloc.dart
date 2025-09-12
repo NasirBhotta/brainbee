@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:bloc/bloc.dart';
 import 'package:brainbee/presentation/views/auth/models/user_model.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
+import 'package:brainbee/presentation/views/home/quizzes/models/quiz_model.dart';
 import 'package:brainbee/services/bb_notifications.dart';
 import 'package:brainbee/services/goalNotificationPrefrences/bb_goal_notification_prefrences.dart';
 import 'package:equatable/equatable.dart';

@@ -2,8 +2,11 @@ import 'package:brainbee/presentation/views/dashboard/UI/bb_dashboard.dart';
 import 'package:brainbee/presentation/views/extras/achievements/badges/UI/bb_badge_detail.dart';
 import 'package:brainbee/presentation/views/extras/achievements/badges/UI/bb_badge_view.dart';
 import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
+import 'package:brainbee/presentation/views/extras/coinquests/UI/bb_coin_quests.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_edit_goals.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
+import 'package:brainbee/presentation/views/home/quizzes/UI/bb_specific_book_quiz_selection.dart';
+import 'package:brainbee/presentation/views/home/quizzes/models/quiz_model.dart';
 import 'package:brainbee/presentation/views/onboarding/bb_combined_onbaord.dart';
 import 'package:flutter/material.dart';
 
@@ -15,6 +18,8 @@ class AppRoutes {
   static const String badgeView = '/badge-view';
   static const String badgeDetail = '/badge-detail';
   static const String editGoals = '/edit-goals';
+  static const String coinQuests = '/coin-quests';
+  static const String quizTaking = '/quiz-taking';
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
@@ -29,6 +34,20 @@ class AppRoutes {
       badgeDetail: (context) {
         final badge = ModalRoute.of(context)!.settings.arguments as BbBadge;
         return BadgeDetailScreen(badge: badge);
+      },
+
+      coinQuests: (context) {
+        final userId = ModalRoute.of(context)!.settings.arguments as String;
+        return BBCoinQuestScreen(userId: userId);
+      },
+
+      quizTaking: (context) {
+        final student =
+            ModalRoute.of(context)!.settings.arguments as StudentModel;
+        return BbSpecificBookQuizSelection(
+          student: student,
+          subject: 'Biology',
+        );
       },
     };
   }

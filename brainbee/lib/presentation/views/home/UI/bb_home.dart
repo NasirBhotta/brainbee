@@ -15,6 +15,7 @@ import 'package:brainbee/presentation/views/home/UI/bb_streak_popup.dart';
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 import 'package:brainbee/presentation/views/settings/UI/bb_settings.dart';
+import 'package:brainbee/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -28,6 +29,7 @@ class BBhome extends StatefulWidget {
 
 class _BBhomeState extends State<BBhome> {
   // Static data - moved to class level for better performance
+
   static const List<String> _imgPath = [
     'assets/trophy.png',
     'assets/coin.png',
@@ -168,7 +170,7 @@ class _BBhomeState extends State<BBhome> {
             SliverList.builder(
               itemBuilder: (context, index) {
                 if (index == 0) {
-                  return const _PromotionCard();
+                  return _PromotionCard(state as StudentDataLoaded);
                 }
 
                 final quiz = _quizzes[index - 1];
@@ -295,7 +297,8 @@ class _ProgressBarRow extends StatelessWidget {
 }
 
 class _PromotionCard extends StatelessWidget {
-  const _PromotionCard();
+  final StudentDataLoaded state;
+  const _PromotionCard(this.state);
 
   @override
   Widget build(BuildContext context) {
@@ -342,7 +345,13 @@ class _PromotionCard extends StatelessWidget {
                       color: BBColors.white,
                     ),
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.coinQuests,
+                          arguments: state.student.id,
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.zero,
                         backgroundColor: Colors.transparent,

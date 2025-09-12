@@ -7,6 +7,10 @@ import 'package:brainbee/presentation/views/extras/coinquests/bloc/quest_bloc.da
 import 'package:brainbee/presentation/views/extras/coinquests/services/api_service.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/services/notification_service.dart';
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
+import 'package:brainbee/presentation/views/home/quizzes/bloc/quiz_bloc.dart';
+import 'package:brainbee/presentation/views/home/quizzes/repositories/quiz_repository.dart';
+import 'package:brainbee/presentation/views/home/quizzes/repositories/quiz_repository_impl.dart';
+import 'package:brainbee/presentation/views/home/quizzes/services/quiz_api_service.dart';
 import 'package:brainbee/repositories/badge_repository.dart';
 import 'package:brainbee/routes/app_routes.dart';
 import 'package:brainbee/services/bb_notifications.dart';
@@ -39,6 +43,15 @@ void main(List<String> args) async {
               (_) => BadgeBloc(
                 repository: BadgeRepositoryImpl(
                   apiService: BadgeApiServiceImpl(),
+                ),
+              ),
+        ),
+
+        BlocProvider(
+          create:
+              (context) => QuizBloc(
+                quizRepository: QuizRepositoryImpl(
+                  apiService: QuizApiService(),
                 ),
               ),
         ),
