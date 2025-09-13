@@ -1,7 +1,11 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/widgets/AI/bb_chat_widget.dart';
+import 'package:brainbee/presentation/views/bot/bloc/bot_bloc.dart';
+import 'package:brainbee/presentation/views/bot/models/chat_message.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 
 enum ChatType { newChat, historyChat }
 
@@ -13,29 +17,13 @@ class BbInitialBotScreen extends StatefulWidget {
 }
 
 class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
-  // Sample chat history data
-  final List<ChatHistoryItem> chatHistory = [
-    ChatHistoryItem(
-      title: "General Inquiry Greeting",
-      date: DateTime(2024, 10, 15),
-    ),
-    ChatHistoryItem(
-      title: "General Inquiry: Hello",
-      date: DateTime(2024, 10, 14),
-    ),
-    ChatHistoryItem(
-      title: "How to solve quadratic equations?",
-      date: DateTime(2024, 10, 13),
-    ),
-    ChatHistoryItem(
-      title: "Explain photosynthesis process",
-      date: DateTime(2024, 10, 12),
-    ),
-    ChatHistoryItem(
-      title: "Grammar: Past vs Present tense",
-      date: DateTime(2024, 10, 11),
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Load chat history when screen initializes
+    // Replace 'student123' with actual student ID
+    context.read<BotBloc>().add(const LoadHistory(studentId: 'student123'));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,121 +32,16 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-
         title: Text('Ai Tutor', style: context.textStyle.titleMedium),
         centerTitle: true,
       ),
       body: Column(
         children: [
-          // AskBot Section
-          // Container(
-          //   width: double.infinity,
-          //   margin: const EdgeInsets.all(16),
-          //   padding: const EdgeInsets.all(20),
-          //   decoration: BoxDecoration(
-          //     borderRadius: BorderRadius.circular(20),
-          //     color: BBColors.successGreen,
-          //   ),
-          //   child: Row(
-          //     children: [
-          //       Expanded(
-          //         child: Column(
-          //           crossAxisAlignment: CrossAxisAlignment.start,
-          //           children: [
-          //             const Text(
-          //               'Ask PBot',
-          //               style: TextStyle(
-          //                 color: Colors.white,
-          //                 fontSize: 28,
-          //                 fontWeight: FontWeight.bold,
-          //               ),
-          //             ),
-          //             const SizedBox(height: 8),
-          //             Text(
-          //               'Get instant help with your questions',
-          //               style: TextStyle(
-          //                 color: Colors.white.withOpacity(0.9),
-          //                 fontSize: 14,
-          //               ),
-          //             ),
-          //           ],
-          //         ),
-          //       ),
-          //       Container(
-          //         width: 80,
-          //         height: 80,
-          //         decoration: BoxDecoration(
-          //           color: Colors.white.withOpacity(0.2),
-          //           shape: BoxShape.circle,
-          //         ),
-          //         child: Stack(
-          //           children: [
-          //             Center(
-          //               child: Container(
-          //                 width: 50,
-          //                 height: 50,
-          //                 decoration: const BoxDecoration(
-          //                   color: Colors.white,
-          //                   shape: BoxShape.circle,
-          //                 ),
-          //                 child: const Center(
-          //                   child: Icon(
-          //                     Icons.smart_toy_rounded,
-          //                     color: Colors.green,
-          //                     size: 30,
-          //                   ),
-          //                 ),
-          //               ),
-          //             ),
-          //             Positioned(
-          //               top: 15,
-          //               left: 20,
-          //               child: Container(
-          //                 width: 8,
-          //                 height: 8,
-          //                 decoration: const BoxDecoration(
-          //                   color: Colors.black,
-          //                   shape: BoxShape.circle,
-          //                 ),
-          //               ),
-          //             ),
-          //             Positioned(
-          //               top: 15,
-          //               right: 20,
-          //               child: Container(
-          //                 width: 8,
-          //                 height: 8,
-          //                 decoration: const BoxDecoration(
-          //                   color: Colors.black,
-          //                   shape: BoxShape.circle,
-          //                 ),
-          //               ),
-          //             ),
-          //             Positioned(
-          //               bottom: 20,
-          //               left: 25,
-          //               right: 25,
-          //               child: Container(
-          //                 height: 3,
-          //                 decoration: BoxDecoration(
-          //                   color: Colors.red,
-          //                   borderRadius: BorderRadius.circular(2),
-          //                 ),
-          //               ),
-          //             ),
-          //           ],
-          //         ),
-          //       ),
-          //     ],
-          //   ),
-          // ),
-
           // Start New Chat Button
           const SizedBox(height: 30),
           Container(
             width: double.infinity,
             margin: const EdgeInsets.symmetric(horizontal: 16),
-
             child: ElevatedButton(
               onPressed: _startNewChat,
               style: ElevatedButton.styleFrom(
@@ -179,7 +62,7 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
 
           const SizedBox(height: 30),
 
-          // History Section
+          // History Section with BLoC
           Expanded(
             child: Container(
               width: double.infinity,
@@ -196,7 +79,7 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
                   Padding(
                     padding: const EdgeInsets.all(20),
                     child: Text(
-                      'October 2024',
+                      'Chat History',
                       style: TextStyle(
                         color: Colors.grey[800],
                         fontSize: 18,
@@ -205,13 +88,17 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
                     ),
                   ),
 
-                  // History List
+                  // BLoC Consumer for History List
                   Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: chatHistory.length,
-                      itemBuilder: (context, index) {
-                        return _buildHistoryItem(chatHistory[index]);
+                    child: BlocBuilder<BotBloc, BotState>(
+                      builder: (context, state) {
+                        if (state is LoadHistoryInProgress) {
+                          return _buildShimmerLoading();
+                        } else if (state is LoadHistorySuccess) {
+                          return _buildHistoryList(state.chatSession.history);
+                        } else {
+                          return _buildEmptyState();
+                        }
                       },
                     ),
                   ),
@@ -224,7 +111,127 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
     );
   }
 
-  Widget _buildHistoryItem(ChatHistoryItem item) {
+  Widget _buildShimmerLoading() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: 6, // Show 6 shimmer items
+        itemBuilder: (context, index) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Row(
+              children: [
+                // Shimmer avatar
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Shimmer title
+                      Container(
+                        height: 16,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Shimmer subtitle
+                      Container(
+                        height: 12,
+                        width: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Shimmer menu button
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHistoryList(List<ChatMessage> messages) {
+    if (messages.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    // Group messages by conversation/session
+    // For now, we'll show each student message as a separate chat item
+    final studentMessages =
+        messages
+            .where((message) => message.sender == 'student')
+            .toList()
+            .reversed
+            .toList();
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: studentMessages.length,
+      itemBuilder: (context, index) {
+        return _buildHistoryItem(studentMessages[index], index);
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            'No chat history yet',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Start a new conversation with your AI tutor',
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryItem(ChatMessage message, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -254,16 +261,18 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.title,
+                  _truncateMessage(message.content),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     color: Colors.black87,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _formatDate(item.date),
+                  _formatDate(message.timestamp),
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
@@ -271,7 +280,7 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
           ),
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert, color: Colors.grey[600]),
-            onSelected: (value) => _handleMenuAction(value, item),
+            onSelected: (value) => _handleMenuAction(value, message, index),
             itemBuilder:
                 (context) => [
                   const PopupMenuItem(
@@ -281,16 +290,6 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
                         Icon(Icons.play_arrow, size: 20),
                         SizedBox(width: 8),
                         Text('Continue Chat'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'rename',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, size: 20),
-                        SizedBox(width: 8),
-                        Text('Rename'),
                       ],
                     ),
                   ),
@@ -309,6 +308,11 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
         ],
       ),
     );
+  }
+
+  String _truncateMessage(String message) {
+    if (message.length <= 50) return message;
+    return '${message.substring(0, 50)}...';
   }
 
   String _formatDate(DateTime date) {
@@ -335,10 +339,9 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
     );
   }
 
-  void _handleMenuAction(String action, ChatHistoryItem item) {
+  void _handleMenuAction(String action, ChatMessage message, int index) {
     switch (action) {
       case 'continue':
-        // Handle continue chat
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -347,52 +350,13 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
           ),
         );
         break;
-      case 'rename':
-        _showRenameDialog(item);
-        break;
       case 'delete':
-        _showDeleteDialog(item);
+        _showDeleteDialog(message, index);
         break;
     }
   }
 
-  void _showRenameDialog(ChatHistoryItem item) {
-    final TextEditingController controller = TextEditingController(
-      text: item.title,
-    );
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Rename Chat'),
-            content: TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                hintText: 'Enter new name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    item.title = controller.text;
-                  });
-                  Navigator.pop(context);
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  void _showDeleteDialog(ChatHistoryItem item) {
+  void _showDeleteDialog(ChatMessage message, int index) {
     showDialog(
       context: context,
       builder:
@@ -408,9 +372,7 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  setState(() {
-                    chatHistory.remove(item);
-                  });
+                  // Here you can add logic to delete from the actual data source
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -429,11 +391,4 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
           ),
     );
   }
-}
-
-class ChatHistoryItem {
-  String title;
-  final DateTime date;
-
-  ChatHistoryItem({required this.title, required this.date});
 }

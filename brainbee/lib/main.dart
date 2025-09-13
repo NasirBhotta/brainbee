@@ -1,6 +1,9 @@
 import 'package:brainbee/core/theme/bb_theme.dart';
 import 'package:brainbee/presentation/splashscreen/splash_screen.dart';
 import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
+import 'package:brainbee/presentation/views/bot/bloc/bot_bloc.dart';
+import 'package:brainbee/presentation/views/bot/repository/chat_repository.dart';
+import 'package:brainbee/presentation/views/bot/services/api_services.dart';
 import 'package:brainbee/presentation/views/extras/achievements/badges/bloc/badge_bloc.dart';
 import 'package:brainbee/presentation/views/extras/achievements/badges/services/badge_api_services.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/bloc/quest_bloc.dart';
@@ -8,7 +11,6 @@ import 'package:brainbee/presentation/views/extras/coinquests/services/api_servi
 import 'package:brainbee/presentation/views/extras/coinquests/services/notification_service.dart';
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/bloc/quiz_bloc.dart';
-import 'package:brainbee/presentation/views/home/quizzes/repositories/quiz_repository.dart';
 import 'package:brainbee/presentation/views/home/quizzes/repositories/quiz_repository_impl.dart';
 import 'package:brainbee/presentation/views/home/quizzes/services/quiz_api_service.dart';
 import 'package:brainbee/repositories/badge_repository.dart';
@@ -53,6 +55,13 @@ void main(List<String> args) async {
                 quizRepository: QuizRepositoryImpl(
                   apiService: QuizApiService(),
                 ),
+              ),
+        ),
+
+        BlocProvider(
+          create:
+              (context) => BotBloc(
+                repository: BotRepository(apiService: BotApiService()),
               ),
         ),
       ],
