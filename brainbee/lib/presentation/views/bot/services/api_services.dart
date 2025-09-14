@@ -1,16 +1,16 @@
 import 'dart:convert';
-import 'package:brainbee/presentation/views/bot/models/chat_session.dart';
 import 'package:http/http.dart' as http;
+import '../models/chat_session.dart';
 
 class BotApiService {
   final String sendUrl = "http://localhost:5000/api/ai/chatbot";
   final String historyUrl = "http://localhost:5000/api/ai/chatbot/history";
 
-  /// Send a new question and get the AI answer
+  /// Send a message to chatbot and get AI response
   Future<String> sendMessage({
     required String studentId,
-    required String subject,
     required String question,
+    String? sessionId, // optional (existing session)
   }) async {
     try {
       final response = await http.post(
@@ -18,8 +18,8 @@ class BotApiService {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "student_id": studentId,
-          "subject": subject,
           "question": question,
+          "session_id": sessionId, // backend decides if new or existing session
         }),
       );
 
@@ -34,8 +34,8 @@ class BotApiService {
     }
   }
 
-  /// Fetch chat history for a student
-  Future<ChatSession?> getChatHistory({required String studentId}) async {
+  /// Fetch ALL chat sessions of a student
+  Future<List<ChatSession>> getChatHistory({required String studentId}) async {
     try {
       final response = await http.post(
         Uri.parse(historyUrl),
@@ -44,13 +44,13 @@ class BotApiService {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return ChatSession.fromJson(data);
+        final data = jsonDecode(response.body) as List;
+        return data.map((session) => ChatSession.fromJson(session)).toList();
       } else {
-        return null;
+        return [];
       }
     } catch (e) {
-      return null;
+      return [];
     }
   }
 }

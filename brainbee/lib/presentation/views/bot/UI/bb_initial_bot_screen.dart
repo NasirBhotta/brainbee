@@ -3,6 +3,7 @@ import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/widgets/AI/bb_chat_widget.dart';
 import 'package:brainbee/presentation/views/bot/bloc/bot_bloc.dart';
 import 'package:brainbee/presentation/views/bot/models/chat_message.dart';
+import 'package:brainbee/presentation/views/bot/models/chat_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shimmer/shimmer.dart';
@@ -22,7 +23,9 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
     super.initState();
     // Load chat history when screen initializes
     // Replace 'student123' with actual student ID
-    context.read<BotBloc>().add(const LoadHistory(studentId: 'student123'));
+    context.read<BotBloc>().add(
+      const LoadHistory(studentId: '6883d69eed4b4da8e4cfd921'),
+    );
   }
 
   @override
@@ -95,7 +98,7 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
                         if (state is LoadHistoryInProgress) {
                           return _buildShimmerLoading();
                         } else if (state is LoadHistorySuccess) {
-                          return _buildHistoryList(state.chatSession.history);
+                          return _buildHistoryList(state.chatSession);
                         } else {
                           return _buildEmptyState();
                         }
@@ -182,25 +185,25 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
     );
   }
 
-  Widget _buildHistoryList(List<ChatMessage> messages) {
-    if (messages.isEmpty) {
+  Widget _buildHistoryList(List<ChatSession> sessions) {
+    if (sessions.isEmpty) {
       return _buildEmptyState();
     }
 
     // Group messages by conversation/session
     // For now, we'll show each student message as a separate chat item
-    final studentMessages =
-        messages
-            .where((message) => message.sender == 'student')
-            .toList()
-            .reversed
-            .toList();
+    // final studentMessages =
+    //     messages
+    //         .where((message) => message.sender == 'student')
+    //         .toList()
+    //         .reversed
+    //         .toList();
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: studentMessages.length,
+      itemCount: sessions.length,
       itemBuilder: (context, index) {
-        return _buildHistoryItem(studentMessages[index], index);
+        return _buildHistoryItem(sessions[index], index);
       },
     );
   }
@@ -231,7 +234,7 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
     );
   }
 
-  Widget _buildHistoryItem(ChatMessage message, int index) {
+  Widget _buildHistoryItem(ChatSession session, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -261,7 +264,7 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _truncateMessage(message.content),
+                  _truncateMessage(session.messages.first.content),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -272,7 +275,7 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _formatDate(message.timestamp),
+                  _formatDate(session.createdAt),
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
@@ -280,7 +283,7 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
           ),
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert, color: Colors.grey[600]),
-            onSelected: (value) => _handleMenuAction(value, message, index),
+            onSelected: (value) => _handleMenuAction(value, session, index),
             itemBuilder:
                 (context) => [
                   const PopupMenuItem(
@@ -339,7 +342,7 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
     );
   }
 
-  void _handleMenuAction(String action, ChatMessage message, int index) {
+  void _handleMenuAction(String action, ChatSession session, int index) {
     switch (action) {
       case 'continue':
         Navigator.push(
@@ -351,7 +354,7 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
         );
         break;
       case 'delete':
-        _showDeleteDialog(message, index);
+        _showDeleteDialog(session.messages.first, index);
         break;
     }
   }

@@ -18,15 +18,11 @@ class LoadHistory extends BotEvent {
 
 class SendMessage extends BotEvent {
   final String studentId;
-  final String subject;
+
   final String question;
 
-  const SendMessage({
-    required this.studentId,
-    required this.subject,
-    required this.question,
-  });
+  const SendMessage({required this.studentId, required this.question});
 
   @override
-  List<Object> get props => [studentId, subject, question];
+  List<Object> get props => [studentId, question];
 }

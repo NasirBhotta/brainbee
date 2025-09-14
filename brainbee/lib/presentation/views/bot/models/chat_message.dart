@@ -1,6 +1,6 @@
 class ChatMessage {
   final String sender; // "student" or "ai"
-  final String content; // actual text
+  final String content;
   final DateTime timestamp;
 
   ChatMessage({

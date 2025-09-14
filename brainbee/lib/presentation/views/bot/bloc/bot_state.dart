@@ -12,7 +12,7 @@ final class BotInitial extends BotState {}
 final class LoadHistoryInProgress extends BotState {}
 
 final class LoadHistorySuccess extends BotState {
-  final ChatSession chatSession;
+  final List<ChatSession> chatSession;
 
   const LoadHistorySuccess(this.chatSession);
 
