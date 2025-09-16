@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:bloc/bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
-import 'package:brainbee/core/models/bb_chapter.dart';
 import 'package:brainbee/presentation/views/home/quizzes/models/quiz_model.dart';
 import 'package:brainbee/presentation/views/home/quizzes/repositories/quiz_repository.dart';
 import 'package:equatable/equatable.dart';

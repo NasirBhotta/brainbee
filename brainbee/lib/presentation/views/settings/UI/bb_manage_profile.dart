@@ -15,8 +15,8 @@ class _BbManageProfileState extends State<BbManageProfile> {
 
   // Controllers for form fields
   final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _nicknameController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
@@ -140,8 +140,8 @@ class _BbManageProfileState extends State<BbManageProfile> {
   @override
   void dispose() {
     _usernameController.dispose();
-    _fullNameController.dispose();
-    _nicknameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _mobileController.dispose();
     _dobController.dispose();
@@ -230,19 +230,24 @@ class _BbManageProfileState extends State<BbManageProfile> {
               const SizedBox(height: 16),
 
               _buildTextField(
-                controller: _fullNameController,
-                label: 'Full Name',
+                controller: _firstNameController,
+                label: 'First Name',
                 isRequired: true,
               ),
 
               const SizedBox(height: 16),
 
               _buildTextField(
-                controller: _nicknameController,
-                label: 'Nickname',
+                controller: _lastNameController,
+                label: 'Last Name',
                 isRequired: true,
               ),
 
+              // _buildTextField(
+              //   controller: _nickNameController,
+              //   label: 'Nickname',
+              //   isRequired: true,
+              // ),
               const SizedBox(height: 30),
 
               // Contact Section
