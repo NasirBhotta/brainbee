@@ -1,21 +1,24 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:brainbee/presentation/views/auth/models/user_model.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
-import 'package:brainbee/presentation/views/home/quizzes/models/quiz_model.dart';
 import 'package:brainbee/services/bb_notifications.dart';
 import 'package:brainbee/services/goalNotificationPrefrences/bb_goal_notification_prefrences.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 part 'student_event.dart';
 part 'student_state.dart';
 
 class StudentBloc extends Bloc<StudentEvent, StudentState> {
   final BBNotificationService _notificationService = BBNotificationService();
+  static const String baseUrl = "http://10.0.2.2:5000";
 
   final Map<String, dynamic> response = {
     "status": "success",
@@ -59,6 +62,7 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
   StudentBloc() : super(StudentInitial()) {
     on<StudentFetchData>(_onStudentFetchData);
     on<StudentUpdateGoals>(_onStudentUpdateGoals);
+    on<StudentUpdateProfile>(_onStudentUpdateProfile);
   }
 
   Future<Map<String, dynamic>> _getTokenAndUser() async {
@@ -73,7 +77,6 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
           final userMap = jsonDecode(userData);
           user = UserModel.fromJson(userMap);
         } catch (e) {
-          // Clear corrupted data
           await _removeTokenAndUser();
         }
       }
@@ -105,6 +108,7 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
       final tokenAndUser = await _getTokenAndUser();
       final token = tokenAndUser['token'] as String;
       final user = tokenAndUser['user'] as UserModel;
+
       response['user']['id'] = user.id;
       response['user']['email'] = user.email;
       response['user']['firstName'] = user.firstName;
@@ -113,11 +117,121 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
       response['status'] = user.status;
 
       final studentData = StudentModel.fromJson(response);
-
       emit(StudentDataLoaded(studentData));
     } catch (e) {
-      print(e);
       emit(StudentDataError(e.toString()));
+    }
+  }
+
+  FutureOr<void> _onStudentUpdateProfile(
+    StudentUpdateProfile event,
+    Emitter<StudentState> emit,
+  ) async {
+    emit(StudentDataLoading());
+
+    try {
+      final tokenAndUser = await _getTokenAndUser();
+      final token = tokenAndUser['token'] as String;
+      final user = tokenAndUser['user'] as UserModel;
+
+      if (token.isEmpty) {
+        emit(StudentDataError("Authentication token not found"));
+        return;
+      }
+
+      // Update profile image
+      await _updateProfileImage(event.image, token);
+
+      // Update other profile data
+      await _updateProfileData(event, token);
+
+      // Update local response data
+      response['user']['firstName'] = event.firstName;
+      response['user']['lastName'] = event.lastName;
+
+      final studentData = StudentModel.fromJson(response);
+      emit(StudentUpdateProfileSuccess("Profile updated successfully"));
+      emit(StudentDataLoaded(studentData));
+    } catch (e) {
+      String errorMessage = "Error updating profile: ${e.toString()}";
+
+      if (e.toString().contains('Connection refused')) {
+        errorMessage =
+            "Cannot connect to server. Please check your connection.";
+      } else if (e.toString().contains('TimeoutException')) {
+        errorMessage =
+            "Request timed out. Please check your internet connection.";
+      }
+
+      emit(StudentUpdateProfileFailure(errorMessage));
+    }
+  }
+
+  Future<void> _updateProfileImage(File image, String token) async {
+    final uri = Uri.parse("$baseUrl/api/auth/update-profile-pic");
+    var request = http.MultipartRequest('POST', uri);
+
+    request.headers['Authorization'] = 'Bearer $token';
+
+    // Determine MIME type from file extension
+    String fileExtension = image.path.split('.').last.toLowerCase();
+    MediaType contentType;
+
+    switch (fileExtension) {
+      case 'jpg':
+      case 'jpeg':
+        contentType = MediaType('image', 'jpeg');
+        break;
+      case 'png':
+        contentType = MediaType('image', 'png');
+        break;
+      case 'gif':
+        contentType = MediaType('image', 'gif');
+        break;
+      default:
+        contentType = MediaType('image', 'jpeg');
+    }
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'profileImage',
+        image.path,
+        contentType: contentType,
+      ),
+    );
+
+    var streamedResponse = await request.send().timeout(
+      const Duration(seconds: 30),
+    );
+    var response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update profile image: ${response.body}');
+    }
+  }
+
+  Future<void> _updateProfileData(
+    StudentUpdateProfile event,
+    String token,
+  ) async {
+    final response = await http
+        .post(
+          Uri.parse("$baseUrl/api/auth/update-profile"),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+          body: jsonEncode({
+            "firstName": event.firstName,
+            "lastName": event.lastName,
+            "address": event.address,
+            "phone": event.phoneNumber,
+          }),
+        )
+        .timeout(const Duration(seconds: 30));
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update profile data: ${response.body}');
     }
   }
 
@@ -176,28 +290,15 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
           );
         }
       } else if (!goalNotificationsEnabled) {
-        print('ℹ️  Goal notifications disabled - no reminders scheduled');
+        print('Goal notifications disabled - no reminders scheduled');
       } else {
-        print('ℹ️  No reminders to schedule');
+        print('No reminders to schedule');
       }
 
       emit(StudentUpdateGoalsSuccess(studentData.goal));
       emit(StudentDataLoaded(studentData));
     } catch (e) {
       emit(StudentUpdateGoalsFailure(e.toString()));
-    }
-  }
-
-  /// Check if notification permission is granted
-  Future<bool> _checkNotificationPermission() async {
-    try {
-      final status = await Permission.notification.status;
-      final hasPermission = status.isGranted;
-      print('Notification permission check: $hasPermission');
-      return hasPermission;
-    } catch (e) {
-      print('Error checking notification permission: $e');
-      return false;
     }
   }
 

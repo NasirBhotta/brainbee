@@ -1,7 +1,13 @@
+import 'dart:io';
+
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
+import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
+import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 
 class BbManageProfile extends StatefulWidget {
   const BbManageProfile({super.key});
@@ -14,7 +20,6 @@ class _BbManageProfileState extends State<BbManageProfile> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers for form fields
-  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -27,6 +32,10 @@ class _BbManageProfileState extends State<BbManageProfile> {
   String _selectedCity = 'Lahore';
   String _selectedSchool = 'Your school';
   List<String> _cities = [];
+  File? _image;
+  String? _existingImageUrl; // For storing existing profile image URL
+  bool _hasDataLoaded = false; // Track if we've loaded data once
+
   final Map<String, List<String>> pakistanStatesAndCities = {
     "Punjab": [
       "Lahore",
@@ -101,7 +110,7 @@ class _BbManageProfileState extends State<BbManageProfile> {
       "Nagar",
     ],
     "Islamabad Capital Territory": [
-      "Islamabad", // Single city, capital
+      "Islamabad",
       "Bari Imam",
       "Sihala",
       "Rawat",
@@ -113,6 +122,7 @@ class _BbManageProfileState extends State<BbManageProfile> {
       "G-13",
     ],
   };
+
   final List<String> _states = [
     'Punjab',
     'Sindh',
@@ -133,13 +143,14 @@ class _BbManageProfileState extends State<BbManageProfile> {
   @override
   void initState() {
     super.initState();
-
     _cities = pakistanStatesAndCities[_selectedState]!;
+
+    // Fetch student data when screen loads
+    context.read<StudentBloc>().add(const StudentFetchData());
   }
 
   @override
   void dispose() {
-    _usernameController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
@@ -150,256 +161,448 @@ class _BbManageProfileState extends State<BbManageProfile> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text('Manage Account', style: context.textStyle.titleMedium),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  void _populateFields(StudentModel student) {
+    if (!_hasDataLoaded) {
+      _emailController.text = student.email ?? '';
+      _firstNameController.text = student.firstName ?? '';
+      _lastNameController.text = student.lastName ?? '';
+
+      // Populate other fields if available in the model
+      // Note: You may need to add these fields to your StudentModel
+      // _mobileController.text = student.phoneNumber ?? '';
+      // _dobController.text = student.dateOfBirth ?? '';
+      // _addressController.text = student.address ?? '';
+      // _postcodeController.text = student.postcode ?? '';
+
+      // Set existing profile image URL if available
+      // _existingImageUrl = student.profileImageUrl;
+
+      _hasDataLoaded = true;
+    }
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+      maxWidth: 1024,
+      maxHeight: 1024,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<void> _pickImageFromGallery() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1024,
+      maxHeight: 1024,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+    }
+  }
+
+  void _showImagePicker() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
             children: [
-              // Profile Picture Section
-              Center(
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.green[600],
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'N',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: Colors.blue[600],
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: const Icon(
-                          Icons.edit,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Camera'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImageFromCamera();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Gallery'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImageFromGallery();
+                },
+              ),
+              if (_image != null || _existingImageUrl != null)
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: const Text('Remove Photo'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    setState(() {
+                      _image = null;
+                      _existingImageUrl = null;
+                    });
+                  },
                 ),
-              ),
-
-              const SizedBox(height: 30),
-
-              // Name Section
-              _buildSectionHeader('Name'),
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _usernameController,
-                label: 'Username',
-                isRequired: true,
-              ),
-
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _firstNameController,
-                label: 'First Name',
-                isRequired: true,
-              ),
-
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _lastNameController,
-                label: 'Last Name',
-                isRequired: true,
-              ),
-
-              // _buildTextField(
-              //   controller: _nickNameController,
-              //   label: 'Nickname',
-              //   isRequired: true,
-              // ),
-              const SizedBox(height: 30),
-
-              // Contact Section
-              _buildSectionHeader('Contact'),
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _emailController,
-                label: 'Email',
-                keyboardType: TextInputType.emailAddress,
-              ),
-
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _mobileController,
-                label: 'Mobile',
-                isRequired: true,
-                keyboardType: TextInputType.phone,
-              ),
-
-              const SizedBox(height: 30),
-
-              // Info Section
-              _buildSectionHeader('Info'),
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _dobController,
-                label: 'Date of Birth',
-                isRequired: true,
-                readOnly: true,
-                suffixIcon: const Icon(
-                  Icons.calendar_today,
-                  color: Colors.grey,
-                ),
-                onTap: () => _selectDate(context),
-              ),
-
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _addressController,
-                label: 'Home Address',
-                maxLines: 3,
-              ),
-
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _postcodeController,
-                label: 'Postcode',
-                keyboardType: TextInputType.number,
-              ),
-
-              const SizedBox(height: 16),
-
-              _buildDropdownField(
-                value: _selectedState,
-                label: 'State',
-                items: _states,
-                onChanged:
-                    (value) => {
-                      setState(() {
-                        _selectedState = value!;
-
-                        _cities = pakistanStatesAndCities[_selectedState]!;
-                        _selectedCity =
-                            pakistanStatesAndCities[_selectedState]![0];
-                      }),
-                    },
-              ),
-
-              const SizedBox(height: 16),
-
-              _buildDropdownField(
-                value: _selectedCity,
-                label: 'City',
-                items: _cities,
-                onChanged: (value) => setState(() => _selectedCity = value!),
-              ),
-
-              const SizedBox(height: 16),
-
-              _buildDropdownField(
-                value: _selectedSchool,
-                label: 'School',
-                items: _schools,
-                onChanged: (value) => setState(() => _selectedSchool = value!),
-              ),
-
-              const SizedBox(height: 40),
-
-              // Update Profile Button
-              Container(
-                width: context.screenWidth,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  gradient: const LinearGradient(
-                    colors: [BBColors.primaryColor, BBColors.secondaryColor],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: ElevatedButton(
-                  onPressed: _updateProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                  ),
-                  child: Text(
-                    'Update Profile',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: BBColors.white,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Delete Account Section
-              Center(
-                child: Column(
-                  children: [
-                    Text(
-                      "Don't want to use BrainBee anymore?",
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: _showDeleteAccountDialog,
-                      child: const Text(
-                        'Delete My Account',
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProfileImage() {
+    if (_image != null) {
+      // Show newly selected image
+      return CircleAvatar(radius: 60, backgroundImage: FileImage(_image!));
+    } else if (_existingImageUrl != null && _existingImageUrl!.isNotEmpty) {
+      // Show existing profile image from server
+      return CircleAvatar(
+        radius: 60,
+        backgroundImage: NetworkImage(_existingImageUrl!),
+        onBackgroundImageError: (exception, stackTrace) {
+          // Handle image loading error
+          print('Error loading profile image: $exception');
+        },
+        child:
+            _existingImageUrl!.isEmpty
+                ? const Icon(Icons.person, size: 60, color: Colors.white)
+                : null,
+      );
+    } else {
+      // Show default placeholder
+      return Container(
+        width: 120,
+        height: 120,
+        decoration: BoxDecoration(
+          color: Colors.green[600],
+          shape: BoxShape.circle,
         ),
-      ),
+        child: const Center(
+          child: Icon(Icons.person, color: Colors.white, size: 60),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<StudentBloc, StudentState>(
+      listener: (context, state) {
+        if (state is StudentUpdateProfileSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else if (state is StudentUpdateProfileFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.error),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        // Show loading screen during data fetch or update
+        if (state is StudentDataLoading) {
+          return Scaffold(
+            backgroundColor: Colors.grey[50],
+            appBar: AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                onPressed: () => Navigator.pop(context),
+              ),
+              title: Text(
+                'Manage Account',
+                style: context.textStyle.titleMedium,
+              ),
+              centerTitle: true,
+            ),
+            body: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Loading profile...'),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Populate fields when data is loaded
+        if (state is StudentDataLoaded) {
+          _populateFields(state.student);
+        }
+
+        return Scaffold(
+          backgroundColor: Colors.grey[50],
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black87),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Text('Manage Account', style: context.textStyle.titleMedium),
+            centerTitle: true,
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Profile Picture Section
+                  GestureDetector(
+                    onTap: _showImagePicker,
+                    child: Center(
+                      child: Stack(
+                        children: [
+                          _buildProfileImage(),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: BBColors.primaryColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 3,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Name Section
+                  _buildSectionHeader('Name'),
+                  const SizedBox(height: 16),
+
+                  _buildTextField(
+                    controller: _firstNameController,
+                    label: 'First Name',
+                    isRequired: true,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  _buildTextField(
+                    controller: _lastNameController,
+                    label: 'Last Name',
+                    isRequired: true,
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Contact Section
+                  _buildSectionHeader('Contact'),
+                  const SizedBox(height: 16),
+
+                  _buildTextField(
+                    controller: _emailController,
+                    label: 'Email',
+                    keyboardType: TextInputType.emailAddress,
+                    isRequired: false,
+                    enabled: false,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  _buildTextField(
+                    controller: _mobileController,
+                    label: 'Mobile',
+                    isRequired: false,
+                    keyboardType: TextInputType.phone,
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Info Section
+                  _buildSectionHeader('Additional Info'),
+                  const SizedBox(height: 16),
+
+                  _buildTextField(
+                    controller: _dobController,
+                    label: 'Date of Birth',
+                    isRequired: false,
+                    readOnly: true,
+                    suffixIcon: const Icon(
+                      Icons.calendar_today,
+                      color: Colors.grey,
+                    ),
+                    onTap: () => _selectDate(context),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  _buildTextField(
+                    controller: _addressController,
+                    label: 'Home Address',
+                    maxLines: 3,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  _buildTextField(
+                    controller: _postcodeController,
+                    label: 'Postcode',
+                    keyboardType: TextInputType.number,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  _buildDropdownField(
+                    value: _selectedState,
+                    label: 'State',
+                    items: _states,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedState = value!;
+                        _cities = pakistanStatesAndCities[_selectedState]!;
+                        _selectedCity = _cities[0];
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  _buildDropdownField(
+                    value: _selectedCity,
+                    label: 'City',
+                    items: _cities,
+                    onChanged:
+                        (value) => setState(() => _selectedCity = value!),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  _buildDropdownField(
+                    value: _selectedSchool,
+                    label: 'School',
+                    items: _schools,
+                    onChanged:
+                        (value) => setState(() => _selectedSchool = value!),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // Update Profile Button
+                  Container(
+                    width: context.screenWidth,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      gradient: const LinearGradient(
+                        colors: [
+                          BBColors.primaryColor,
+                          BBColors.secondaryColor,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: ElevatedButton(
+                      onPressed:
+                          state is StudentDataLoading ? null : _updateProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child:
+                          state is StudentDataLoading
+                              ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                              : Text(
+                                'Update Profile',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium?.copyWith(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: BBColors.white,
+                                ),
+                              ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Delete Account Section
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          "Don't want to use BrainBee anymore?",
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _showDeleteAccountDialog,
+                          child: const Text(
+                            'Delete My Account',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -422,7 +625,7 @@ class _BbManageProfileState extends State<BbManageProfile> {
     int maxLines = 1,
     bool readOnly = false,
     Widget? suffixIcon,
-
+    bool? enabled,
     VoidCallback? onTap,
   }) {
     return Column(
@@ -444,9 +647,10 @@ class _BbManageProfileState extends State<BbManageProfile> {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          enabled: enabled,
           style: Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(fontSize: 12, color: Colors.black),
+          ).textTheme.bodyMedium?.copyWith(fontSize: 14, color: Colors.black),
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
@@ -454,25 +658,38 @@ class _BbManageProfileState extends State<BbManageProfile> {
           onTap: onTap,
           decoration: InputDecoration(
             hintText: "Enter $label",
-
             hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontSize: 12,
+              fontSize: 14,
               color: BBColors.bodyText,
             ),
-
             contentPadding: EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: label.startsWith('Home') ? 5 : 2,
+              horizontal: 16,
+              vertical: maxLines > 1 ? 12 : 16,
             ),
             filled: true,
-            fillColor: Colors.white,
-
+            fillColor: enabled == false ? Colors.grey[100] : Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: BBColors.primaryColor),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
             suffixIcon: suffixIcon,
           ),
           validator:
               isRequired
                   ? (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return '$label is required';
                     }
                     return null;
@@ -506,7 +723,7 @@ class _BbManageProfileState extends State<BbManageProfile> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey[300]!),
           ),
           child: DropdownButtonHideUnderline(
@@ -522,7 +739,7 @@ class _BbManageProfileState extends State<BbManageProfile> {
                       child: Text(
                         item,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontSize: 12,
+                          fontSize: 14,
                           color: Colors.black,
                         ),
                       ),
@@ -541,24 +758,62 @@ class _BbManageProfileState extends State<BbManageProfile> {
       initialDate: DateTime(2011, 1, 1),
       firstDate: DateTime(1950),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: BBColors.primaryColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() {
         _dobController.text =
-            "${picked.year}-${picked.month.toString()}-${picked.day.toString().padLeft(2, '0')}";
+            "${picked.day.toString().padLeft(2, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.year}";
       });
     }
   }
 
   void _updateProfile() {
     if (_formKey.currentState!.validate()) {
-      // Handle profile update logic here
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      // Only require image if no existing image and no new image selected
+      if (_image == null &&
+          (_existingImageUrl == null || _existingImageUrl!.isEmpty)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a profile image'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      // Only update image if a new one is selected
+      if (_image != null) {
+        context.read<StudentBloc>().add(
+          StudentUpdateProfile(
+            image: _image!,
+            firstName: _firstNameController.text.trim(),
+            lastName: _lastNameController.text.trim(),
+            address: _addressController.text.trim(),
+            phoneNumber: _mobileController.text.trim(),
+          ),
+        );
+      } else {
+        // Handle other profile updates without image
+        // You might want to create a separate event for this
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully!'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -567,25 +822,46 @@ class _BbManageProfileState extends State<BbManageProfile> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Delete Account'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: const Text(
+            'Delete Account',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           content: const Text(
-            'Are you sure you want to delete your account? This action cannot be undone.',
+            'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Cancel'),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 // Handle account deletion logic here
+                _showAccountDeletionConfirmation();
               },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Delete'),
             ),
           ],
         );
       },
+    );
+  }
+
+  void _showAccountDeletionConfirmation() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Account deletion feature will be implemented soon'),
+        backgroundColor: Colors.orange,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }

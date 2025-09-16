@@ -43,3 +43,21 @@ final class StudentUpdateGoalsFailure extends StudentState {
   @override
   List<Object> get props => [message];
 }
+
+final class StudentUpdateProfileSuccess extends StudentState {
+  final String message;
+
+  const StudentUpdateProfileSuccess(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+final class StudentUpdateProfileFailure extends StudentState {
+  final String error;
+
+  const StudentUpdateProfileFailure(this.error);
+
+  @override
+  List<Object> get props => [error];
+}
