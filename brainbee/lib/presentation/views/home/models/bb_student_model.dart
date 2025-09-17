@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:brainbee/presentation/views/auth/models/user_model.dart';
 import 'package:brainbee/presentation/views/extras/achievements/models/bb_achievement_model.dart';
 import 'package:brainbee/presentation/views/extras/leaderboard/models/bb_leaderboard_class.dart';
@@ -20,8 +22,10 @@ class StudentModel extends UserModel {
   final int score;
   final Map<String, String> chapterLevels;
   final Map<String, TopicPerformance>? topicPerformance;
+  final String profileImage;
 
   StudentModel({
+    required this.profileImage,
     required super.id,
     required super.email,
     required super.firstName,
@@ -51,6 +55,7 @@ class StudentModel extends UserModel {
     final user = json['user'];
 
     return StudentModel(
+      profileImage: user["profileImage"],
       id: user['id'] ?? user['_id'] ?? '',
       email: user['email'] ?? '',
       firstName: user['firstName'] ?? '',
@@ -94,6 +99,7 @@ class StudentModel extends UserModel {
       'status': status,
       'accessToken': token,
       'user': {
+        'profileImage': profileImage,
         'id': id,
         'email': email,
         'firstName': firstName,

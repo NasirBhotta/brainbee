@@ -1,38 +1,52 @@
 part of 'auth_bloc.dart';
 
 @immutable
-sealed class AuthState extends Equatable {
+abstract class AuthState extends Equatable {
+  const AuthState();
+
   @override
   List<Object?> get props => [];
 }
 
-abstract class AuthActionState extends AuthState {}
+class AuthInitial extends AuthState {}
 
-final class AuthInitial extends AuthState {}
+class AuthLoadingState extends AuthState {}
 
-final class AuthLoadingState extends AuthState {}
-
-final class AuthSuccessState extends AuthState {}
-
-final class AuthAuthenticated extends AuthState {
+class AuthAuthenticated extends AuthState {
   final UserModel user;
   final String token;
 
-  AuthAuthenticated({required this.user, required this.token});
+  const AuthAuthenticated({required this.user, required this.token});
 
   @override
   List<Object?> get props => [user, token];
 }
 
-final class AuthFailureState extends AuthState {
+class AuthFailureState extends AuthState {
   final String message;
 
-  AuthFailureState({required this.message});
+  const AuthFailureState({required this.message});
+
+  @override
+  List<Object?> get props => [message];
 }
 
-final class AuthLoggedOut extends AuthState {}
-//
+class AuthLoggedOut extends AuthState {}
 
-final class NavigateToDashboardActionState extends AuthActionState {}
+class AuthPasswordResetSentState extends AuthState {
+  final String message;
 
-final class NavigateToForgotPasswordAction extends AuthActionState {}
+  const AuthPasswordResetSentState({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}
+
+// Action States (for navigation)
+abstract class AuthActionState extends AuthState {}
+
+class NavigateToDashboardActionState extends AuthActionState {}
+
+class NavigateToLoginActionState extends AuthActionState {}
+
+class NavigateToSignupActionState extends AuthActionState {}

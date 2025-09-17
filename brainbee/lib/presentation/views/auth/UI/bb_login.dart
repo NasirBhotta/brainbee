@@ -2,7 +2,6 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/scroll_controller.dart';
 import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
-import 'package:brainbee/presentation/views/dashboard/UI/bb_dashboard.dart';
 import 'package:brainbee/routes/app_routes.dart';
 
 import 'package:flutter/material.dart';

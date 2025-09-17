@@ -5,6 +5,7 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -175,8 +176,8 @@ class _BbManageProfileState extends State<BbManageProfile> {
       // _postcodeController.text = student.postcode ?? '';
 
       // Set existing profile image URL if available
-      // _existingImageUrl = student.profileImageUrl;
-
+      _existingImageUrl = student.profileImage;
+      print("Existing image is $_existingImageUrl");
       _hasDataLoaded = true;
     }
   }
@@ -263,15 +264,19 @@ class _BbManageProfileState extends State<BbManageProfile> {
       // Show existing profile image from server
       return CircleAvatar(
         radius: 60,
-        backgroundImage: NetworkImage(_existingImageUrl!),
-        onBackgroundImageError: (exception, stackTrace) {
-          // Handle image loading error
-          print('Error loading profile image: $exception');
-        },
-        child:
-            _existingImageUrl!.isEmpty
-                ? const Icon(Icons.person, size: 60, color: Colors.white)
-                : null,
+        backgroundColor: Colors.grey[200],
+        child: ClipOval(
+          child: CachedNetworkImage(
+            imageUrl: _existingImageUrl!,
+            width: 120,
+            height: 120,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => const CircularProgressIndicator(),
+            errorWidget:
+                (context, url, error) =>
+                    const Icon(Icons.person, size: 60, color: Colors.grey),
+          ),
+        ),
       );
     } else {
       // Show default placeholder
@@ -344,6 +349,7 @@ class _BbManageProfileState extends State<BbManageProfile> {
 
         // Populate fields when data is loaded
         if (state is StudentDataLoaded) {
+          print("fetched data is here ${(state).student}");
           _populateFields(state.student);
         }
 
