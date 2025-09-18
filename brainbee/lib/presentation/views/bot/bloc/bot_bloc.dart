@@ -3,7 +3,10 @@ import 'package:bloc/bloc.dart';
 import 'package:brainbee/presentation/views/bot/models/chat_message.dart';
 import 'package:brainbee/presentation/views/bot/models/chat_session.dart';
 import 'package:brainbee/presentation/views/bot/repository/chat_repository.dart';
+import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 part 'bot_event.dart';
 part 'bot_state.dart';
@@ -14,47 +17,8 @@ class BotBloc extends Bloc<BotEvent, BotState> {
   BotBloc({required this.repository}) : super(BotInitial()) {
     on<LoadHistory>(_onLoadHistory);
     on<SendMessage>(_onSendMessage);
+    on<LoadSessionSpecificChat>(_onLoadSessionSpecificChat);
   }
-
-  /// Dummy sessions for testing (replace later with API call)
-  final List<ChatSession> dummySessions = [
-    ChatSession(
-      id: "chat_1",
-      studentId: "6883d69eed4b4da8e4cfd921",
-      messages: [
-        ChatMessage(
-          sender: "student",
-          content: "Hi, explain Newton's First Law.",
-          timestamp: DateTime.parse("2025-09-13T11:00:00.000Z"),
-        ),
-        ChatMessage(
-          sender: "ai",
-          content:
-              "Newton's First Law states that an object will remain at rest or move in a straight line at constant speed unless acted upon by a force.",
-          timestamp: DateTime.parse("2025-09-13T11:00:03.000Z"),
-        ),
-      ],
-      createdAt: DateTime.parse("2025-09-13T11:00:00.000Z"),
-    ),
-    ChatSession(
-      id: "chat_2",
-      studentId: "6883d69eed4b4da8e4cfd921",
-      messages: [
-        ChatMessage(
-          sender: "student",
-          content: "What is morphology?",
-          timestamp: DateTime.parse("2025-09-14T09:30:00.000Z"),
-        ),
-        ChatMessage(
-          sender: "ai",
-          content:
-              "Morphology is the study of the form and structure of organisms.",
-          timestamp: DateTime.parse("2025-09-14T09:30:05.000Z"),
-        ),
-      ],
-      createdAt: DateTime.parse("2025-09-14T09:30:00.000Z"),
-    ),
-  ];
 
   FutureOr<void> _onLoadHistory(
     LoadHistory event,
@@ -63,21 +27,10 @@ class BotBloc extends Bloc<BotEvent, BotState> {
     emit(LoadHistoryInProgress());
 
     try {
-      // Simulate delay for demo
-      await Future.delayed(const Duration(seconds: 1));
-
-      // TODO: Replace with API call when ready
-      // final response = await repository.fetchHistory(studentId: event.studentId);
-
-      final response =
-          dummySessions
-              .where((session) => session.studentId == event.studentId)
-              .toList();
-
-      print("dummy sessions: ${dummySessions.map((e) => e.studentId)}");
-      print(
-        "response is ${dummySessions.where((session) => session.studentId == event.studentId).toList()}",
+      final response = await repository.fetchHistory(
+        studentId: event.studentId,
       );
+
       emit(LoadHistorySuccess(response));
     } catch (e) {
       emit(LoadHistoryFailure('Failed to load chat history: ${e.toString()}'));
@@ -91,27 +44,42 @@ class BotBloc extends Bloc<BotEvent, BotState> {
     emit(SendMessageInProgress());
 
     try {
-      // Optimistically append message to dummy session (for demo only)
-      final newMessage = ChatMessage(
-        sender: "student",
-        content: event.question,
-        timestamp: DateTime.now(),
+      final result = await repository.askQuestion(
+        question: event.question,
+        studentId: event.studentId,
+        sessionId: event.sessionId,
       );
 
-      dummySessions.first.messages.add(newMessage);
+      print("result is $result");
+      if (result['success']) {
+        final answer = result['answer'] as String;
+        final sessionId = result['sessionId'] as String;
+        final question = result['question'] as String;
 
-      // TODO: Replace with real API call
-      final response = ChatMessage(
-        sender: "ai",
-        content: "This is a dummy AI response for '${event.question}'.",
-        timestamp: DateTime.now().add(const Duration(seconds: 1)),
-      );
-
-      dummySessions.first.messages.add(response);
-
-      emit(SendMessageSuccess(response.content));
+        emit(SendMessageSuccess(answer, sessionId));
+      } else {
+        emit(SendMessageFailure(result['error'] ?? "Unknown error"));
+      }
     } catch (e) {
       emit(SendMessageFailure('Failed to send message: ${e.toString()}'));
+    }
+  }
+
+  FutureOr<void> _onLoadSessionSpecificChat(
+    LoadSessionSpecificChat event,
+    Emitter<BotState> emit,
+  ) async {
+    emit(SessionSpecificChatLoading());
+
+    try {
+      final messages = await repository.fetchSessionMessages(event.sessionId);
+      emit(SessionSpecificChatLoaded(chat: messages));
+    } catch (e) {
+      emit(
+        SessionSpecificChatFailure(
+          'Failed to load session chat: ${e.toString()}',
+        ),
+      );
     }
   }
 }

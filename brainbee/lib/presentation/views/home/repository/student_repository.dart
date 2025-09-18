@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:brainbee/core/models/token_user.dart';
 import 'package:brainbee/presentation/views/auth/models/user_model.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
-import 'package:brainbee/presentation/views/home/models/token_user.dart';
 import 'package:brainbee/presentation/views/home/services/student_api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

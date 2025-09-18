@@ -2,33 +2,35 @@ import 'chat_message.dart';
 
 class ChatSession {
   final String id; // session _id from MongoDB
-  final String studentId;
+  final String title;
   final DateTime createdAt;
-  final List<ChatMessage> messages;
+  final DateTime lastActivity;
+  final int messageCount;
 
   ChatSession({
     required this.id,
-    required this.studentId,
+    required this.title,
     required this.createdAt,
-    required this.messages,
+    required this.lastActivity,
+    required this.messageCount,
   });
 
   factory ChatSession.fromJson(Map<String, dynamic> json) {
     return ChatSession(
       id: json['_id'] ?? '',
-      studentId: json['student'] ?? json['studentId'] ?? '',
+      title: json['title'] ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
-      messages:
-          (json['messages'] as List? ?? [])
-              .map((msg) => ChatMessage.fromJson(msg))
-              .toList(),
+      lastActivity:
+          DateTime.tryParse(json['lastActivity'] ?? '') ?? DateTime.now(),
+      messageCount: json['messageCount'] ?? 0,
     );
   }
 
   Map<String, dynamic> toJson() => {
     "_id": id,
-    "student": studentId,
+    "title": title,
     "createdAt": createdAt.toIso8601String(),
-    "messages": messages.map((m) => m.toJson()).toList(),
+    "lastActivity": lastActivity.toIso8601String(),
+    "messageCount": messageCount,
   };
 }

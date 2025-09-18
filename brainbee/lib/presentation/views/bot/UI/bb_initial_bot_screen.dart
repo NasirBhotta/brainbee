@@ -2,7 +2,6 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/widgets/AI/bb_chat_widget.dart';
 import 'package:brainbee/presentation/views/bot/bloc/bot_bloc.dart';
-import 'package:brainbee/presentation/views/bot/models/chat_message.dart';
 import 'package:brainbee/presentation/views/bot/models/chat_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -199,6 +198,8 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
     //         .reversed
     //         .toList();
 
+    print("sessions are ${sessions[0].id}");
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: sessions.length,
@@ -235,80 +236,94 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
   }
 
   Widget _buildHistoryItem(ChatSession session, int index) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.blue[100],
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.chat_bubble_outline,
-              color: Colors.blue[600],
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _truncateMessage(session.messages.first.content),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => BbChatWidget(
+                  chatType: ChatType.historyChat,
+                  sessionId: session.id,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatDate(session.createdAt),
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
-            ),
           ),
-          PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert, color: Colors.grey[600]),
-            onSelected: (value) => _handleMenuAction(value, session, index),
-            itemBuilder:
-                (context) => [
-                  const PopupMenuItem(
-                    value: 'continue',
-                    child: Row(
-                      children: [
-                        Icon(Icons.play_arrow, size: 20),
-                        SizedBox(width: 8),
-                        Text('Continue Chat'),
-                      ],
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.blue[100],
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.chat_bubble_outline,
+                color: Colors.blue[600],
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    session.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, size: 20, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Delete', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatDate(session.createdAt),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
-          ),
-        ],
+              ),
+            ),
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+              onSelected: (value) => _handleMenuAction(value, session, index),
+              itemBuilder:
+                  (context) => [
+                    const PopupMenuItem(
+                      value: 'continue',
+                      child: Row(
+                        children: [
+                          Icon(Icons.play_arrow, size: 20),
+                          SizedBox(width: 8),
+                          Text('Continue Chat'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, size: 20, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Delete', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -354,12 +369,12 @@ class _BbInitialBotScreenState extends State<BbInitialBotScreen> {
         );
         break;
       case 'delete':
-        _showDeleteDialog(session.messages.first, index);
+        _showDeleteDialog(session.title, index);
         break;
     }
   }
 
-  void _showDeleteDialog(ChatMessage message, int index) {
+  void _showDeleteDialog(String title, int index) {
     showDialog(
       context: context,
       builder:

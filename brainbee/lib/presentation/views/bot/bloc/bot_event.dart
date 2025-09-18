@@ -18,11 +18,24 @@ class LoadHistory extends BotEvent {
 
 class SendMessage extends BotEvent {
   final String studentId;
-
+  final String? sessionId;
   final String question;
 
-  const SendMessage({required this.studentId, required this.question});
+  const SendMessage({
+    required this.studentId,
+    required this.question,
+    this.sessionId,
+  });
 
   @override
   List<Object> get props => [studentId, question];
+}
+
+class LoadSessionSpecificChat extends BotEvent {
+  final String sessionId;
+
+  const LoadSessionSpecificChat({required this.sessionId});
+
+  @override
+  List<Object> get props => [sessionId];
 }
