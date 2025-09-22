@@ -255,6 +255,7 @@ class _BBEditGoalsState extends State<BBEditGoals> with WidgetsBindingObserver {
           // Initialize data only once
           if (state is StudentDataLoaded && !_isInitialized) {
             final student = state.student;
+            print("Student data loaded: ${student.toJson()}");
             _selectedGoalIndex = _goalOptions.indexWhere(
               (goal) => goal.title == student.goal.title,
             );

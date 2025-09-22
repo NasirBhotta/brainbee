@@ -78,4 +78,34 @@ class AuthApiService {
         return MediaType('image', 'jpeg');
     }
   }
+
+  Future<http.Response> updateGoals({
+    required String title,
+    required String description,
+    required DateTime dueDate,
+    required List<DateTime> reminders,
+    required int value,
+    required bool status,
+    required int noOfAttempts,
+    required String token,
+  }) async {
+    return await http
+        .post(
+          Uri.parse("$baseUrl/api/student/update-goals"),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+          body: jsonEncode({
+            "title": title,
+            "description": description,
+            "dueDate": dueDate.toIso8601String(),
+            "reminder": reminders.map((d) => d.toIso8601String()).toList(),
+            "value": value,
+            "status": status,
+            "noOfAttempts": noOfAttempts,
+          }),
+        )
+        .timeout(timeoutDuration);
+  }
 }

@@ -131,20 +131,32 @@ class StudentModel extends UserModel {
 class Goal {
   final String title;
   final String description;
-  final List<DateTime> reminder;
   final DateTime dueDate;
+  final List<DateTime> reminder;
   final int value;
   final bool status;
   final int noOfAttempts;
 
+  // Optional (parent-assigned or progress-based)
+  final String? parentId;
+  final int? targetScore;
+  final int? targetCompletion;
+  final int? rewardCoins;
+  final int? progress; // percentage
+
   Goal({
-    required this.value,
-    required this.status,
     required this.title,
     required this.description,
-    required this.reminder,
     required this.dueDate,
+    required this.reminder,
+    required this.value,
+    required this.status,
     required this.noOfAttempts,
+    this.parentId,
+    this.targetScore,
+    this.targetCompletion,
+    this.rewardCoins,
+    this.progress,
   });
 
   factory Goal.fromJson(Map<String, dynamic> json) {
@@ -158,8 +170,14 @@ class Goal {
       value: json['value'] ?? 0,
       status: json['status'] ?? false,
       noOfAttempts: json['noOfAttempts'] ?? 0,
+      parentId: json['parentId'],
+      targetScore: json['targetScore'],
+      targetCompletion: json['targetCompletion'],
+      rewardCoins: json['rewardCoins'],
+      progress: json['progress'],
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'title': title,
@@ -169,6 +187,11 @@ class Goal {
       'value': value,
       'status': status,
       'noOfAttempts': noOfAttempts,
+      'parentId': parentId,
+      'targetScore': targetScore,
+      'targetCompletion': targetCompletion,
+      'rewardCoins': rewardCoins,
+      'progress': progress,
     };
   }
 }

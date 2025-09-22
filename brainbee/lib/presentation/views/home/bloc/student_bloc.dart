@@ -91,7 +91,10 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
         reminders: finalReminders,
         value: event.goal.value,
         status: event.goal.status,
+        noOfAttempts: event.goal.noOfAttempts,
       );
+
+      print("Goals updated: $studentData");
 
       // Only schedule new reminders if goal notifications are enabled AND we have system permission
       if (goalNotificationsEnabled && finalReminders.isNotEmpty) {

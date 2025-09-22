@@ -10,45 +10,6 @@ class StudentRepository {
   final AuthApiService _apiService = AuthApiService();
 
   // Mock response data (keeping the same structure from your BLoC)
-  final Map<String, dynamic> _mockResponse = {
-    "status": "success",
-    "accessToken": "dummy-token-123",
-    "user": {
-      "id": "S001",
-      "email": "student@example.com",
-      "firstName": "Ali",
-      "lastName": "Khan",
-      "grade": 8,
-      "subjects": ["Math", "Science"],
-      "parentId": "P001",
-      "coins": 120,
-      "streakScore": 5,
-      "lastStreakDate": "2025-08-10T00:00:00.000Z",
-      "dailyLives": 5,
-      "livesResetTime": "2025-08-23T00:00:00.000Z",
-      "friends": ["S002", "S003"],
-      "achievements": {"badges": [], "trophies": []},
-      "leaderboardStats": {"rank": 15, "points": 1200},
-      "battleStats": {"wins": 10, "losses": 3, "totalBattles": 13},
-      "enrolledClasses": ["Math101", "Sci101"],
-      "chapter_levels": {"math_ch1": "completed", "sci_ch1": "in-progress"},
-      "score": 25,
-      "topic_performance": {
-        "fractions": {"attempts": 10, "correct": 7},
-        "algebra": {"attempts": 5, "correct": 4},
-      },
-      "goal": {
-        "title": "Casual",
-        "description": "2 Quizzes & Estimate 7 minutes daily",
-        "dueDate": "2025-08-30T00:00:00.000Z",
-        "reminder": [],
-        "value": 2,
-        "status": true,
-        "noOfAttempts": 2,
-      },
-    },
-  };
-
   Future<TokenUserData> getTokenAndUser() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -93,6 +54,8 @@ class StudentRepository {
     try {
       final response = await _apiService.getProfile(token);
 
+      print("The response is ${response.body}");
+
       if (response.statusCode != 200) {
         throw Exception('Failed to fetch profile data: ${response.body}');
       }
@@ -112,6 +75,9 @@ class StudentRepository {
         token,
       );
 
+      print(
+        "the student updated data is ${StudentModel.fromJson(transformedResponse)}",
+      );
       return StudentModel.fromJson(transformedResponse);
     } catch (e) {
       if (e.toString().contains('Connection refused')) {
@@ -161,7 +127,11 @@ class StudentRepository {
         "chapter_levels": userData['chapter_levels'] ?? {},
         "score": userData['score'] ?? 0,
         "topic_performance": userData['topic_performance'] ?? {},
-        "goal": userData['goal'] ?? _getDefaultGoal(),
+        "goal": _transformGoal(
+          userData['goals'] != null && userData['goals'].isNotEmpty
+              ? userData['goals'][0]
+              : null,
+        ),
       },
     };
   }
@@ -179,15 +149,43 @@ class StudentRepository {
     return {"rank": stats['rank'] ?? 0, "points": totalPoints};
   }
 
-  Map<String, dynamic> _getDefaultGoal() {
+  // Map<String, dynamic> _getDefaultGoal() {
+  //   return {
+  //     "title": "Casual",
+  //     "description": "2 Quizzes & Estimate 7 minutes daily",
+  //     "dueDate": DateTime.now().add(Duration(days: 7)).toIso8601String(),
+  //     "reminder": [],
+  //     "value": 2,
+  //     "status": true,
+  //     "noOfAttempts": 0,
+  //   };
+  // }
+
+  Map<String, dynamic> _transformGoal(Map<String, dynamic>? goalData) {
+    // If goalData is null or empty, return default goal
+    if (goalData == null) {
+      return {
+        "title": "Casual",
+        "description": "2 Quizzes & Estimate 7 minutes daily",
+        "dueDate": DateTime.now().add(Duration(days: 7)).toIso8601String(),
+        "reminder": [],
+        "value": 2,
+        "status": true,
+        "noOfAttempts": 0,
+      };
+    }
+
     return {
-      "title": "Casual",
-      "description": "2 Quizzes & Estimate 7 minutes daily",
-      "dueDate": DateTime.now().add(Duration(days: 7)).toIso8601String(),
-      "reminder": [],
-      "value": 2,
-      "status": true,
-      "noOfAttempts": 0,
+      "title": goalData['title'] ?? 'Casual',
+      "description":
+          goalData['description'] ?? '2 Quizzes & Estimate 7 minutes daily',
+      "dueDate":
+          goalData['dueDate'] ??
+          DateTime.now().add(Duration(days: 7)).toIso8601String(),
+      "reminder": goalData['reminder'] ?? [],
+      "value": goalData['value'] ?? 2,
+      "status": goalData['status'] ?? true,
+      "noOfAttempts": goalData['noOfAttempts'] ?? 0,
     };
   }
 
@@ -255,22 +253,44 @@ class StudentRepository {
     required List<DateTime> reminders,
     required int value,
     required bool status,
+    required int noOfAttempts,
   }) async {
-    await Future.delayed(const Duration(seconds: 2)); // Simulate API delay
+    final tokenUserData = await getTokenAndUser();
+    final token = tokenUserData.token;
 
-    final int noOfAttempts = _mockResponse['user']['goal']['noOfAttempts'];
+    print("tokem is $token");
+    if (token == null || token.isEmpty) {
+      throw Exception("Authentication token not found");
+    }
+    try {
+      final response = await _apiService.updateGoals(
+        title: title,
+        description: description,
+        dueDate: dueDate,
+        reminders: reminders,
+        value: value,
+        status: status,
+        noOfAttempts: noOfAttempts,
+        token: token,
+      );
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch profile data: ${response.body}');
+      }
 
-    // Update goal data in mock response
-    _mockResponse['user']['goal'] = {
-      "title": title,
-      "description": description,
-      "dueDate": dueDate.toIso8601String(),
-      "reminder": reminders.map((date) => date.toIso8601String()).toList(),
-      "value": value,
-      "status": status,
-      "noOfAttempts": noOfAttempts,
-    };
+      final studentData = await fetchStudentData();
 
-    return StudentModel.fromJson(_mockResponse);
+      return studentData;
+    } catch (e) {
+      if (e.toString().contains('Connection refused')) {
+        throw Exception(
+          "Cannot connect to server. Please check your connection.",
+        );
+      } else if (e.toString().contains('TimeoutException')) {
+        throw Exception(
+          "Request timed out. Please check your internet connection.",
+        );
+      }
+      rethrow;
+    }
   }
 }
