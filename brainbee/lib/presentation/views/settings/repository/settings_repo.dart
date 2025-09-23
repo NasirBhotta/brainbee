@@ -3,11 +3,42 @@ import 'dart:io';
 import 'package:brainbee/core/models/token_user.dart';
 import 'package:brainbee/presentation/views/auth/models/user_model.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
-import 'package:brainbee/presentation/views/home/services/student_api_service.dart';
+import 'package:brainbee/presentation/views/settings/services/settings_api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class StudentRepository {
-  final AuthApiService _apiService = AuthApiService();
+class SettingsRepository {
+  final SettingsApiService _apiService = SettingsApiService();
+
+  Future<void> saveGrade(int grade) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('selected_grade', grade);
+      print("Grade $grade saved in SharedPreferences");
+    } catch (e) {
+      throw Exception("Error saving grade: $e");
+    }
+  }
+
+  Future<int?> getGrade() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final grade = prefs.getInt('selected_grade');
+      print("Fetched grade from SharedPreferences: $grade");
+      return grade;
+    } catch (e) {
+      throw Exception("Error fetching grade: $e");
+    }
+  }
+
+  Future<void> removeGrade() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('selected_grade');
+      print("Grade removed from SharedPreferences");
+    } catch (e) {
+      throw Exception("Error removing grade: $e");
+    }
+  }
 
   // Mock response data (keeping the same structure from your BLoC)
   Future<TokenUserData> getTokenAndUser() async {
@@ -54,7 +85,7 @@ class StudentRepository {
     try {
       final response = await _apiService.getProfile(token);
 
-      print("The response is ${response.body}");
+      print("The settings response is ${response.body}");
 
       if (response.statusCode != 200) {
         throw Exception('Failed to fetch profile data: ${response.body}');
@@ -149,18 +180,6 @@ class StudentRepository {
     return {"rank": stats['rank'] ?? 0, "points": totalPoints};
   }
 
-  // Map<String, dynamic> _getDefaultGoal() {
-  //   return {
-  //     "title": "Casual",
-  //     "description": "2 Quizzes & Estimate 7 minutes daily",
-  //     "dueDate": DateTime.now().add(Duration(days: 7)).toIso8601String(),
-  //     "reminder": [],
-  //     "value": 2,
-  //     "status": true,
-  //     "noOfAttempts": 0,
-  //   };
-  // }
-
   Map<String, dynamic> _transformGoal(Map<String, dynamic>? goalData) {
     // If goalData is null or empty, return default goal
     if (goalData == null) {
@@ -187,111 +206,6 @@ class StudentRepository {
       "status": goalData['status'] ?? true,
       "noOfAttempts": goalData['noOfAttempts'] ?? 0,
     };
-  }
-
-  Future<StudentModel> updateProfile({
-    required File image,
-    required String firstName,
-    required String lastName,
-    required String address,
-    required String phoneNumber,
-  }) async {
-    final tokenUserData = await getTokenAndUser();
-    final token = tokenUserData.token;
-    final user = tokenUserData.user;
-
-    if (token == null || token.isEmpty) {
-      throw Exception("Authentication token not found");
-    }
-
-    try {
-      // Update profile image
-      final imageResponse = await _apiService.updateProfileImage(image, token);
-      if (imageResponse.statusCode != 200) {
-        throw Exception(
-          'Failed to update profile image: ${imageResponse.body}',
-        );
-      }
-
-      // Update other profile data
-      final profileResponse = await _apiService.updateProfileData(
-        firstName: firstName,
-        lastName: lastName,
-        address: address,
-        phoneNumber: phoneNumber,
-        token: token,
-      );
-
-      if (profileResponse.statusCode != 200) {
-        throw Exception(
-          'Failed to update profile data: ${profileResponse.body}',
-        );
-      }
-
-      // Update local mock response data
-      final studentData = await fetchStudentData();
-
-      return studentData;
-    } catch (e) {
-      if (e.toString().contains('Connection refused')) {
-        throw Exception(
-          "Cannot connect to server. Please check your connection.",
-        );
-      } else if (e.toString().contains('TimeoutException')) {
-        throw Exception(
-          "Request timed out. Please check your internet connection.",
-        );
-      }
-      rethrow;
-    }
-  }
-
-  Future<StudentModel> updateGoals({
-    required String title,
-    required String description,
-    required DateTime dueDate,
-    required List<DateTime> reminders,
-    required int value,
-    required bool status,
-    required int noOfAttempts,
-  }) async {
-    final tokenUserData = await getTokenAndUser();
-    final token = tokenUserData.token;
-
-    print("tokem is $token");
-    if (token == null || token.isEmpty) {
-      throw Exception("Authentication token not found");
-    }
-    try {
-      final response = await _apiService.updateGoals(
-        title: title,
-        description: description,
-        dueDate: dueDate,
-        reminders: reminders,
-        value: value,
-        status: status,
-        noOfAttempts: noOfAttempts,
-        token: token,
-      );
-      if (response.statusCode != 200) {
-        throw Exception('Failed to fetch profile data: ${response.body}');
-      }
-
-      final studentData = await fetchStudentData();
-
-      return studentData;
-    } catch (e) {
-      if (e.toString().contains('Connection refused')) {
-        throw Exception(
-          "Cannot connect to server. Please check your connection.",
-        );
-      } else if (e.toString().contains('TimeoutException')) {
-        throw Exception(
-          "Request timed out. Please check your internet connection.",
-        );
-      }
-      rethrow;
-    }
   }
 
   Future<StudentModel> updateGradeAndSubjects({

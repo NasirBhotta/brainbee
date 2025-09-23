@@ -10,6 +10,7 @@ import 'package:brainbee/presentation/views/settings/UI/bb_learn_and_earn.dart';
 import 'package:brainbee/presentation/views/settings/UI/bb_manage_profile.dart';
 import 'package:brainbee/presentation/views/settings/UI/bb_select_grade.dart';
 import 'package:brainbee/presentation/views/settings/UI/bb_select_subject.dart';
+import 'package:brainbee/presentation/views/settings/bloc/setting_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -21,6 +22,7 @@ class BBSettings extends StatefulWidget {
 }
 
 class _BBSettingsState extends State<BBSettings> {
+  int? localGrade;
   // UserModel authenticatedUser = UserModel(
   //   id: '',
   //   email: '',
@@ -34,6 +36,14 @@ class _BBSettingsState extends State<BBSettings> {
   @override
   void initState() {
     super.initState();
+
+    context.read<SettingsBloc>().add(SettingsLoadGradeFromLocal());
+
+    if (context.read<SettingsBloc>().state is SettingsGradeLoadedLocally) {
+      localGrade =
+          (context.read<SettingsBloc>().state as SettingsGradeLoadedLocally)
+              .grade;
+    }
   }
 
   @override
@@ -124,7 +134,9 @@ class _BBSettingsState extends State<BBSettings> {
                             context,
                             MaterialPageRoute(
                               builder:
-                                  (context) => const SelectYearGradeScreen(),
+                                  (context) => SelectYearGradeScreen(
+                                    student: state.student,
+                                  ),
                             ),
                           );
                         },
@@ -145,8 +157,12 @@ class _BBSettingsState extends State<BBSettings> {
                             context,
                             MaterialPageRoute(
                               builder:
-                                  (context) => const SelectSubjectsScreen(
-                                    selectedGrade: "9th Grade",
+                                  (context) => SelectSubjectsScreen(
+                                    student: state.student,
+                                    selectedGrade:
+                                        state.student.grade == 0
+                                            ? localGrade!
+                                            : state.student.grade,
                                   ),
                             ),
                           );

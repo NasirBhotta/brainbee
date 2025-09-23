@@ -132,7 +132,7 @@ class _BBDashboardState extends State<BBDashboard>
           if (state is StudentDataLoading) {
             return _buildShimmerUI();
           } else if (state is StudentDataLoaded) {
-            print("updated goal is ${state.student.goal.toJson()}");
+            print("updated goal is ${state.student.toJson()}");
             dashBoardScreens = [
               BBhome(student: state.student),
               BBhome(student: state.student),

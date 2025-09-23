@@ -7,30 +7,38 @@ sealed class SettingEvent extends Equatable {
   List<Object> get props => [];
 }
 
-class SettingProfileUpdateEventButtonClicked extends SettingEvent {
-  final String fullName;
-  final String? email;
-  final String mobile;
-  final String dateOfBirth;
-  final String imageURL;
-  final String? address;
-  final int? postCode;
-  final String? state;
-  final String? city;
-  final String schoolName;
+// Existing events
+class SettingsLoadGradeFromLocal extends SettingEvent {}
 
-  const SettingProfileUpdateEventButtonClicked({
-    required this.fullName,
-    this.email,
-    required this.mobile,
-    required this.dateOfBirth,
-    required this.imageURL,
-    this.address,
-    this.postCode,
-    this.state,
-    this.city,
-    required this.schoolName,
-  });
+class SettingsSaveGradeLocal extends SettingEvent {
+  final int grade;
+  const SettingsSaveGradeLocal(this.grade);
+  @override
+  List<Object> get props => [grade];
 }
 
-final class SettingDeleteAccountEvent extends SettingEvent {}
+class SettingsUpdateGradeAndSubjects extends SettingEvent {
+  final int grade;
+  final List<String> subjects;
+  const SettingsUpdateGradeAndSubjects({
+    required this.grade,
+    required this.subjects,
+  });
+  @override
+  List<Object> get props => [grade, subjects];
+}
+
+class SettingsClearLocalGrade extends SettingEvent {}
+
+class SettingsSaveStudentLocal extends SettingEvent {
+  final int grade;
+
+  const SettingsSaveStudentLocal({required this.grade});
+
+  @override
+  List<Object> get props => [grade];
+}
+
+class SettingsLoadStudentFromLocal extends SettingEvent {}
+
+class SettingsClearLocalStudent extends SettingEvent {}

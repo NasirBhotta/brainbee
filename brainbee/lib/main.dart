@@ -13,6 +13,8 @@ import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/bloc/quiz_bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/repositories/quiz_repository_impl.dart';
 import 'package:brainbee/presentation/views/home/quizzes/services/quiz_api_service.dart';
+import 'package:brainbee/presentation/views/settings/bloc/setting_bloc.dart';
+import 'package:brainbee/presentation/views/settings/repository/settings_repo.dart';
 import 'package:brainbee/repositories/badge_repository.dart';
 import 'package:brainbee/routes/app_routes.dart';
 import 'package:brainbee/services/bb_notifications.dart';
@@ -63,6 +65,10 @@ void main(List<String> args) async {
               (context) => BotBloc(
                 repository: BotRepository(apiService: BotApiService()),
               ),
+        ),
+
+        BlocProvider(
+          create: (_) => SettingsBloc(repository: SettingsRepository()),
         ),
       ],
       child: const BrainBeeApp(),

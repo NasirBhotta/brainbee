@@ -1,38 +1,66 @@
 part of 'setting_bloc.dart';
 
-sealed class SettingState extends Equatable {
-  const SettingState();
+sealed class SettingsState extends Equatable {
+  const SettingsState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
-abstract class SettingActionState extends SettingState {}
+class SettingsInitial extends SettingsState {}
 
-final class SettingInitial extends SettingState {}
+class SettingsLoading extends SettingsState {}
 
-final class SettingDataUpdatingState extends SettingState {}
+class SettingsGradeLoadedLocally extends SettingsState {
+  final int? grade;
 
-final class SettingDataUpdatedState extends SettingState {}
+  const SettingsGradeLoadedLocally(this.grade);
 
-final class SettingDataUpdatedFailureState extends SettingState {
-  final String message;
-
-  const SettingDataUpdatedFailureState({required this.message});
+  @override
+  List<Object?> get props => [grade];
 }
 
-//
+class SettingsGradeSavedLocal extends SettingsState {
+  final int grade;
 
-final class SettingAccountDeletingState extends SettingState {}
+  const SettingsGradeSavedLocal(this.grade);
 
-final class SettingAccountDeletedState extends SettingState {}
-
-final class SettingAccountDeletingFailureState extends SettingState {
-  final String message;
-
-  const SettingAccountDeletingFailureState({required this.message});
+  @override
+  List<Object> get props => [grade];
 }
 
-//
+class SettingsUpdateSuccess extends SettingsState {
+  final StudentModel student;
 
-final class SettingNavigateToAuthState extends SettingActionState {}
+  const SettingsUpdateSuccess(this.student);
+
+  @override
+  List<Object> get props => [student];
+}
+
+class SettingsUpdateFailure extends SettingsState {
+  final String error;
+
+  const SettingsUpdateFailure(this.error);
+
+  @override
+  List<Object> get props => [error];
+}
+
+class SettingsStudentSavedLocal extends SettingsState {
+  final int grade;
+  const SettingsStudentSavedLocal(this.grade);
+
+  @override
+  List<Object?> get props => [grade];
+}
+
+class SettingsStudentLoaded extends SettingsState {
+  final int? grade;
+  const SettingsStudentLoaded(this.grade);
+
+  @override
+  List<Object?> get props => [grade];
+}
+
+class SettingsStudentCleared extends SettingsState {}

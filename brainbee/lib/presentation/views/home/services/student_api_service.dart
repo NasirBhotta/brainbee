@@ -108,4 +108,21 @@ class AuthApiService {
         )
         .timeout(timeoutDuration);
   }
+
+  Future<http.Response> updateGradeAndSubjects({
+    required int grade,
+    required List<String> subjects,
+    required String token,
+  }) async {
+    return await http
+        .post(
+          Uri.parse("$baseUrl/api/student/update-grade-subjects"),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+          body: jsonEncode({"grade": grade, "subjects": subjects}),
+        )
+        .timeout(timeoutDuration);
+  }
 }
