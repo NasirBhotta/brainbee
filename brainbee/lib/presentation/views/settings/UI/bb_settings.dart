@@ -23,26 +23,29 @@ class BBSettings extends StatefulWidget {
 
 class _BBSettingsState extends State<BBSettings> {
   int? localGrade;
-  // UserModel authenticatedUser = UserModel(
-  //   id: '',
-  //   email: '',
-
-  //   token: '',
-  //   status: '',
-  //   firstName: '',
-  //   lastName: '',
-  // );
 
   @override
   void initState() {
     super.initState();
-
     context.read<SettingsBloc>().add(SettingsLoadGradeFromLocal());
 
     if (context.read<SettingsBloc>().state is SettingsGradeLoadedLocally) {
       localGrade =
           (context.read<SettingsBloc>().state as SettingsGradeLoadedLocally)
               .grade;
+    }
+  }
+
+  // Method to navigate and refresh data when returning
+  Future<void> _navigateAndRefresh(Widget destination) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => destination),
+    );
+
+    // Refresh student data when returning from any screen
+    if (mounted) {
+      context.read<StudentBloc>().add(StudentFetchData());
     }
   }
 
@@ -86,7 +89,6 @@ class _BBSettingsState extends State<BBSettings> {
                           left: 13,
                           top: 10,
                         ),
-
                         leading: CircleAvatar(
                           radius: 15,
                           backgroundColor: Colors.green[700],
@@ -108,12 +110,7 @@ class _BBSettingsState extends State<BBSettings> {
                       const Divider(),
                       ListTile(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const BbManageProfile(),
-                            ),
-                          );
+                          _navigateAndRefresh(const BbManageProfile());
                         },
                         leading: const Icon(
                           Icons.people,
@@ -125,19 +122,11 @@ class _BBSettingsState extends State<BBSettings> {
                         ),
                         visualDensity: const VisualDensity(vertical: -4),
                       ),
-
                       const Divider(),
-
                       ListTile(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => SelectYearGradeScreen(
-                                    student: state.student,
-                                  ),
-                            ),
+                          _navigateAndRefresh(
+                            SelectYearGradeScreen(student: state.student),
                           );
                         },
                         leading: const Icon(
@@ -153,17 +142,14 @@ class _BBSettingsState extends State<BBSettings> {
                       const Divider(),
                       ListTile(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => SelectSubjectsScreen(
-                                    student: state.student,
-                                    selectedGrade:
-                                        state.student.grade == 0
-                                            ? localGrade!
-                                            : state.student.grade,
-                                  ),
+                          _navigateAndRefresh(
+                            SelectSubjectsScreen(
+                              student: state.student,
+                              selectedGrade:
+                                  state.student.grade == 0
+                                      ? localGrade ??
+                                          9 // Default to 9 if no local grade
+                                      : state.student.grade,
                             ),
                           );
                         },
@@ -180,13 +166,7 @@ class _BBSettingsState extends State<BBSettings> {
                       const Divider(),
                       ListTile(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => const ChangePasswordScreen(),
-                            ),
-                          );
+                          _navigateAndRefresh(const ChangePasswordScreen());
                         },
                         leading: const Icon(
                           Icons.lock,
@@ -213,12 +193,7 @@ class _BBSettingsState extends State<BBSettings> {
                       const Divider(),
                       ListTile(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AppSettingsScreen(),
-                            ),
-                          );
+                          _navigateAndRefresh(const AppSettingsScreen());
                         },
                         leading: const Icon(
                           Icons.settings,
@@ -233,12 +208,7 @@ class _BBSettingsState extends State<BBSettings> {
                       const Divider(),
                       ListTile(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LearnAndEarnScreen(),
-                            ),
-                          );
+                          _navigateAndRefresh(const LearnAndEarnScreen());
                         },
                         leading: const Icon(
                           Icons.card_giftcard,
@@ -299,7 +269,7 @@ class _BBSettingsState extends State<BBSettings> {
               ],
             );
           }
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         },
       ),
     );

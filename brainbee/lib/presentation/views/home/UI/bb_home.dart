@@ -45,13 +45,13 @@ class _BBhomeState extends State<BBhome> {
   ];
 
   static const List<Map<String, dynamic>> _quizzes = [
-    {
-      'title': 'Mathematics',
-      'description': 'Quiz level 1 - Basic and Mixed Operations',
-      'imagePath1': 'assets/bg1.png',
-      'imagePath2': 'assets/quiz1.png',
-      'color': BBColors.progressColor1,
-    },
+    // {
+    //   'title': 'Mathematics',
+    //   'description': 'Quiz level 1 - Basic and Mixed Operations',
+    //   'imagePath1': 'assets/bg1.png',
+    //   'imagePath2': 'assets/quiz1.png',
+    //   'color': BBColors.progressColor1,
+    // },
     {
       'title': 'Physics',
       'description': 'Quiz level 1 - Science Process Skills',
@@ -60,18 +60,18 @@ class _BBhomeState extends State<BBhome> {
       'color': BBColors.progressColor2,
     },
     {
-      'title': 'Biology',
-      'description': 'Quiz level 1 - Introduction to Biology',
-      'imagePath1': 'assets/bg3.png',
-      'imagePath2': 'assets/quiz3.png',
-      'color': BBColors.progressColor3,
-    },
-    {
       'title': 'Chemistry',
       'description': 'Quiz level 1 - Introduction to Chemistry',
       'imagePath1': 'assets/bg4.png',
       'imagePath2': 'assets/quiz4.png',
       'color': BBColors.progressColor4,
+    },
+    {
+      'title': 'Biology',
+      'description': 'Quiz level 1 - Introduction to Biology',
+      'imagePath1': 'assets/bg3.png',
+      'imagePath2': 'assets/quiz3.png',
+      'color': BBColors.progressColor3,
     },
   ];
 
@@ -90,7 +90,6 @@ class _BBhomeState extends State<BBhome> {
       '${widget.student.dailyLives}/10',
     ];
 
-    print("in initstate data is: ${_desc[0]}");
     _displayName =
         widget.student.firstName != ''
             ? "${widget.student.firstName} ${widget.student.lastName}"
@@ -119,6 +118,15 @@ class _BBhomeState extends State<BBhome> {
     }
   }
 
+  // Helper method to get registered quizzes only
+  List<Map<String, dynamic>> _getRegisteredQuizzes(
+    List<String> registeredSubjects,
+  ) {
+    return _quizzes.where((quiz) {
+      return registeredSubjects.contains(quiz['title']);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<StudentBloc, StudentState>(
@@ -130,15 +138,20 @@ class _BBhomeState extends State<BBhome> {
         }
       },
       builder: (context, state) {
+        List<Map<String, dynamic>> registeredQuizzes = [];
+
         if (state is StudentDataLoaded) {
-          print("updated data in ui is ${state.student.goal.toJson()}");
           _desc = [
             state.student.score.toString(),
             state.student.coins.toString(),
             state.student.streakScore.toString(),
             '${state.student.dailyLives}/10',
           ];
+
+          // Get only the quizzes for registered subjects
+          registeredQuizzes = _getRegisteredQuizzes(state.student.subjects);
         }
+
         return CustomScrollView(
           slivers: [
             SliverAppBar(
@@ -159,7 +172,9 @@ class _BBhomeState extends State<BBhome> {
                     title: _ProgressBarRow(
                       desc: _desc,
                       onPopupTap: (index) {
-                        _onPopupTap(index, state as StudentDataLoaded);
+                        if (state is StudentDataLoaded) {
+                          _onPopupTap(index, state);
+                        }
                       },
                     ),
                     centerTitle: true,
@@ -170,19 +185,85 @@ class _BBhomeState extends State<BBhome> {
             SliverList.builder(
               itemBuilder: (context, index) {
                 if (index == 0) {
-                  return _PromotionCard(state as StudentDataLoaded);
+                  print("index is $index");
+                  if (state is StudentDataLoaded) {
+                    return _PromotionCard(state);
+                  }
+                  return const SizedBox.shrink();
                 }
 
-                final quiz = _quizzes[index - 1];
-                return BbQuizzesDisplay(
-                  title: quiz['title']!,
-                  description: quiz['description']!,
-                  imagePath1: quiz['imagePath1']!,
-                  imagePath2: quiz['imagePath2']!,
-                  color: quiz['color']!,
-                );
+                final quizIndex = index - 1;
+
+                if (state is StudentDataLoaded) {
+                  // Check if we have registered quizzes and if the index is valid
+                  if (registeredQuizzes.isNotEmpty &&
+                      quizIndex < registeredQuizzes.length) {
+                    final quiz = registeredQuizzes[quizIndex];
+                    print("Showing registered quiz: ${quiz['title']}");
+
+                    return BbQuizzesDisplay(
+                      title: quiz['title']!,
+                      description: quiz['description']!,
+                      imagePath1: quiz['imagePath1']!,
+                      imagePath2: quiz['imagePath2']!,
+                      color: quiz['color']!,
+                    );
+                  }
+                  // Show message if no subjects are registered at all
+                  else if (registeredQuizzes.isEmpty && quizIndex == 0) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 10,
+                      ),
+                      padding: const EdgeInsets.all(30),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color: Colors.blue[50],
+                        border: Border.all(color: Colors.blue[200]!),
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.school_outlined,
+                              size: 64,
+                              color: Colors.blue[400],
+                            ),
+                            const SizedBox(height: 16),
+                            BBText(
+                              data: "No Subjects Registered",
+                              style: Theme.of(
+                                context,
+                              ).textTheme.titleLarge?.copyWith(
+                                color: Colors.blue[700],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            BBText(
+                              data:
+                                  "Please register your subjects to start taking quizzes",
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(color: Colors.blue[600]),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                }
+
+                // Return null for indices beyond registered quizzes
+                return null;
               },
-              itemCount: _quizzes.length + 1,
+              itemCount:
+                  state is StudentDataLoaded
+                      ? registeredQuizzes.length +
+                          1 // +1 for promotion card
+                      : 1, // Only show promotion card if state is not loaded
             ),
           ],
         );
