@@ -22,6 +22,7 @@ class SelectSubjectsScreen extends StatefulWidget {
 class _SelectSubjectsScreenState extends State<SelectSubjectsScreen> {
   List<String> selectedSubjects = [];
   bool isLoading = false;
+  int? selectedGrade;
 
   final Map<int, List<Map<String, dynamic>>> subjectsByGrade = {
     9: [
@@ -53,12 +54,47 @@ class _SelectSubjectsScreenState extends State<SelectSubjectsScreen> {
       },
       {'name': 'Economics', 'icon': Icons.trending_up, 'color': Colors.red},
     ],
+    11: [
+      {'name': 'Mathematics', 'icon': Icons.calculate, 'color': Colors.blue},
+      {'name': 'Physics', 'icon': Icons.science, 'color': Colors.purple},
+      {'name': 'Chemistry', 'icon': Icons.biotech, 'color': Colors.green},
+      {'name': 'Biology', 'icon': Icons.local_florist, 'color': Colors.teal},
+      {'name': 'English', 'icon': Icons.book, 'color': Colors.orange},
+      {'name': 'History', 'icon': Icons.history_edu, 'color': Colors.brown},
+      {'name': 'Geography', 'icon': Icons.public, 'color': Colors.indigo},
+      {
+        'name': 'Computer Science',
+        'icon': Icons.computer,
+        'color': Colors.cyan,
+      },
+      {'name': 'Economics', 'icon': Icons.trending_up, 'color': Colors.red},
+      {'name': 'Psychology', 'icon': Icons.psychology, 'color': Colors.pink},
+    ],
+    12: [
+      {'name': 'Mathematics', 'icon': Icons.calculate, 'color': Colors.blue},
+      {'name': 'Physics', 'icon': Icons.science, 'color': Colors.purple},
+      {'name': 'Chemistry', 'icon': Icons.biotech, 'color': Colors.green},
+      {'name': 'Biology', 'icon': Icons.local_florist, 'color': Colors.teal},
+      {'name': 'English', 'icon': Icons.book, 'color': Colors.orange},
+      {'name': 'History', 'icon': Icons.history_edu, 'color': Colors.brown},
+      {'name': 'Geography', 'icon': Icons.public, 'color': Colors.indigo},
+      {
+        'name': 'Computer Science',
+        'icon': Icons.computer,
+        'color': Colors.cyan,
+      },
+      {'name': 'Economics', 'icon': Icons.trending_up, 'color': Colors.red},
+      {'name': 'Psychology', 'icon': Icons.psychology, 'color': Colors.pink},
+      {'name': 'Philosophy', 'icon': Icons.school, 'color': Colors.deepOrange},
+      {'name': 'Statistics', 'icon': Icons.bar_chart, 'color': Colors.amber},
+    ],
   };
 
   @override
   void initState() {
     super.initState();
     _initializeSelectedSubjects();
+    _initializeSelectedGrade();
   }
 
   void _initializeSelectedSubjects() {
@@ -69,6 +105,23 @@ class _SelectSubjectsScreenState extends State<SelectSubjectsScreen> {
     } else if (widget.student.subjects.isNotEmpty) {
       selectedSubjects = List.from(widget.student.subjects);
     }
+  }
+
+  void _initializeSelectedGrade() {
+    // Get grade from settings state safely
+    final settingsState = context.read<SettingsBloc>().state;
+    final localGrade = _getGradeFromState(settingsState);
+
+    selectedGrade = localGrade ?? widget.selectedGrade;
+  }
+
+  int? _getGradeFromState(SettingsState state) {
+    if (state is SettingsGradeLoadedLocally) {
+      return state.grade;
+    } else if (state is SettingsGradeSavedLocal) {
+      return state.grade;
+    }
+    return null;
   }
 
   // Helper method to compare two lists
@@ -141,6 +194,8 @@ class _SelectSubjectsScreenState extends State<SelectSubjectsScreen> {
                       duration: const Duration(seconds: 3),
                     ),
                   );
+                } else {
+                  isLoading = false;
                 }
               });
             },
@@ -164,7 +219,7 @@ class _SelectSubjectsScreenState extends State<SelectSubjectsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Choose subjects for ${widget.selectedGrade}',
+                'Choose subjects for Grade ${selectedGrade ?? widget.selectedGrade}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -240,14 +295,21 @@ class _SelectSubjectsScreenState extends State<SelectSubjectsScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Text(
-                              subject['name'],
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
                               ),
-                              textAlign: TextAlign.center,
+                              child: Text(
+                                subject['name'],
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                             if (isSelected)
                               const Padding(
@@ -275,7 +337,7 @@ class _SelectSubjectsScreenState extends State<SelectSubjectsScreen> {
                           ? () {
                             context.read<SettingsBloc>().add(
                               SettingsUpdateGradeAndSubjects(
-                                grade: widget.selectedGrade,
+                                grade: selectedGrade!,
                                 subjects: selectedSubjects,
                               ),
                             );
@@ -308,6 +370,4 @@ class _SelectSubjectsScreenState extends State<SelectSubjectsScreen> {
       ),
     );
   }
-
-  // Helper method to compare two lists
 }

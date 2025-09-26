@@ -38,13 +38,13 @@ class _BBSettingsState extends State<BBSettings> {
 
   // Method to navigate and refresh data when returning
   Future<void> _navigateAndRefresh(Widget destination) async {
-    await Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => destination),
     );
 
     // Refresh student data when returning from any screen
-    if (mounted) {
+    if (mounted && result == true) {
       context.read<StudentBloc>().add(StudentFetchData());
     }
   }

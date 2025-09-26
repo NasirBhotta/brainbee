@@ -8,6 +8,7 @@ import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:image_picker/image_picker.dart';
 
 class BbManageProfile extends StatefulWidget {
@@ -36,6 +37,7 @@ class _BbManageProfileState extends State<BbManageProfile> {
   File? _image;
   String? _existingImageUrl; // For storing existing profile image URL
   bool _hasDataLoaded = false; // Track if we've loaded data once
+  bool _isUpdated = false;
 
   final Map<String, List<String>> pakistanStatesAndCities = {
     "Punjab": [
@@ -147,7 +149,7 @@ class _BbManageProfileState extends State<BbManageProfile> {
     _cities = pakistanStatesAndCities[_selectedState]!;
 
     // Fetch student data when screen loads
-    context.read<StudentBloc>().add(const StudentFetchData());
+    // context.read<StudentBloc>().add(const StudentFetchData());
   }
 
   @override
@@ -162,22 +164,16 @@ class _BbManageProfileState extends State<BbManageProfile> {
     super.dispose();
   }
 
-  void _populateFields(StudentModel student) {
+  void _populateFields(StudentModel student) async {
     if (!_hasDataLoaded) {
-      _emailController.text = student.email ?? '';
-      _firstNameController.text = student.firstName ?? '';
-      _lastNameController.text = student.lastName ?? '';
-
-      // Populate other fields if available in the model
-      // Note: You may need to add these fields to your StudentModel
-      // _mobileController.text = student.phoneNumber ?? '';
-      // _dobController.text = student.dateOfBirth ?? '';
-      // _addressController.text = student.address ?? '';
-      // _postcodeController.text = student.postcode ?? '';
-
-      // Set existing profile image URL if available
+      _emailController.text = student.email;
+      _firstNameController.text = student.firstName;
+      _lastNameController.text = student.lastName;
       _existingImageUrl = student.profileImage;
-      print("Existing image is $_existingImageUrl");
+
+      if (_existingImageUrl != null && _existingImageUrl!.isNotEmpty) {
+        _image = await getCachedImageFile(_existingImageUrl!);
+      }
       _hasDataLoaded = true;
     }
   }
@@ -256,6 +252,13 @@ class _BbManageProfileState extends State<BbManageProfile> {
     );
   }
 
+  Future<File> getCachedImageFile(String imageUrl) async {
+    // This will return the cached file if available,
+    // or download and cache it if it's not cached yet
+    final file = await DefaultCacheManager().getSingleFile(imageUrl);
+    return file;
+  }
+
   Widget _buildProfileImage() {
     if (_image != null) {
       // Show newly selected image
@@ -326,7 +329,13 @@ class _BbManageProfileState extends State<BbManageProfile> {
               elevation: 0,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.black87),
-                onPressed: () => Navigator.pop(context),
+                onPressed:
+                    () => {
+                      if (!_isUpdated)
+                        {Navigator.pop(context, false)}
+                      else
+                        {Navigator.pop(context, true)},
+                    },
               ),
               title: Text(
                 'Manage Account',
@@ -800,6 +809,7 @@ class _BbManageProfileState extends State<BbManageProfile> {
 
       // Only update image if a new one is selected
       if (_image != null) {
+        _isUpdated = true;
         context.read<StudentBloc>().add(
           StudentUpdateProfile(
             image: _image!,
@@ -810,8 +820,18 @@ class _BbManageProfileState extends State<BbManageProfile> {
           ),
         );
       } else {
-        // Handle other profile updates without image
-        // You might want to create a separate event for this
+        _isUpdated = true;
+
+        context.read<StudentBloc>().add(
+          StudentUpdateProfile(
+            image: _image!,
+            firstName: _firstNameController.text.trim(),
+            lastName: _lastNameController.text.trim(),
+            address: _addressController.text.trim(),
+            phoneNumber: _mobileController.text.trim(),
+          ),
+        );
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Profile updated successfully!'),

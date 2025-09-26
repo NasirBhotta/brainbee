@@ -4,7 +4,6 @@ import 'package:brainbee/presentation/views/settings/bloc/setting_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-// 1. Select Year Grade Screen
 class SelectYearGradeScreen extends StatefulWidget {
   final StudentModel student;
   const SelectYearGradeScreen({super.key, required this.student});
@@ -27,10 +26,33 @@ class _SelectYearGradeScreenState extends State<SelectYearGradeScreen> {
   void initState() {
     super.initState();
 
+    print("working");
+    context.read<SettingsBloc>().add(SettingsLoadGradeFromLocal());
+  }
+
+  int? _getGradeFromState(SettingsState state) {
+    if (state is SettingsGradeLoadedLocally) {
+      return state.grade;
+    } else if (state is SettingsGradeSavedLocal) {
+      return state.grade;
+    }
+    return null;
+  }
+
+  void _setInitialGrade(SettingsState state) {
+    final localGrade = _getGradeFromState(state);
+
+    // Priority: Use student grade if it's valid and matches local storage,
+    // otherwise use local storage grade, otherwise no selection
     if (widget.student.grade >= 9 &&
         widget.student.grade <= 12 &&
-        widget.student.grade != 0) {
+        widget.student.grade != 0 &&
+        localGrade == widget.student.grade) {
       selectedGrade = widget.student.grade;
+    } else if (localGrade != null && localGrade >= 9 && localGrade <= 12) {
+      selectedGrade = localGrade;
+    } else {
+      selectedGrade = null;
     }
   }
 
@@ -62,6 +84,35 @@ class _SelectYearGradeScreenState extends State<SelectYearGradeScreen> {
               isLoading = true;
             } else {
               isLoading = false;
+
+              // Set initial grade when grade is loaded from local storage
+              if (state is SettingsGradeLoadedLocally) {
+                print("the state is ${state.grade}");
+                _setInitialGrade(state);
+              }
+
+              // Handle successful grade save
+              if (state is SettingsGradeSavedLocal) {
+                // Optionally navigate back or show success message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Grade ${state.grade} saved successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                // Navigate back after successful save
+                Navigator.pop(context);
+              }
+
+              // Handle errors
+              if (state is SettingsUpdateFailure) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.error),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             }
           });
         },
@@ -136,7 +187,7 @@ class _SelectYearGradeScreenState extends State<SelectYearGradeScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      grade['grade'].toString(),
+                                      'Grade ${grade['grade']}',
                                       style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
@@ -174,7 +225,7 @@ class _SelectYearGradeScreenState extends State<SelectYearGradeScreen> {
                 height: 50,
                 child: ElevatedButton(
                   onPressed:
-                      selectedGrade != null
+                      selectedGrade != null && !isLoading
                           ? () {
                             context.read<SettingsBloc>().add(
                               SettingsSaveGradeLocal(selectedGrade!),

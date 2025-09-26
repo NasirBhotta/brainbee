@@ -27,6 +27,7 @@ class SettingsBloc extends Bloc<SettingEvent, SettingsState> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final grade = prefs.getInt(_gradeKey);
+
       emit(SettingsGradeLoadedLocally(grade));
     } catch (e) {
       emit(SettingsUpdateFailure('Failed to load grade: ${e.toString()}'));
@@ -63,7 +64,7 @@ class SettingsBloc extends Bloc<SettingEvent, SettingsState> {
       );
 
       // Clear local grade since it's now synced with backend
-      await _clearLocalGrade();
+      // await _clearLocalGrade();
 
       emit(SettingsUpdateSuccess(studentData));
     } catch (e) {
