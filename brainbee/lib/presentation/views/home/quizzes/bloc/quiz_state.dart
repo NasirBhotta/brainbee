@@ -13,18 +13,12 @@ class QuizInitial extends QuizState {}
 class QuizLoading extends QuizState {}
 
 class QuizzesLoaded extends QuizState {
-  final List<ParsedChapter> chapters;
-  final String subject;
-  final int totalQuizzes;
+  final QuizData quizData;
 
-  const QuizzesLoaded({
-    required this.chapters,
-    required this.subject,
-    required this.totalQuizzes,
-  });
+  const QuizzesLoaded({required this.quizData});
 
   @override
-  List<Object> get props => [chapters, subject, totalQuizzes];
+  List<Object> get props => [quizData];
 }
 
 class QuizStarted extends QuizState {
@@ -49,6 +43,26 @@ class QuizError extends QuizState {
   final String message;
 
   const QuizError({required this.message});
+
+  @override
+  List<Object> get props => [message];
+}
+
+class BookDataLoading extends QuizState {}
+
+class BookDataLoaded extends QuizState {
+  final BookData bookData;
+
+  const BookDataLoaded({required this.bookData});
+
+  @override
+  List<Object> get props => [bookData];
+}
+
+class BookDataError extends QuizState {
+  final String message;
+
+  const BookDataError({required this.message});
 
   @override
   List<Object> get props => [message];

@@ -3,6 +3,8 @@ import 'package:brainbee/core/models/bb_question.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
+import 'package:brainbee/core/utils/helper/bb_confirmation_dialog.dart';
+import 'package:brainbee/core/utils/helper/bb_result_extention.dart';
 import 'package:brainbee/core/widgets/popups/bb_confirmation_dialog.dart';
 import 'package:brainbee/core/widgets/popups/bb_result_dialog.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_battle_report_card.dart';
@@ -153,7 +155,8 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
       resultType = ResultType.lose;
     }
 
-    context.showResultDialog(
+    context.showDynamicResultDialog(
+      quizType: QuizType.battle,
       title: "Battle Result",
       resultType: resultType,
       userScore: score,
@@ -165,7 +168,8 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
           context,
           MaterialPageRoute(
             builder:
-                (context) => BBBattleReportCardScreen(
+                (context) => BBQuizReportCardScreen(
+                  quizType: QuizType.battle,
                   score: score,
                   opponentScore: opponentScore,
                   won: score > opponentScore,
@@ -181,7 +185,8 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
           context,
           MaterialPageRoute(
             builder:
-                (context) => BBBattleReportCardScreen(
+                (context) => BBQuizReportCardScreen(
+                  quizType: QuizType.battle,
                   score: score,
                   opponentScore: opponentScore,
                   won: score > opponentScore,
@@ -197,7 +202,8 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
           context,
           MaterialPageRoute(
             builder:
-                (context) => BBBattleReportCardScreen(
+                (context) => BBQuizReportCardScreen(
+                  quizType: QuizType.battle,
                   score: score,
                   opponentScore: opponentScore,
                   won: score > opponentScore,
@@ -208,6 +214,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
           ),
         );
       },
+      inAppQuestions: [],
     );
   }
 
@@ -583,7 +590,8 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
 
   // Basic usage with extension method:
   void showQuitDialog(BuildContext context) {
-    context.showConfirmationDialog(
+    context.showDynamicQuitDialog(
+      quizType: QuizType.battle,
       title: "Quit Battle?",
       message: "Are you sure you want to quit? You'll lose this battle.",
       confirmButtonText: "Quit",
@@ -601,7 +609,8 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
           context,
           MaterialPageRoute(
             builder:
-                (context) => BBBattleReportCardScreen(
+                (context) => BBQuizReportCardScreen(
+                  quizType: QuizType.battle,
                   score: score,
                   opponentScore: opponentScore,
                   won: score > opponentScore,

@@ -1,11 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
+import 'package:brainbee/core/models/bb_question.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
+import 'package:brainbee/core/utils/helper/bb_result_extention.dart';
 import 'package:brainbee/core/widgets/popups/bb_model_button.dart';
+import 'package:brainbee/presentation/views/home/quizzes/models/quiz_question_model.dart';
+import 'package:brainbee/presentation/views/learn/battle/bb_battle_report_card.dart';
+import 'package:flutter/material.dart';
 
-enum ResultType { win, lose, tie }
-
-class ResultDialog extends StatelessWidget {
+class DynamicResultDialog extends StatelessWidget {
+  final List<QuizQuestion> inAppQuestions;
   final String title;
   final ResultType resultType;
   final int userScore;
@@ -18,21 +21,50 @@ class ResultDialog extends StatelessWidget {
   final Color? primaryColor;
   final Widget? headerIcon;
   final String? customResultMessage;
+  final QuizType quizType;
 
-  const ResultDialog({
+  // Battle-specific properties
+  final List<Question>? battleQuestions;
+  final List<int?>? battleAnswers;
+  final int? battleTimeSpent;
+  final bool? won;
+
+  // In-app quiz specific properties
+  final int? correctAnswers;
+  final int? totalQuestions;
+  final int? inAppTimeSpent;
+  final String? quizTitle;
+  final List<int?>? inAppAnswers;
+  final List<String>? explanations;
+
+  const DynamicResultDialog({
     super.key,
     required this.title,
     required this.resultType,
     required this.userScore,
     required this.opponentScore,
     required this.onActionPressed,
+    required this.onCrossPressed,
+    required this.quizType,
     this.userScoreLabel = "Your Score",
     this.opponentScoreLabel = "Opponent",
     this.actionButtonText = "Done",
     this.primaryColor,
     this.headerIcon,
     this.customResultMessage,
-    required this.onCrossPressed,
+    // Battle properties
+    this.battleQuestions,
+    this.battleAnswers,
+    this.battleTimeSpent,
+    this.won,
+    // In-app quiz properties
+    required this.inAppQuestions,
+    this.correctAnswers,
+    this.totalQuestions,
+    this.inAppTimeSpent,
+    this.quizTitle,
+    this.inAppAnswers,
+    this.explanations,
   });
 
   @override
@@ -106,7 +138,10 @@ class ResultDialog extends StatelessWidget {
                       buildStudyModeButton(
                         context,
                         label: actionButtonText,
-                        onTap: onActionPressed,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _navigateToReportCard(context);
+                        },
                       ),
                       const Expanded(child: SizedBox.shrink()),
                     ],
@@ -120,7 +155,10 @@ class ResultDialog extends StatelessWidget {
           Align(
             alignment: const Alignment(0.95, -0.375),
             child: InkWell(
-              onTap: onCrossPressed,
+              onTap: () {
+                Navigator.pop(context);
+                _navigateToReportCard(context);
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
                 decoration: BoxDecoration(
@@ -173,7 +211,14 @@ class ResultDialog extends StatelessWidget {
       children: [
         _buildScoreRow(context, userScoreLabel, userScore, Colors.blue),
         const SizedBox(height: 12),
-        _buildScoreRow(context, opponentScoreLabel, opponentScore, Colors.red),
+        _buildScoreRow(
+          context,
+          quizType == QuizType.battle ? opponentScoreLabel : "Total",
+          quizType == QuizType.battle
+              ? opponentScore
+              : (totalQuestions ?? opponentScore),
+          quizType == QuizType.battle ? Colors.red : Colors.green,
+        ),
       ],
     );
   }
@@ -239,6 +284,46 @@ class ResultDialog extends StatelessWidget {
         );
     }
   }
+
+  void _navigateToReportCard(BuildContext context) {
+    print("the quiz type is $quizType");
+    if (quizType == QuizType.battle) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => BBQuizReportCardScreen(
+                inAppQuestions: [],
+                quizType: QuizType.battle,
+                score: userScore,
+                opponentScore: opponentScore,
+                won: won ?? (userScore > opponentScore),
+                questions: battleQuestions,
+                userAnswers: battleAnswers ?? [],
+                timeSpent: battleTimeSpent ?? 0,
+              ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => BBQuizReportCardScreen(
+                quizType: QuizType.inAppQuiz,
+                score: userScore,
+                correctAnswers: correctAnswers,
+                totalQuestions: totalQuestions,
+                timeSpent: inAppTimeSpent ?? 0,
+                quizTitle: quizTitle,
+                userAnswers: inAppAnswers ?? [],
+                explanations: explanations,
+              ),
+        ),
+      );
+    }
+    onActionPressed();
+  }
 }
 
 class ResultConfig {
@@ -253,58 +338,4 @@ class ResultConfig {
     required this.borderColor,
     required this.textColor,
   });
-}
-
-// Extension method for easy usage
-extension ResultDialogExtension on BuildContext {
-  Future<void> showResultDialog({
-    required String title,
-    required ResultType resultType,
-    required int userScore,
-    required int opponentScore,
-    required VoidCallback onActionPressed,
-    required VoidCallback onCrossPressed,
-    required VoidCallback onPressedOutside,
-    String userScoreLabel = "Your Score",
-    String opponentScoreLabel = "Opponent",
-    String actionButtonText = "Done",
-    Color? primaryColor,
-    Widget? headerIcon,
-    String? customResultMessage,
-    bool barrierDismissible = true,
-    Duration transitionDuration = const Duration(milliseconds: 300),
-  }) {
-    return showGeneralDialog(
-      context: this,
-      barrierDismissible: barrierDismissible,
-      barrierLabel: "result",
-      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 0.2),
-            end: const Offset(0, 0),
-          ).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-          ),
-          child: ResultDialog(
-            title: title,
-            resultType: resultType,
-            userScore: userScore,
-            opponentScore: opponentScore,
-            onActionPressed: onActionPressed,
-            userScoreLabel: userScoreLabel,
-            opponentScoreLabel: opponentScoreLabel,
-            actionButtonText: actionButtonText,
-            primaryColor: primaryColor,
-            headerIcon: headerIcon,
-            customResultMessage: customResultMessage,
-            onCrossPressed: onCrossPressed,
-          ),
-        );
-      },
-    ).then((_) {
-      onPressedOutside();
-    });
-  }
 }

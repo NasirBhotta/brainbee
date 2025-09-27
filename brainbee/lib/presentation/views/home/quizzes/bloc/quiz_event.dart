@@ -45,3 +45,12 @@ class RefreshQuizzes extends QuizEvent {
   @override
   List<Object> get props => [subject, grade];
 }
+
+class LoadQuizById extends QuizEvent {
+  final String quizId;
+
+  const LoadQuizById({required this.quizId});
+
+  @override
+  List<Object> get props => [quizId];
+}

@@ -1,8 +1,9 @@
 // quiz_repository.dart
-import 'package:brainbee/presentation/views/home/quizzes/models/quiz_model.dart';
+import 'package:brainbee/presentation/views/home/quizzes/models/book_model.dart';
+import 'package:brainbee/presentation/views/home/quizzes/models/quiz_data_model.dart';
 
 abstract class QuizRepository {
-  Future<List<QuizData>> getQuizzesBySubject({
+  Future<BookData> getQuizzesBySubject({
     required String subject,
     required int grade,
   });

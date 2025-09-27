@@ -70,6 +70,15 @@ void main(List<String> args) async {
         BlocProvider(
           create: (_) => SettingsBloc(repository: SettingsRepository()),
         ),
+
+        BlocProvider(
+          create:
+              (_) => QuizBloc(
+                quizRepository: QuizRepositoryImpl(
+                  apiService: QuizApiService(),
+                ),
+              ),
+        ),
       ],
       child: const BrainBeeApp(),
     ),

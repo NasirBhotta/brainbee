@@ -1,4 +1,5 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
+
 import 'package:brainbee/presentation/views/dashboard/UI/bb_progress_bar.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_coin_popup.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_lives_popup.dart';
@@ -7,7 +8,7 @@ import 'package:brainbee/presentation/views/home/UI/bb_streak_popup.dart';
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 import 'package:brainbee/presentation/views/home/quizzes/bloc/quiz_bloc.dart';
-import 'package:brainbee/presentation/views/home/quizzes/models/quiz_model.dart';
+import 'package:brainbee/presentation/views/home/quizzes/models/book_model.dart';
 import 'package:brainbee/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -51,17 +52,11 @@ class _BbSpecificBookQuizSelectionState
     );
   }
 
-  void _onChapterTap(String chapterId, String topicId) {
-    // Start quiz directly without unlock mechanism
-    // context.read<QuizBloc>().add(
-    //   StartQuiz(chapterId: chapterId, topicId: topicId),
-    // );
+  void _onTopicTap(Topic topic) {
+    Navigator.pushNamed(context, AppRoutes.quizzesList, arguments: topic);
   }
 
-  void _onSelectChapterTap() {
-    // Navigate to chapter selection screen (you'll connect this later)
-    // Navigator.pushNamed(context, AppRoutes.chapterSelection);
-  }
+  void _onSelectChapterTap() {}
 
   @override
   Widget build(BuildContext context) {
@@ -106,16 +101,24 @@ class _BbSpecificBookQuizSelectionState
             SliverAppBar(
               expandedHeight: 130,
               pinned: true,
+              centerTitle: true,
+              title: Text(
+                _displaySubject,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
               floating: false,
               backgroundColor: BBColors.secondaryColor, // Your subject color
               elevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
                 onPressed: () => Navigator.pop(context),
               ),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  icon: const Icon(Icons.refresh, color: Colors.black),
                   onPressed: () {
                     context.read<QuizBloc>().add(
                       LoadSubjectQuizzes(
@@ -127,19 +130,11 @@ class _BbSpecificBookQuizSelectionState
                 ),
               ],
               flexibleSpace: FlexibleSpaceBar(
-                background: Container(color: BBColors.primaryColor),
+                background: Container(color: BBColors.white),
                 expandedTitleScale: 1,
                 title: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      _displaySubject,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                     const SizedBox(height: 10),
                     _ProgressBarRow(
                       desc: _desc,
@@ -158,13 +153,13 @@ class _BbSpecificBookQuizSelectionState
             ),
             BlocBuilder<QuizBloc, QuizState>(
               builder: (context, state) {
-                if (state is QuizLoading) {
+                if (state is BookDataLoading) {
                   return const SliverFillRemaining(
                     child: Center(child: CircularProgressIndicator()),
                   );
                 }
 
-                if (state is QuizzesLoaded) {
+                if (state is BookDataLoaded) {
                   return SliverList.builder(
                     itemBuilder: (context, index) {
                       if (index == 0) {
@@ -174,16 +169,16 @@ class _BbSpecificBookQuizSelectionState
                       }
 
                       final chapterIndex = index - 1;
-                      if (chapterIndex < state.chapters.length) {
+                      if (chapterIndex < state.bookData.chapters.length) {
                         return _ChapterCard(
-                          chapter: state.chapters[chapterIndex],
-                          onTopicTap: _onChapterTap,
+                          chapter: state.bookData.chapters[chapterIndex],
+                          onTopicTap: _onTopicTap,
                         );
                       }
 
                       return const SizedBox.shrink();
                     },
-                    itemCount: state.chapters.length + 1,
+                    itemCount: state.bookData.chapters.length + 1,
                   );
                 }
 
@@ -292,8 +287,8 @@ class _ChapterSelectionHeader extends StatelessWidget {
 }
 
 class _ChapterCard extends StatelessWidget {
-  final ParsedChapter chapter;
-  final void Function(String chapterId, String topicId) onTopicTap;
+  final Chapter chapter;
+  final void Function(Topic topic) onTopicTap;
 
   const _ChapterCard({required this.chapter, required this.onTopicTap});
 
@@ -313,16 +308,21 @@ class _ChapterCard extends StatelessWidget {
         ],
       ),
       child: ExpansionTile(
+        shape: Border(top: BorderSide.none, bottom: BorderSide.none),
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: chapter.color.withOpacity(0.1),
+            color: BBColors.primaryColor.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(chapter.icon, color: chapter.color, size: 24),
+          child: Icon(
+            Icons.book,
+            color: BBColors.secondaryColor.withValues(alpha: 1),
+            size: 24,
+          ),
         ),
         title: Text(
-          chapter.chapterTitle,
+          chapter.chapter.toString(),
           style: Theme.of(
             context,
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -336,6 +336,7 @@ class _ChapterCard extends StatelessWidget {
         children:
             chapter.topics.map((topic) {
               return ListTile(
+                style: ListTileStyle.drawer,
                 leading: const CircleAvatar(
                   radius: 16,
                   backgroundColor: Colors.grey,
@@ -348,9 +349,12 @@ class _ChapterCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                title: Text(topic.topicTitle),
+                title: Text(topic.topic),
                 // Remove the coin icon and start button
-                onTap: () => onTopicTap(chapter.chapterTitle, topic.topicKey),
+                onTap:
+                    () => onTopicTap(
+                      chapter.topics.firstWhere((t) => t.topic == topic.topic),
+                    ),
               );
             }).toList(),
       ),

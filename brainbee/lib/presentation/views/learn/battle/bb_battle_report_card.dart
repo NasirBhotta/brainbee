@@ -1,3 +1,4 @@
+import 'package:brainbee/presentation/views/home/quizzes/models/quiz_question_model.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_reportcard_pdf.dart';
 import 'package:flutter/material.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
@@ -6,30 +7,59 @@ import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/models/bb_question.dart';
 import 'package:intl/intl.dart';
 
-class BBBattleReportCardScreen extends StatefulWidget {
-  final int score;
-  final int opponentScore;
-  final bool won;
-  final List<Question> questions;
-  final List<int?> userAnswers;
-  final int timeSpent; // Total seconds spent on the quiz
+enum QuizType { battle, inAppQuiz }
 
-  const BBBattleReportCardScreen({
+class BBQuizReportCardScreen extends StatefulWidget {
+  // Common fields
+  final int score;
+  final int timeSpent;
+  final List<int?> userAnswers;
+  final QuizType quizType;
+
+  // Battle-specific fields
+  final int? opponentScore;
+  final bool? won;
+  final List<Question>? questions;
+
+  // In-app quiz specific fields
+  final List<QuizQuestion>? inAppQuestions;
+  final List<String>? explanations;
+  final int? correctAnswers;
+  final int? totalQuestions;
+  final String? quizTitle;
+  final String? topicKey;
+
+  const BBQuizReportCardScreen({
     super.key,
     required this.score,
-    required this.opponentScore,
-    required this.won,
-    required this.questions,
-    required this.userAnswers,
     required this.timeSpent,
-  });
+    required this.userAnswers,
+    required this.quizType,
+    // Battle fields
+    this.opponentScore,
+    this.won,
+    this.questions,
+    // In-app quiz fields
+    this.inAppQuestions,
+    this.explanations,
+    this.correctAnswers,
+    this.totalQuestions,
+    this.quizTitle,
+    this.topicKey,
+  }) : assert(
+         quizType == QuizType.battle
+             ? (opponentScore != null && won != null && questions != null)
+             : (inAppQuestions != null &&
+                 explanations != null &&
+                 correctAnswers != null &&
+                 totalQuestions != null),
+       );
 
   @override
-  State<BBBattleReportCardScreen> createState() =>
-      _BBBattleReportCardScreenState();
+  State<BBQuizReportCardScreen> createState() => _BBQuizReportCardScreenState();
 }
 
-class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
+class _BBQuizReportCardScreenState extends State<BBQuizReportCardScreen> {
   bool _questionsExpanded = true;
   bool _performanceExpanded = true;
   bool _improvementsExpanded = true;
@@ -41,13 +71,19 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
   late Map<String, dynamic> performanceMetrics = {};
   late List<Map<String, dynamic>> improvements = [];
 
-  // Added properties to handle edge cases
+  // Properties to handle edge cases
   late bool isQuizAbandoned;
   late List<int?> normalizedUserAnswers;
+
+  // Dynamic properties based on quiz type
+  late List<dynamic> currentQuestions;
+  late int totalQuestionsCount;
 
   @override
   void initState() {
     super.initState();
+
+    _initializeDynamicProperties();
     _handleEdgeCases();
     _generateQuizAnalytics();
     _mockPastQuizData();
@@ -56,19 +92,26 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
     _generateImprovementSuggestions();
   }
 
+  void _initializeDynamicProperties() {
+    if (widget.quizType == QuizType.battle) {
+      currentQuestions = widget.questions!;
+      totalQuestionsCount = widget.questions!.length;
+    } else {
+      currentQuestions = widget.inAppQuestions!;
+      totalQuestionsCount = widget.totalQuestions!;
+    }
+  }
+
   void _handleEdgeCases() {
-    // Check if quiz was abandoned (empty answers array or significantly fewer answers than questions)
     isQuizAbandoned =
         widget.userAnswers.isEmpty ||
-        widget.userAnswers.length < widget.questions.length;
+        widget.userAnswers.length < totalQuestionsCount;
 
-    // Normalize user answers to match questions length
-    normalizedUserAnswers = List<int?>.filled(widget.questions.length, null);
+    normalizedUserAnswers = List<int?>.filled(totalQuestionsCount, null);
 
-    // Copy existing answers if any
     for (
       int i = 0;
-      i < widget.userAnswers.length && i < widget.questions.length;
+      i < widget.userAnswers.length && i < totalQuestionsCount;
       i++
     ) {
       normalizedUserAnswers[i] = widget.userAnswers[i];
@@ -76,63 +119,83 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
   }
 
   void _generateQuizAnalytics() {
-    // Calculate analytics for this specific quiz
     int correctAnswers = 0;
     int incorrectAnswers = 0;
     int unanswered = 0;
 
-    for (int i = 0; i < widget.questions.length; i++) {
-      // Use normalized answers
+    for (int i = 0; i < totalQuestionsCount; i++) {
       int? userAnswer =
           i < normalizedUserAnswers.length ? normalizedUserAnswers[i] : null;
 
       if (userAnswer == null) {
         unanswered++;
-      } else if (userAnswer == widget.questions[i].correctOptionIndex) {
-        correctAnswers++;
       } else {
-        incorrectAnswers++;
+        int correctIndex;
+        if (widget.quizType == QuizType.battle) {
+          correctIndex = (currentQuestions[i] as Question).correctOptionIndex;
+        } else {
+          correctIndex =
+              (currentQuestions[i] as QuizQuestion).correctChoiceIndex;
+        }
+
+        if (userAnswer == correctIndex) {
+          correctAnswers++;
+        } else {
+          incorrectAnswers++;
+        }
       }
     }
 
-    // Calculate average time per question - handle zero time case
     int avgTimePerQuestion =
-        widget.questions.isEmpty
+        totalQuestionsCount == 0
             ? 0
             : (widget.timeSpent <= 0
                 ? 0
-                : widget.timeSpent ~/ widget.questions.length);
+                : widget.timeSpent ~/ totalQuestionsCount);
 
-    // Handle accuracy calculation for edge cases
-    double accuracyPercentage = 0;
-    if (widget.questions.isNotEmpty) {
-      accuracyPercentage = (correctAnswers / widget.questions.length * 100);
-    }
+    double accuracyPercentage =
+        totalQuestionsCount == 0
+            ? 0.0
+            : (correctAnswers / totalQuestionsCount * 100);
 
     quizAnalytics = {
       "date": DateFormat('MMM d, yyyy').format(DateTime.now()),
-      "totalQuestions": widget.questions.length,
+      "totalQuestions": totalQuestionsCount,
       "correctAnswers": correctAnswers,
       "incorrectAnswers": incorrectAnswers,
       "unanswered": unanswered,
       "accuracy": accuracyPercentage.round(),
       "score": widget.score,
-      "opponentScore": widget.opponentScore,
-      "result": widget.won ? "Won" : "Lost",
+      "opponentScore": widget.opponentScore ?? 0,
+      "result": _getQuizResult(correctAnswers),
       "timeSpent": widget.timeSpent,
       "avgTimePerQuestion": avgTimePerQuestion,
       "isAbandoned": isQuizAbandoned,
     };
   }
 
+  String _getQuizResult(int correctAnswers) {
+    if (widget.quizType == QuizType.battle) {
+      return widget.won! ? "Won" : "Lost";
+    } else {
+      if (totalQuestionsCount == 0) {
+        return "Needs Improvement";
+      }
+      double percentage = (correctAnswers / totalQuestionsCount * 100);
+      if (percentage >= 80) return "Excellent";
+      if (percentage >= 60) return "Good";
+      if (percentage >= 40) return "Average";
+      return "Needs Improvement";
+    }
+  }
+
   void _mockPastQuizData() {
-    // Mock data for past quizzes - in production, this would come from backend
     pastQuizzes = [
       {
         "id": 1,
         "date": "May 10, 2025",
         "score": 85,
-        "opponentScore": 72,
+        "opponentScore": widget.quizType == QuizType.battle ? 72 : 100,
         "accuracy": 80,
         "avgTimePerQuestion": 8,
       },
@@ -140,7 +203,7 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
         "id": 2,
         "date": "May 8, 2025",
         "score": 63,
-        "opponentScore": 78,
+        "opponentScore": widget.quizType == QuizType.battle ? 78 : 100,
         "accuracy": 60,
         "avgTimePerQuestion": 10,
       },
@@ -148,7 +211,7 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
         "id": 3,
         "date": "May 5, 2025",
         "score": 92,
-        "opponentScore": 85,
+        "opponentScore": widget.quizType == QuizType.battle ? 85 : 100,
         "accuracy": 90,
         "avgTimePerQuestion": 7,
       },
@@ -156,42 +219,66 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
   }
 
   void _analyzeQuestions() {
-    // Create detailed analysis for each question
-    questionAnalysis = List.generate(widget.questions.length, (index) {
-      // Use normalized answers
+    questionAnalysis = List.generate(totalQuestionsCount, (index) {
       int? userAnswer =
           index < normalizedUserAnswers.length
               ? normalizedUserAnswers[index]
               : null;
-      bool isCorrect =
-          userAnswer != null &&
-          userAnswer == widget.questions[index].correctOptionIndex;
+
+      int correctIndex;
+      String questionText;
+      List<String> options;
+      String? explanation;
+
+      if (widget.quizType == QuizType.battle) {
+        final question = currentQuestions[index] as Question;
+        correctIndex = question.correctOptionIndex;
+        questionText = question.text;
+        options = question.options;
+        explanation = null;
+      } else {
+        final question = currentQuestions[index] as QuizQuestion;
+        correctIndex = question.correctChoiceIndex;
+        questionText = question.stem;
+        options =
+            question.choices
+                .map(
+                  (choice) => choice.replaceFirst(RegExp(r'^[A-D]\.\s*'), ''),
+                )
+                .toList();
+        explanation = question.explanation;
+      }
+
+      bool isCorrect = userAnswer != null && userAnswer == correctIndex;
       bool isUnanswered = userAnswer == null;
 
       String difficultyLevel = "Medium";
-      if (index % 3 == 0) difficultyLevel = "Easy";
-      if (index % 3 == 2) difficultyLevel = "Hard";
+      if (widget.quizType == QuizType.inAppQuiz) {
+        final difficulty = (currentQuestions[index] as QuizQuestion).difficulty;
+        if (difficulty < 0.4) {
+          difficultyLevel = "Easy";
+        } else if (difficulty > 0.7) {
+          difficultyLevel = "Hard";
+        }
+      } else {
+        if (index % 3 == 0) difficultyLevel = "Easy";
+        if (index % 3 == 2) difficultyLevel = "Hard";
+      }
 
       return {
         "questionNumber": index + 1,
-        "question": widget.questions[index].text,
-        "correctAnswer":
-            widget.questions[index].options[widget
-                .questions[index]
-                .correctOptionIndex],
-        "userAnswer":
-            isUnanswered
-                ? "Unanswered"
-                : widget.questions[index].options[userAnswer],
+        "question": questionText,
+        "correctAnswer": options[correctIndex],
+        "userAnswer": isUnanswered ? "Unanswered" : options[userAnswer],
         "isCorrect": isCorrect,
         "isUnanswered": isUnanswered,
         "difficultyLevel": difficultyLevel,
+        "explanation": explanation,
       };
     });
   }
 
   void _generatePerformanceMetrics() {
-    // Calculate performance metrics compared to past quizzes
     double avgPastAccuracy = 0;
     double avgPastTime = 0;
     int totalPastQuizzes = pastQuizzes.length;
@@ -207,135 +294,140 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
 
     performanceMetrics = {
       "accuracyChange": quizAnalytics["accuracy"] - avgPastAccuracy,
-      "speedChange":
-          avgPastTime -
-          quizAnalytics["avgTimePerQuestion"], // Positive means improvement
+      "speedChange": avgPastTime - quizAnalytics["avgTimePerQuestion"],
       "scoreChange":
           widget.score -
           (pastQuizzes.isNotEmpty
               ? pastQuizzes[0]["score"] as int
               : widget.score),
-      "winRateChange": _calculateWinRateChange(),
+      "winRateChange": _calculatePerformanceChange(),
     };
   }
 
-  double _calculateWinRateChange() {
-    // Calculate win rate change from past quizzes
-    int pastWins = 0;
-    for (var quiz in pastQuizzes) {
-      if ((quiz["score"] as int) > (quiz["opponentScore"] as int)) {
-        pastWins++;
+  double _calculatePerformanceChange() {
+    if (widget.quizType == QuizType.battle) {
+      int pastWins = 0;
+      for (var quiz in pastQuizzes) {
+        if ((quiz["score"] as int) > (quiz["opponentScore"] as int)) {
+          pastWins++;
+        }
       }
+      double pastWinRate =
+          pastQuizzes.isEmpty ? 0 : (pastWins / pastQuizzes.length * 100);
+      double currentWinRate = widget.won! ? 100 : 0;
+      return currentWinRate - pastWinRate;
+    } else {
+      // For in-app quizzes, calculate improvement in overall performance
+      // FIX: Convert the 'int' value from the map to a 'double'.
+      double currentPerformance = (quizAnalytics["accuracy"] as int).toDouble();
+      double pastAvgPerformance =
+          pastQuizzes.isNotEmpty
+              ? pastQuizzes
+                      .map((q) => q["accuracy"] as int)
+                      .reduce((a, b) => a + b) /
+                  pastQuizzes.length
+              : currentPerformance;
+      return currentPerformance - pastAvgPerformance;
     }
-
-    double pastWinRate =
-        pastQuizzes.isEmpty ? 0 : (pastWins / pastQuizzes.length * 100);
-    double currentWinRate = widget.won ? 100 : 0;
-
-    return currentWinRate - pastWinRate;
   }
 
   void _generateImprovementSuggestions() {
-    // Generate improvement suggestions based on quiz performance
     improvements = [];
 
-    // Special handling for abandoned quiz
     if (isQuizAbandoned) {
       improvements.add({
         "title": "Quiz Completion",
         "description":
-            "You left the quiz early. Try to complete all questions even if you're unsure - partial credit is better than no attempt.",
+            widget.quizType == QuizType.battle
+                ? "You left the battle early. Try to answer all questions to maximize your score."
+                : "You left the quiz early. Try to complete all questions even if you're unsure.",
         "icon": Icons.warning_amber,
       });
     }
 
-    // Check for accuracy issues
     if (quizAnalytics["accuracy"] < 70) {
       improvements.add({
         "title": "Focus on Accuracy",
         "description":
-            "Your accuracy is below 70%. Try to understand concepts more thoroughly before answering.",
-        "icon": Icons.gpp_bad,
+            widget.quizType == QuizType.battle
+                ? "Your accuracy is below 70%. Study the fundamentals to improve your battle performance."
+                : "Your accuracy is below 70%. Review the topic thoroughly before attempting more quizzes.",
+        "icon": Icons.gps_fixed,
       });
     }
 
-    // Check for time management issues
-    if (quizAnalytics["avgTimePerQuestion"] > 10) {
+    if (quizAnalytics["avgTimePerQuestion"] > 15) {
       improvements.add({
         "title": "Improve Speed",
         "description":
-            "You're taking more than 10 seconds per question. Practice quick decision making and time management.",
+            widget.quizType == QuizType.battle
+                ? "You're taking too long per question. Practice quick decision making for battles."
+                : "You're taking more than 15 seconds per question. Practice time management.",
         "icon": Icons.timer,
       });
     }
 
-    // Check for time management issues - too fast (might indicate rushing)
     if (quizAnalytics["avgTimePerQuestion"] > 0 &&
         quizAnalytics["avgTimePerQuestion"] < 3) {
       improvements.add({
         "title": "Take Your Time",
         "description":
-            "You're answering very quickly. Consider reading questions more carefully to improve accuracy.",
+            "You're answering very quickly. Consider reading questions more carefully.",
         "icon": Icons.slow_motion_video,
       });
     }
 
-    // Check for unanswered questions
     if (quizAnalytics["unanswered"] > 0) {
       improvements.add({
         "title": "Answer All Questions",
         "description":
-            "You left ${quizAnalytics["unanswered"]} questions unanswered. Remember, making an educated guess is better than no answer.",
+            "You left ${quizAnalytics["unanswered"]} questions unanswered. ${widget.quizType == QuizType.battle ? "Every answer counts in battle!" : "Making an educated guess is better than no answer."}",
         "icon": Icons.help_outline,
       });
     }
 
-    // Handle zero score case
     if (widget.score == 0) {
       improvements.add({
         "title": "Back to Basics",
         "description":
-            "Consider reviewing fundamental concepts before attempting more quizzes. Practice makes perfect!",
+            widget.quizType == QuizType.battle
+                ? "Consider practicing with study mode before entering battles."
+                : "Review fundamental concepts before attempting more quizzes.",
         "icon": Icons.school,
       });
     }
 
-    // If performing well, provide positive feedback
-    if (improvements.isEmpty) {
-      improvements.add({
-        "title": "Excellent Performance!",
-        "description":
-            "You're doing great! Keep practicing to maintain your high level of performance.",
-        "icon": Icons.emoji_events,
-      });
-    }
+    if (widget.quizType == QuizType.inAppQuiz &&
+        widget.inAppQuestions != null &&
+        widget.inAppQuestions!.isNotEmpty) {
+      double avgDifficulty =
+          widget.inAppQuestions!
+              .map((q) => q.difficulty)
+              .reduce((a, b) => a + b) /
+          widget.inAppQuestions!.length;
 
-    // Add subject-specific suggestion based on questions
-    if (widget.questions.isNotEmpty) {
-      int scienceQuestions =
-          widget.questions.length ~/ 3; // Assuming 1/3 are science
-      int incorrectScience = 0;
-
-      for (
-        int i = 0;
-        i < scienceQuestions && i < normalizedUserAnswers.length;
-        i++
-      ) {
-        if (normalizedUserAnswers[i] == null ||
-            normalizedUserAnswers[i] !=
-                widget.questions[i].correctOptionIndex) {
-          incorrectScience++;
-        }
-      }
-
-      if (scienceQuestions > 0 && incorrectScience > scienceQuestions / 2) {
+      if (avgDifficulty > 0.7 && quizAnalytics["accuracy"] < 60) {
         improvements.add({
-          "title": "Review Science Concepts",
+          "title": "Challenge Level",
           "description":
-              "You struggled with science questions. Focus on reviewing fundamental scientific principles.",
-          "icon": Icons.science,
+              "This was a difficult quiz. Try easier topics first to build confidence.",
+          "icon": Icons.trending_down,
         });
       }
+    }
+
+    if (improvements.isEmpty) {
+      improvements.add({
+        "title":
+            widget.quizType == QuizType.battle
+                ? "Battle Champion!"
+                : "Excellent Performance!",
+        "description":
+            widget.quizType == QuizType.battle
+                ? "You're dominating the battles! Keep up the great work!"
+                : "You're mastering the material! Keep practicing to maintain excellence.",
+        "icon": Icons.emoji_events,
+      });
     }
   }
 
@@ -346,7 +438,10 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
       appBar: AppBar(
         backgroundColor: BBColors.lightGrayBG,
         title: BBText(
-          data: "Quiz Report Card",
+          data:
+              widget.quizType == QuizType.battle
+                  ? "Battle Report Card"
+                  : "${widget.quizTitle ?? 'Quiz'} Report",
           style: context.textStyle.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -365,9 +460,9 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
             onPressed: () {
               ReportCardPDFGenerator.generatePDF(
                 score: widget.score,
-                opponentScore: widget.opponentScore,
-                won: widget.won,
-                questions: widget.questions,
+                opponentScore: widget.opponentScore ?? 100,
+                won: widget.won ?? (quizAnalytics["accuracy"] >= 70),
+                questions: widget.questions ?? [],
                 userAnswers: widget.userAnswers,
                 timeSpent: widget.timeSpent,
                 quizAnalytics: quizAnalytics,
@@ -385,9 +480,9 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
             onPressed: () {
               ReportCardPDFGenerator.generatePDF(
                 score: widget.score,
-                opponentScore: widget.opponentScore,
-                won: widget.won,
-                questions: widget.questions,
+                opponentScore: widget.opponentScore ?? 100,
+                won: widget.won ?? (quizAnalytics["accuracy"] >= 70),
+                questions: widget.questions ?? [],
                 userAnswers: widget.userAnswers,
                 timeSpent: widget.timeSpent,
                 quizAnalytics: quizAnalytics,
@@ -432,16 +527,18 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
                       ),
                   child: _buildPerformanceMetrics(),
                 ),
-                const SizedBox(height: 16),
-                _buildExpandableSection(
-                  title: 'Comparison with Past Quizzes',
-                  isExpanded: _comparisonExpanded,
-                  onToggle:
-                      () => setState(
-                        () => _comparisonExpanded = !_comparisonExpanded,
-                      ),
-                  child: _buildComparisonChart(),
-                ),
+                if (widget.quizType == QuizType.battle) ...[
+                  const SizedBox(height: 16),
+                  _buildExpandableSection(
+                    title: 'Battle History',
+                    isExpanded: _comparisonExpanded,
+                    onToggle:
+                        () => setState(
+                          () => _comparisonExpanded = !_comparisonExpanded,
+                        ),
+                    child: _buildComparisonChart(),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 _buildExpandableSection(
                   title: 'Improvement Suggestions',
@@ -463,6 +560,41 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
   }
 
   Widget _buildQuizSummary() {
+    String resultText;
+    Color resultColor;
+    IconData resultIcon;
+
+    if (widget.quizType == QuizType.battle) {
+      resultText = widget.won! ? "Victory!" : "Better Luck Next Time";
+      resultColor = widget.won! ? Colors.green : Colors.red;
+      resultIcon =
+          widget.won! ? Icons.emoji_events : Icons.sentiment_dissatisfied;
+    } else {
+      double percentage =
+          totalQuestionsCount > 0
+              ? (quizAnalytics["correctAnswers"] / totalQuestionsCount * 100)
+              : 0.0;
+      if (percentage >= 80) {
+        resultText = "Excellent Work!";
+        resultColor = Colors.green;
+        resultIcon = Icons.emoji_events;
+      } else if (percentage >= 60) {
+        resultText = "Good Job!";
+        resultColor = Colors.blue;
+        resultIcon = Icons.thumb_up;
+      } else {
+        resultText = "Keep Trying!";
+        resultColor = Colors.orange;
+        resultIcon = Icons.school;
+      }
+    }
+
+    if (isQuizAbandoned) {
+      resultText = "Quiz Incomplete";
+      resultColor = Colors.red;
+      resultIcon = Icons.warning_amber;
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -486,25 +618,11 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
                 height: 60,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color:
-                      widget.won
-                          ? Colors.green.withOpacity(0.15)
-                          : Colors.red.withOpacity(0.15),
-                  border: Border.all(
-                    color: widget.won ? Colors.green : Colors.red,
-                    width: 2,
-                  ),
+                  color: resultColor.withOpacity(0.15),
+                  border: Border.all(color: resultColor, width: 2),
                 ),
                 child: Center(
-                  child: Icon(
-                    widget.won
-                        ? Icons.emoji_events
-                        : (isQuizAbandoned
-                            ? Icons.warning_amber
-                            : Icons.sentiment_dissatisfied),
-                    size: 30,
-                    color: widget.won ? Colors.green : Colors.red,
-                  ),
+                  child: Icon(resultIcon, size: 30, color: resultColor),
                 ),
               ),
               const SizedBox(width: 16),
@@ -513,26 +631,25 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     BBText(
-                      data:
-                          widget.won
-                              ? "Victory!"
-                              : (isQuizAbandoned
-                                  ? "Quiz Incomplete"
-                                  : "Better Luck Next Time"),
+                      data: resultText,
                       style: context.textStyle.titleMedium?.copyWith(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: widget.won ? Colors.green : Colors.red,
+                        color: resultColor,
                       ),
                     ),
                     const SizedBox(height: 4),
                     BBText(
                       data:
-                          isQuizAbandoned
-                              ? "Quiz ended early on ${quizAnalytics['date']}"
-                              : "Quiz completed on ${quizAnalytics['date']}",
+                          "${widget.quizType == QuizType.battle ? 'Battle' : 'Quiz'} completed on ${quizAnalytics['date']}",
                       style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
+                    if (widget.quizType == QuizType.inAppQuiz &&
+                        widget.topicKey != null)
+                      BBText(
+                        data: "Topic: ${widget.topicKey!.split('::').last}",
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
                   ],
                 ),
               ),
@@ -558,11 +675,18 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
                   BBColors.primaryColor,
                 ),
                 _buildDivider(),
-                _buildScoreItem(
-                  "Opponent",
-                  widget.opponentScore.toString(),
-                  Colors.red,
-                ),
+                if (widget.quizType == QuizType.battle)
+                  _buildScoreItem(
+                    "Opponent",
+                    widget.opponentScore.toString(),
+                    Colors.red,
+                  )
+                else
+                  _buildScoreItem(
+                    "Correct",
+                    "${quizAnalytics['correctAnswers']}/$totalQuestionsCount",
+                    Colors.green,
+                  ),
                 _buildDivider(),
                 _buildScoreItem(
                   "Time",
@@ -574,170 +698,6 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScoreItem(String label, String value, Color color) {
-    return Column(
-      children: [
-        BBText(
-          data: label,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        ),
-        const SizedBox(height: 4),
-        BBText(
-          data: value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDivider() {
-    return Container(height: 30, width: 1, color: Colors.grey.withOpacity(0.3));
-  }
-
-  Widget _buildQuizStatCards() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            title: 'Accuracy',
-            value: "${quizAnalytics['accuracy']}%",
-            icon: Icons.check_circle_outline,
-            color: _getAccuracyColor(quizAnalytics['accuracy']),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            title: 'Correct',
-            value:
-                "${quizAnalytics['correctAnswers']}/${quizAnalytics['totalQuestions']}",
-            icon: Icons.thumb_up_alt_outlined,
-            color: Colors.green,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            title: 'Avg Time',
-            value: "${quizAnalytics['avgTimePerQuestion']}s",
-            icon: Icons.timer_outlined,
-            color: Colors.orange,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getAccuracyColor(int accuracy) {
-    if (accuracy >= 80) return Colors.green;
-    if (accuracy >= 60) return Colors.orange;
-    return Colors.red;
-  }
-
-  Widget _buildStatCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          BBText(
-            data: value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: BBColors.black,
-            ),
-          ),
-          const SizedBox(height: 4),
-          BBText(
-            data: title,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ... (rest of the methods remain the same as in your original code)
-  // I'm keeping the rest of the implementation unchanged to focus on the edge case fixes
-
-  Widget _buildExpandableSection({
-    required String title,
-    required bool isExpanded,
-    required VoidCallback onToggle,
-    required Widget child,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            spreadRadius: 1,
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            splashColor: Colors.transparent,
-            onTap: onToggle,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: BBColors.black,
-                    ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    isExpanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    color: BBColors.primaryColor,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (isExpanded) child,
         ],
       ),
     );
@@ -758,6 +718,7 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
   Widget _buildQuestionItem(Map<String, dynamic> question, int index) {
     final isCorrect = question['isCorrect'] as bool;
     final isUnanswered = question['isUnanswered'] as bool;
+    final explanation = question['explanation'] as String?;
 
     Color statusColor =
         isCorrect ? Colors.green : (isUnanswered ? Colors.orange : Colors.red);
@@ -858,6 +819,45 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
                 ),
             ],
           ),
+          if (explanation != null && explanation.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.lightbulb, size: 16, color: Colors.blue[700]),
+                      const SizedBox(width: 4),
+                      BBText(
+                        data: "Explanation:",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  BBText(
+                    data: explanation,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue[800],
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -894,6 +894,169 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
     );
   }
 
+  Widget _buildScoreItem(String label, String value, Color color) {
+    return Column(
+      children: [
+        BBText(
+          data: label,
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        ),
+        const SizedBox(height: 4),
+        BBText(
+          data: value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(height: 30, width: 1, color: Colors.grey.withOpacity(0.3));
+  }
+
+  Widget _buildQuizStatCards() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildStatCard(
+            title: 'Accuracy',
+            value: "${quizAnalytics['accuracy']}%",
+            icon: Icons.check_circle_outline,
+            color: _getAccuracyColor(quizAnalytics['accuracy']),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard(
+            title: widget.quizType == QuizType.battle ? 'Correct' : 'Score',
+            value:
+                widget.quizType == QuizType.battle
+                    ? "${quizAnalytics['correctAnswers']}/${quizAnalytics['totalQuestions']}"
+                    : "${quizAnalytics['correctAnswers']}/$totalQuestionsCount",
+            icon: Icons.thumb_up_alt_outlined,
+            color: Colors.green,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard(
+            title: 'Avg Time',
+            value: "${quizAnalytics['avgTimePerQuestion']}s",
+            icon: Icons.timer_outlined,
+            color: Colors.orange,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _getAccuracyColor(int accuracy) {
+    if (accuracy >= 80) return Colors.green;
+    if (accuracy >= 60) return Colors.orange;
+    return Colors.red;
+  }
+
+  Widget _buildStatCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 28),
+          const SizedBox(height: 8),
+          BBText(
+            data: value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: BBColors.black,
+            ),
+          ),
+          const SizedBox(height: 4),
+          BBText(
+            data: title,
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpandableSection({
+    required String title,
+    required bool isExpanded,
+    required VoidCallback onToggle,
+    required Widget child,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            spreadRadius: 1,
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            splashColor: Colors.transparent,
+            onTap: onToggle,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: BBColors.black,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: BBColors.primaryColor,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (isExpanded) child,
+        ],
+      ),
+    );
+  }
+
   Color _getDifficultyColor(String difficulty) {
     switch (difficulty) {
       case "Easy":
@@ -924,7 +1087,7 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
             "Speed (sec/question)",
             quizAnalytics['avgTimePerQuestion'],
             -performanceMetrics['speedChange'],
-            15,
+            widget.quizType == QuizType.battle ? 15 : 30,
             Icons.speed,
             invertProgress: true,
           ),
@@ -933,7 +1096,7 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
             "Score",
             widget.score,
             performanceMetrics['scoreChange'],
-            100,
+            widget.quizType == QuizType.battle ? 100 : 500,
             Icons.leaderboard,
           ),
         ],
@@ -943,8 +1106,9 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
 
   Widget _buildPerformanceProgressBar(
     String label,
-    dynamic value,
-    dynamic change,
+    // FIX: Use 'num' for better type safety instead of 'dynamic'
+    num value,
+    num change,
     int maxValue,
     IconData icon, {
     bool invertProgress = false,
@@ -1004,10 +1168,12 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
     );
   }
 
-  Widget _buildChangeIndicator(dynamic change) {
+  // FIX: Use 'num' for better type safety
+  Widget _buildChangeIndicator(num change) {
     bool isPositive = change > 0;
+    num displayChange = change;
     if (change is double) {
-      change = (change * 10).round() / 10;
+      displayChange = (change * 10).round() / 10;
     }
 
     return Container(
@@ -1036,7 +1202,7 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
           ),
           const SizedBox(width: 2),
           BBText(
-            data: "${isPositive ? '+' : ''}${change.toString()}",
+            data: "${isPositive ? '+' : ''}${displayChange.toString()}",
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,
@@ -1102,23 +1268,25 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
                             color: Colors.grey[600],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Container(
-                          width: 12,
-                          height: 12,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
+                        if (widget.quizType == QuizType.battle) ...[
+                          const SizedBox(width: 12),
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        BBText(
-                          data: "Opponent",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
+                          const SizedBox(width: 4),
+                          BBText(
+                            data: "Opponent",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ],
@@ -1143,30 +1311,25 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
 
   List<Widget> _buildChartBars() {
     List<Widget> bars = [];
-
-    // Add past quizzes data
     for (int i = 0; i < pastQuizzes.length; i++) {
       var quiz = pastQuizzes[i];
       bars.add(
         _buildChartBar(
           quiz['score'] as int,
-          quiz['opponentScore'] as int,
+          widget.quizType == QuizType.battle ? quiz['opponentScore'] as int : 0,
           quiz['date'] as String,
           false,
         ),
       );
     }
-
-    // Add current quiz
     bars.add(
       _buildChartBar(
         widget.score,
-        widget.opponentScore,
+        widget.opponentScore ?? 0,
         quizAnalytics['date'] as String,
         true,
       ),
     );
-
     return bars;
   }
 
@@ -1177,18 +1340,21 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
     bool isCurrent,
   ) {
     double maxHeight = 120;
-    double userHeight = (userScore / 100 * maxHeight).clamp(10, maxHeight);
-    double opponentHeight = (opponentScore / 100 * maxHeight).clamp(
-      10,
-      maxHeight,
-    );
+    double userHeight = (userScore /
+            (widget.quizType == QuizType.battle ? 100 : 500) *
+            maxHeight)
+        .clamp(10, maxHeight);
+    double opponentHeight =
+        widget.quizType == QuizType.battle
+            ? (opponentScore / 100 * maxHeight).clamp(10, maxHeight)
+            : 0;
 
     return Expanded(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
@@ -1208,29 +1374,31 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
                           : null,
                 ),
               ),
-              const SizedBox(width: 4),
-              Container(
-                width: 12,
-                height: opponentHeight,
-                decoration: BoxDecoration(
-                  color:
-                      isCurrent
-                          ? Colors.red.withOpacity(0.8)
-                          : Colors.red.withOpacity(0.5),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(6),
+              if (widget.quizType == QuizType.battle) ...[
+                const SizedBox(width: 4),
+                Container(
+                  width: 12,
+                  height: opponentHeight,
+                  decoration: BoxDecoration(
+                    color:
+                        isCurrent
+                            ? Colors.red.withOpacity(0.8)
+                            : Colors.red.withOpacity(0.5),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(6),
+                    ),
+                    border:
+                        isCurrent
+                            ? Border.all(color: Colors.red, width: 2)
+                            : null,
                   ),
-                  border:
-                      isCurrent
-                          ? Border.all(color: Colors.red, width: 2)
-                          : null,
                 ),
-              ),
+              ],
             ],
           ),
           const SizedBox(height: 8),
           BBText(
-            data: date.split(',')[0], // Show only "May 10" part
+            data: date.split(',')[0],
             style: TextStyle(
               fontSize: 10,
               color: Colors.grey[600],
@@ -1248,7 +1416,10 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         BBText(
-          data: "Recent Quiz History",
+          data:
+              widget.quizType == QuizType.battle
+                  ? "Battle History"
+                  : "Quiz History",
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -1260,7 +1431,7 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
         _buildQuizHistoryItem({
           'date': quizAnalytics['date'],
           'score': widget.score,
-          'opponentScore': widget.opponentScore,
+          'opponentScore': widget.opponentScore ?? 0,
           'accuracy': quizAnalytics['accuracy'],
           'avgTimePerQuestion': quizAnalytics['avgTimePerQuestion'],
         }, isCurrent: true),
@@ -1272,7 +1443,10 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
     Map<String, dynamic> quiz, {
     bool isCurrent = false,
   }) {
-    bool won = (quiz['score'] as int) > (quiz['opponentScore'] as int);
+    bool won =
+        widget.quizType == QuizType.battle
+            ? (quiz['score'] as int) > (quiz['opponentScore'] as int)
+            : (quiz['accuracy'] as int) >= 70;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -1352,7 +1526,9 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
                   children: [
                     BBText(
                       data:
-                          "Score: ${quiz['score']} vs ${quiz['opponentScore']}",
+                          widget.quizType == QuizType.battle
+                              ? "Score: ${quiz['score']} vs ${quiz['opponentScore']}"
+                              : "Score: ${quiz['score']}",
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                     const Spacer(),
@@ -1444,11 +1620,7 @@ class _BBBattleReportCardScreenState extends State<BBBattleReportCardScreen> {
       width: double.infinity,
       child: TextButton.icon(
         onPressed: () {
-          Navigator.pop(context);
-          Navigator.pop(context);
-          Navigator.pop(context);
-          Navigator.pop(context);
-          Navigator.pop(context);
+          Navigator.of(context).popUntil((route) => route.isFirst);
         },
         icon: const Icon(Icons.home, color: Colors.grey),
         label: const BBText(

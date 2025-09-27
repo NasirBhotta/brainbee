@@ -1,33 +1,58 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
+import 'package:brainbee/core/models/bb_question.dart';
+import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/widgets/popups/bb_model_button.dart';
+import 'package:brainbee/presentation/views/learn/battle/bb_battle_report_card.dart';
 import 'package:flutter/material.dart';
 
-class ConfirmationDialog extends StatelessWidget {
+class QuitConfirmationDialog extends StatelessWidget {
   final String title;
   final String message;
   final String confirmButtonText;
   final String cancelButtonText;
   final VoidCallback onConfirm;
   final VoidCallback? onCancel;
-  final Color? backgroundColor;
-  final Color? primaryColor;
-  final Color? borderColor;
-  final bool showCloseButton;
-  final String? barrierLabel;
+  final QuizType quizType;
 
-  const ConfirmationDialog({
+  // Battle-specific properties
+  final int? battleScore;
+  final int? opponentScore;
+  final List<Question>? battleQuestions;
+  final List<int?>? battleAnswers;
+  final int? battleTimeSpent;
+
+  // In-app quiz specific properties
+  final int? inAppScore;
+  final int? correctAnswers;
+  final int? totalQuestions;
+  final int? inAppTimeSpent;
+  final String? quizTitle;
+  final List<int?>? inAppAnswers;
+  final List<String>? explanations;
+
+  const QuitConfirmationDialog({
     super.key,
     required this.title,
     required this.message,
     required this.onConfirm,
-    this.confirmButtonText = "Confirm",
+    required this.quizType,
+    this.confirmButtonText = "Quit",
     this.cancelButtonText = "Cancel",
     this.onCancel,
-    this.backgroundColor,
-    this.primaryColor,
-    this.borderColor,
-    this.showCloseButton = true,
-    this.barrierLabel,
+    // Battle properties
+    this.battleScore,
+    this.opponentScore,
+    this.battleQuestions,
+    this.battleAnswers,
+    this.battleTimeSpent,
+    // In-app quiz properties
+    this.inAppScore,
+    this.correctAnswers,
+    this.totalQuestions,
+    this.inAppTimeSpent,
+    this.quizTitle,
+    this.inAppAnswers,
+    this.explanations,
   });
 
   @override
@@ -41,8 +66,7 @@ class ConfirmationDialog extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 20),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               decoration: BoxDecoration(
-                color:
-                    backgroundColor ?? Theme.of(context).dialogBackgroundColor,
+                color: Theme.of(context).dialogBackgroundColor,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Column(
@@ -50,16 +74,16 @@ class ConfirmationDialog extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Center(
-                    child: Text(
-                      title,
+                    child: BBText(
+                      data: title,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   const Divider(color: BBColors.borderGray),
-                  Text(
-                    message,
+                  BBText(
+                    data: message,
                     style: Theme.of(context).textTheme.bodyMedium,
                     textAlign: TextAlign.center,
                   ),
@@ -81,7 +105,7 @@ class ConfirmationDialog extends StatelessWidget {
                         label: confirmButtonText,
                         onTap: () {
                           Navigator.pop(context);
-                          onConfirm();
+                          _handleQuit(context);
                         },
                       ),
                       const Expanded(child: SizedBox.shrink()),
@@ -91,90 +115,76 @@ class ConfirmationDialog extends StatelessWidget {
               ),
             ),
           ),
-          if (showCloseButton)
-            Align(
-              alignment: const Alignment(0.95, -0.145),
-              child: InkWell(
-                onTap: () {
-                  Navigator.pop(context);
-                  onCancel?.call();
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 5,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        backgroundColor ??
-                        Theme.of(context).dialogBackgroundColor,
-                    borderRadius: BorderRadius.circular(2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.3),
-                        spreadRadius: 0.5,
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.close,
-                    size: 20,
-                    color: primaryColor ?? Theme.of(context).primaryColor,
-                  ),
+          Align(
+            alignment: const Alignment(0.95, -0.145),
+            child: InkWell(
+              onTap: () {
+                Navigator.pop(context);
+                onCancel?.call();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).dialogBackgroundColor,
+                  borderRadius: BorderRadius.circular(2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.3),
+                      spreadRadius: 0.5,
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.close,
+                  size: 20,
+                  color: Theme.of(context).primaryColor,
                 ),
               ),
             ),
+          ),
         ],
       ),
     );
   }
-}
 
-// Extension method to show the dialog easily
-extension ConfirmationDialogExtension on BuildContext {
-  Future<void> showConfirmationDialog({
-    required String title,
-    required String message,
-    required VoidCallback onConfirm,
-    String confirmButtonText = "Confirm",
-    String cancelButtonText = "Cancel",
-    VoidCallback? onCancel,
-    Color? backgroundColor,
-    Color? primaryColor,
-    Color? borderColor,
-    bool showCloseButton = true,
-    String? barrierLabel,
-    bool barrierDismissible = true,
-  }) {
-    return showGeneralDialog(
-      context: this,
-      barrierDismissible: barrierDismissible,
-      barrierLabel: barrierLabel ?? "confirmation_dialog",
-      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 0.2),
-            end: const Offset(0, 0),
-          ).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-          ),
-          child: ConfirmationDialog(
-            title: title,
-            message: message,
-            onConfirm: onConfirm,
-            confirmButtonText: confirmButtonText,
-            cancelButtonText: cancelButtonText,
-            onCancel: onCancel,
-            backgroundColor: backgroundColor,
-            primaryColor: primaryColor,
-            borderColor: borderColor,
-            showCloseButton: showCloseButton,
-            barrierLabel: barrierLabel,
-          ),
-        );
-      },
-    );
+  void _handleQuit(BuildContext context) {
+    if (quizType == QuizType.battle) {
+      // Navigate to battle report card
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => BBQuizReportCardScreen(
+                quizType: QuizType.battle,
+                score: battleScore ?? 0,
+                opponentScore: opponentScore,
+                won: (battleScore ?? 0) > (opponentScore ?? 0),
+                questions: battleQuestions,
+                userAnswers: battleAnswers ?? [],
+                timeSpent: battleTimeSpent ?? 0,
+              ),
+        ),
+      );
+    } else {
+      // Navigate to in-app quiz report card
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => BBQuizReportCardScreen(
+                quizType: QuizType.inAppQuiz,
+                score: inAppScore ?? 0,
+                correctAnswers: correctAnswers,
+                totalQuestions: totalQuestions,
+                timeSpent: inAppTimeSpent ?? 0,
+                quizTitle: quizTitle,
+                userAnswers: inAppAnswers ?? [],
+                explanations: explanations,
+              ),
+        ),
+      );
+    }
+    onConfirm();
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:brainbee/presentation/views/home/quizzes/models/quiz_model.dart';
+import 'package:brainbee/presentation/views/home/quizzes/models/book_model.dart';
+import 'package:brainbee/presentation/views/home/quizzes/models/quiz_data_model.dart';
 import 'package:brainbee/presentation/views/home/quizzes/repositories/quiz_repository.dart';
 import 'package:brainbee/presentation/views/home/quizzes/services/quiz_api_service.dart';
 
@@ -10,18 +11,19 @@ class QuizRepositoryImpl implements QuizRepository {
   QuizRepositoryImpl({required this.apiService});
 
   @override
-  Future<List<QuizData>> getQuizzesBySubject({
+  Future<BookData> getQuizzesBySubject({
     required String subject,
     required int grade,
   }) async {
     try {
       final response = await apiService.get(
-        '/api/student/fetch-quizzes/',
-        queryParams: {'subject': subject, 'grade': grade.toString()},
+        '/api/student/fetch-quizzes/$subject/$grade',
       );
 
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) => QuizData.fromJson(json)).toList();
+      var data = jsonDecode(response.body);
+
+      print("the data is $data");
+      return BookData.fromJson(data['data']);
     } catch (e) {
       throw Exception('Failed to load quizzes: $e');
     }
@@ -53,8 +55,12 @@ class QuizRepositoryImpl implements QuizRepository {
   @override
   Future<QuizData> getQuizById(String quizId) async {
     try {
-      final response = await apiService.get('/api/quizzes/$quizId');
+      final response = await apiService.get(
+        '/api/student/fetch-quizzes/$quizId/questions',
+      );
       final Map<String, dynamic> data = jsonDecode(response.body);
+
+      print("the quiz data is $data");
       return QuizData.fromJson(data);
     } catch (e) {
       throw Exception('Failed to load quiz: $e');

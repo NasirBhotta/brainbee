@@ -5,8 +5,9 @@ import 'package:brainbee/presentation/views/extras/achievements/badges/models/ba
 import 'package:brainbee/presentation/views/extras/coinquests/UI/bb_coin_quests.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_edit_goals.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
+import 'package:brainbee/presentation/views/home/quizzes/UI/bb_quizzes_list.dart';
 import 'package:brainbee/presentation/views/home/quizzes/UI/bb_specific_book_quiz_selection.dart';
-import 'package:brainbee/presentation/views/home/quizzes/models/quiz_model.dart';
+import 'package:brainbee/presentation/views/home/quizzes/models/book_model.dart';
 import 'package:brainbee/presentation/views/onboarding/bb_combined_onbaord.dart';
 import 'package:flutter/material.dart';
 
@@ -20,6 +21,8 @@ class AppRoutes {
   static const String editGoals = '/edit-goals';
   static const String coinQuests = '/coin-quests';
   static const String quizTaking = '/quiz-taking';
+  static const String quizzesList = '/quizzes-list';
+  static const String quizGeneration = '/quiz-generation';
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
@@ -48,6 +51,11 @@ class AppRoutes {
           student: student,
           subject: 'Biology',
         );
+      },
+
+      quizzesList: (context) {
+        final topic = ModalRoute.of(context)!.settings.arguments as Topic;
+        return BbQuizzesListScreen(topic: topic);
       },
     };
   }
