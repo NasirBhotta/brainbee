@@ -57,6 +57,8 @@ class AppRoutes {
         final topic = ModalRoute.of(context)!.settings.arguments as Topic;
         return BbQuizzesListScreen(topic: topic);
       },
+
+      // quizGeneration: (context) {},
     };
   }
 
