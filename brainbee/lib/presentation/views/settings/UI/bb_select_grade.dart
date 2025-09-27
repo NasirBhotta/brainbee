@@ -44,6 +44,7 @@ class _SelectYearGradeScreenState extends State<SelectYearGradeScreen> {
 
     // Priority: Use student grade if it's valid and matches local storage,
     // otherwise use local storage grade, otherwise no selection
+
     if (widget.student.grade >= 9 &&
         widget.student.grade <= 12 &&
         widget.student.grade != 0 &&

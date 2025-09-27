@@ -9,12 +9,12 @@ sealed class QuizEvent extends Equatable {
 
 class LoadSubjectQuizzes extends QuizEvent {
   final String subject;
-  final String studentId;
+  final int grade;
 
-  const LoadSubjectQuizzes({required this.subject, required this.studentId});
+  const LoadSubjectQuizzes({required this.subject, required this.grade});
 
   @override
-  List<Object> get props => [subject, studentId];
+  List<Object> get props => [subject, grade];
 }
 
 class StartExistingQuiz extends QuizEvent {
@@ -28,20 +28,20 @@ class StartExistingQuiz extends QuizEvent {
 
 class GenerateNewQuiz extends QuizEvent {
   final String topicKey;
-  final String studentId;
+  final int grade;
 
-  const GenerateNewQuiz({required this.topicKey, required this.studentId});
+  const GenerateNewQuiz({required this.topicKey, required this.grade});
 
   @override
-  List<Object> get props => [topicKey, studentId];
+  List<Object> get props => [topicKey, grade];
 }
 
 class RefreshQuizzes extends QuizEvent {
   final String subject;
-  final String studentId;
+  final int grade;
 
-  const RefreshQuizzes({required this.subject, required this.studentId});
+  const RefreshQuizzes({required this.subject, required this.grade});
 
   @override
-  List<Object> get props => [subject, studentId];
+  List<Object> get props => [subject, grade];
 }

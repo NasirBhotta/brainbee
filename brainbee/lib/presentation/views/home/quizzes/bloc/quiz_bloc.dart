@@ -30,7 +30,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       // Fetch all quizzes for the subject
       final quizzes = await quizRepository.getQuizzesBySubject(
         subject: event.subject,
-        studentId: event.studentId,
+        grade: event.grade,
       );
 
       // Parse and organize quizzes by chapters
@@ -69,7 +69,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
 
       final newQuiz = await quizRepository.generateQuiz(
         topicKey: event.topicKey,
-        studentId: event.studentId,
+        grade: event.grade,
       );
 
       emit(QuizStarted(quiz: newQuiz));
@@ -83,7 +83,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     Emitter<QuizState> emit,
   ) async {
     // Same as load but doesn't show loading state
-    add(LoadSubjectQuizzes(subject: event.subject, studentId: event.studentId));
+    add(LoadSubjectQuizzes(subject: event.subject, grade: event.grade));
   }
 
   List<ParsedChapter> _parseQuizzesIntoChapters(

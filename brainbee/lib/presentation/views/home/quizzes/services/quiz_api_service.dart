@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:brainbee/core/utils/helper/bb_token.dart';
 import 'package:http/http.dart' as http;
 
 class QuizApiException implements Exception {
@@ -14,8 +15,7 @@ class QuizApiException implements Exception {
 }
 
 class QuizApiService {
-  static const String _baseUrl =
-      'https://your-api-domain.com'; // Update this with your actual API URL
+  static const String _baseUrl = 'http://10.0.2.2:5000';
   final http.Client _client;
   final Duration timeout;
 
@@ -24,13 +24,14 @@ class QuizApiService {
     this.timeout = const Duration(seconds: 30),
   }) : _client = client ?? http.Client();
 
-  // Headers for API requests
-  Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    // Add authorization headers here if needed
-    // 'Authorization': 'Bearer $token',
-  };
+  Future<Map<String, String>> get _headers async {
+    final tokenData = await getTokenAndUser();
+    final token = tokenData.token ?? '';
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
 
   // GET request
   Future<http.Response> get(
@@ -44,7 +45,7 @@ class QuizApiService {
       }
 
       final response = await _client
-          .get(uri, headers: _headers)
+          .get(uri, headers: await _headers)
           .timeout(timeout);
       return _handleResponse(response);
     } catch (e) {
@@ -62,7 +63,7 @@ class QuizApiService {
       final body = data != null ? jsonEncode(data) : null;
 
       final response = await _client
-          .post(uri, headers: _headers, body: body)
+          .post(uri, headers: await _headers, body: body)
           .timeout(timeout);
       return _handleResponse(response);
     } catch (e) {
@@ -80,7 +81,7 @@ class QuizApiService {
       final body = data != null ? jsonEncode(data) : null;
 
       final response = await _client
-          .put(uri, headers: _headers, body: body)
+          .put(uri, headers: await _headers, body: body)
           .timeout(timeout);
       return _handleResponse(response);
     } catch (e) {
@@ -93,7 +94,7 @@ class QuizApiService {
     try {
       final uri = Uri.parse('$_baseUrl$endpoint');
       final response = await _client
-          .delete(uri, headers: _headers)
+          .delete(uri, headers: await _headers)
           .timeout(timeout);
       return _handleResponse(response);
     } catch (e) {

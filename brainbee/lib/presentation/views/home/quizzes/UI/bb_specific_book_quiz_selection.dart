@@ -47,10 +47,7 @@ class _BbSpecificBookQuizSelectionState
 
     // Load quiz chapters when screen initializes
     context.read<QuizBloc>().add(
-      LoadSubjectQuizzes(
-        subject: _displaySubject,
-        studentId: widget.student.id,
-      ),
+      LoadSubjectQuizzes(subject: _displaySubject, grade: widget.student.grade),
     );
   }
 
@@ -123,7 +120,7 @@ class _BbSpecificBookQuizSelectionState
                     context.read<QuizBloc>().add(
                       LoadSubjectQuizzes(
                         subject: _displaySubject,
-                        studentId: widget.student.id,
+                        grade: widget.student.grade,
                       ),
                     );
                   },

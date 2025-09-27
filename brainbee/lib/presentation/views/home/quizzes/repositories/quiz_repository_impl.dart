@@ -12,12 +12,12 @@ class QuizRepositoryImpl implements QuizRepository {
   @override
   Future<List<QuizData>> getQuizzesBySubject({
     required String subject,
-    required String studentId,
+    required int grade,
   }) async {
     try {
       final response = await apiService.get(
-        '/api/quizzes',
-        queryParams: {'subject': subject, 'student_id': studentId},
+        '/api/student/fetch-quizzes/',
+        queryParams: {'subject': subject, 'grade': grade.toString()},
       );
 
       final List<dynamic> data = jsonDecode(response.body);
@@ -30,14 +30,14 @@ class QuizRepositoryImpl implements QuizRepository {
   @override
   Future<QuizData> generateQuiz({
     required String topicKey,
-    required String studentId,
+    required int grade,
   }) async {
     try {
       final response = await apiService.post(
         '/api/quizzes/generate',
         data: {
           'topic_key': topicKey,
-          'student_id': studentId,
+          'grade': grade.toString(),
           'num_questions': 5,
           'difficulty_target': 'medium',
         },
@@ -74,11 +74,11 @@ class QuizRepositoryImpl implements QuizRepository {
 
   @override
   Future<Map<String, dynamic>> getQuizStatistics({
-    required String studentId,
+    required int grade,
     String? subject,
   }) async {
     try {
-      final queryParams = <String, String>{'student_id': studentId};
+      final queryParams = <String, String>{'grade': grade.toString()};
       if (subject != null) {
         queryParams['subject'] = subject;
       }

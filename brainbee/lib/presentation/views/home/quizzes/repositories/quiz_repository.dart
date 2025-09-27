@@ -4,20 +4,17 @@ import 'package:brainbee/presentation/views/home/quizzes/models/quiz_model.dart'
 abstract class QuizRepository {
   Future<List<QuizData>> getQuizzesBySubject({
     required String subject,
-    required String studentId,
+    required int grade,
   });
 
-  Future<QuizData> generateQuiz({
-    required String topicKey,
-    required String studentId,
-  });
+  Future<QuizData> generateQuiz({required String topicKey, required int grade});
 
   Future<QuizData> getQuizById(String quizId);
 
   Future<List<String>> getAvailableSubjects();
 
   Future<Map<String, dynamic>> getQuizStatistics({
-    required String studentId,
+    required int grade,
     String? subject,
   });
 }
