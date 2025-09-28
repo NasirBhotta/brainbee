@@ -15,7 +15,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class BbSpecificBookQuizSelection extends StatefulWidget {
   final String subject;
-  final StudentModel student; // Pass student data if needed
+  final StudentModel student;
 
   const BbSpecificBookQuizSelection({
     super.key,
@@ -38,7 +38,6 @@ class _BbSpecificBookQuizSelectionState
     super.initState();
     _displaySubject = widget.subject;
 
-    // Initialize with student data from StudentBloc
     _desc = [
       widget.student.score.toString(),
       widget.student.coins.toString(),
@@ -46,7 +45,6 @@ class _BbSpecificBookQuizSelectionState
       '${widget.student.dailyLives}/10',
     ];
 
-    // Load quiz chapters when screen initializes
     context.read<QuizBloc>().add(
       LoadSubjectQuizzes(subject: _displaySubject, grade: widget.student.grade),
     );
@@ -63,7 +61,6 @@ class _BbSpecificBookQuizSelectionState
     return Scaffold(
       body: MultiBlocListener(
         listeners: [
-          // Listen to StudentBloc for updates
           BlocListener<StudentBloc, StudentState>(
             listener: (context, state) {
               if (state is StudentDataLoaded) {
@@ -78,11 +75,10 @@ class _BbSpecificBookQuizSelectionState
               }
             },
           ),
-          // Listen to QuizBloc for navigation
+
           BlocListener<QuizBloc, QuizState>(
             listener: (context, state) {
               if (state is QuizStarted) {
-                // Navigate to quiz taking screen
                 Navigator.pushNamed(
                   context,
                   AppRoutes.quizTaking,
@@ -110,7 +106,7 @@ class _BbSpecificBookQuizSelectionState
                 ),
               ),
               floating: false,
-              backgroundColor: BBColors.secondaryColor, // Your subject color
+              backgroundColor: BBColors.secondaryColor,
               elevation: 0,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -139,7 +135,6 @@ class _BbSpecificBookQuizSelectionState
                     _ProgressBarRow(
                       desc: _desc,
                       onPopupTap: (index) {
-                        // You can still show popups using StudentBloc data
                         final studentState = context.read<StudentBloc>().state;
                         if (studentState is StudentDataLoaded) {
                           _onPopupTap(index, studentState);
@@ -350,7 +345,7 @@ class _ChapterCard extends StatelessWidget {
                   ),
                 ),
                 title: Text(topic.topic),
-                // Remove the coin icon and start button
+
                 onTap:
                     () => onTopicTap(
                       chapter.topics.firstWhere((t) => t.topic == topic.topic),
@@ -360,28 +355,4 @@ class _ChapterCard extends StatelessWidget {
       ),
     );
   }
-}
-
-// Models for your quiz data structure
-class QuizChapter {
-  final String id;
-  final String title;
-  final IconData icon;
-  final Color color;
-  final List<QuizTopic> topics;
-
-  QuizChapter({
-    required this.id,
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.topics,
-  });
-}
-
-class QuizTopic {
-  final String id;
-  final String name;
-
-  QuizTopic({required this.id, required this.name});
 }
