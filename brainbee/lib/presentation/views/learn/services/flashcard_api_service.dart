@@ -91,6 +91,7 @@ class FlashCardContentApiService {
   // Handle response and check for errors
   http.Response _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
+      print("the dara ${response.body}");
       return response;
     } else {
       String errorMessage = 'Request failed';

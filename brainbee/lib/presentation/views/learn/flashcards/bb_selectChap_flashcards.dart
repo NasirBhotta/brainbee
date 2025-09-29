@@ -1,5 +1,5 @@
 // bb_chapter_selection_screen.dart
-// Example implementation showing how to use the BookContentBloc
+// Chapter selection screen with expandable sections
 
 import 'package:brainbee/presentation/views/learn/bloc/learn_bloc.dart';
 import 'package:brainbee/presentation/views/learn/model/flashcard_models/content.model.dart';
@@ -27,7 +27,6 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
   @override
   void initState() {
     super.initState();
-    // Load chapters when screen initializes
     context.read<BookContentBloc>().add(
       LoadBookChapters(subject: widget.subject, grade: widget.grade),
     );
@@ -37,19 +36,6 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: BBText(
-          data: '${widget.subject} - Grade ${widget.grade}',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
       body: BlocConsumer<BookContentBloc, BookContentState>(
         listener: (context, state) {
           if (state is BookContentError) {
@@ -85,59 +71,103 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
       return _buildEmptyState();
     }
 
-    return Column(
-      children: [
-        // Book title header
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar(
+          pinned: true,
+          centerTitle: true,
+          title: Text(
+            bookData.bookTitle,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              BBText(
-                data: bookData.bookTitle,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
-              BBText(
-                data: '${bookData.chapters.length} Chapters Available',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-              ),
-            ],
+          floating: false,
+          backgroundColor: BBColors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => Navigator.pop(context),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.black),
+              onPressed: () {
+                context.read<BookContentBloc>().add(
+                  LoadBookChapters(
+                    subject: widget.subject,
+                    grade: widget.grade,
+                  ),
+                );
+              },
+            ),
+          ],
+          flexibleSpace: FlexibleSpaceBar(
+            background: Container(color: BBColors.white),
+            expandedTitleScale: 1,
           ),
         ),
-
-        // Chapters list
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: bookData.chapters.length,
-            itemBuilder: (context, index) {
-              final chapter = bookData.chapters[index];
-              return _ChapterCard(
-                chapter: chapter,
-                onTap: () => _navigateToChapterDetails(chapter),
-              );
-            },
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverToBoxAdapter(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: BBColors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.menu_book, color: BBColors.primaryColor, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        BBText(
+                          data:
+                              '${bookData.chapters.length} Chapters Available',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        BBText(
+                          data: 'Tap on a chapter to view sections',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
+        ),
+        SliverList.builder(
+          itemCount: bookData.chapters.length,
+          itemBuilder: (context, index) {
+            final chapter = bookData.chapters[index];
+            return _ExpandableChapterCard(
+              chapter: chapter,
+              onSectionTap: (section) {
+                _handleSectionTap(section);
+              },
+            );
+          },
         ),
       ],
     );
@@ -227,29 +257,34 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
     );
   }
 
-  void _navigateToChapterDetails(BookChapter chapter) {
-    // Navigate to chapter details screen
-    // You can pass the chapter object or just the chapter ID
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => BBChapterDetailsScreen(chapter: chapter),
-    //   ),
-    // );
+  void _handleSectionTap(ChapterSection section) {
+    // Handle section tap - navigate to flashcards or content view
+    // You can pass the section data to the next screen
+    print('Section tapped: ${section.sectionTitle}');
   }
 }
 
-// Chapter Card Widget
-class _ChapterCard extends StatelessWidget {
+// Expandable Chapter Card Widget
+class _ExpandableChapterCard extends StatefulWidget {
   final BookChapter chapter;
-  final VoidCallback onTap;
+  final Function(ChapterSection) onSectionTap;
 
-  const _ChapterCard({required this.chapter, required this.onTap});
+  const _ExpandableChapterCard({
+    required this.chapter,
+    required this.onSectionTap,
+  });
+
+  @override
+  State<_ExpandableChapterCard> createState() => _ExpandableChapterCardState();
+}
+
+class _ExpandableChapterCardState extends State<_ExpandableChapterCard> {
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
         decoration: BoxDecoration(
           color: BBColors.white,
@@ -263,83 +298,206 @@ class _ChapterCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  // Chapter number badge
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Center(
-                      child: BBText(
-                        data: '${chapter.chapterNumber}',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
+        child: Column(
+          children: [
+            // Chapter Header
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      // Chapter number badge
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: BBColors.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-
-                  // Chapter details
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        BBText(
-                          data: chapter.chapterTitle,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleMedium?.copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+                        child: Center(
+                          child: BBText(
+                            data: '${widget.chapter.chapterNumber}',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleLarge?.copyWith(
+                              color: BBColors.primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Row(
+                      ),
+                      const SizedBox(width: 16),
+
+                      // Chapter details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.list_alt,
-                              size: 16,
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(width: 4),
                             BBText(
-                              data: '${chapter.sections.length} Sections',
+                              data: widget.chapter.chapterTitle,
                               style: Theme.of(
                                 context,
-                              ).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                                fontSize: 13,
+                              ).textTheme.titleMedium?.copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
                               ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.list_alt,
+                                  size: 16,
+                                  color: Colors.grey[600],
+                                ),
+                                const SizedBox(width: 4),
+                                BBText(
+                                  data:
+                                      '${widget.chapter.sections.length} Sections',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall?.copyWith(
+                                    color: Colors.grey[600],
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
 
-                  // Arrow icon
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: Colors.grey[400],
+                      // Expand/Collapse icon
+                      AnimatedRotation(
+                        turns: _isExpanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(
+                          Icons.keyboard_arrow_down,
+                          color: Colors.grey[600],
+                          size: 24,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
+
+            // Sections List (Expandable)
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const Divider(height: 1, thickness: 1),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: widget.chapter.sections.length,
+                      separatorBuilder:
+                          (context, index) => Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Colors.grey[200],
+                          ),
+                      itemBuilder: (context, index) {
+                        final section = widget.chapter.sections[index];
+                        return _SectionTile(
+                          section: section,
+                          sectionNumber: index + 1,
+                          onTap: () => widget.onSectionTap(section),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              crossFadeState:
+                  _isExpanded
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 200),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Section Tile Widget
+class _SectionTile extends StatelessWidget {
+  final ChapterSection section;
+  final int sectionNumber;
+  final VoidCallback onTap;
+
+  const _SectionTile({
+    required this.section,
+    required this.sectionNumber,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              // Section number
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: BBColors.secondaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: BBText(
+                    data: '$sectionNumber',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: BBColors.secondaryColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Section title
+              Expanded(
+                child: BBText(
+                  data: section.sectionTitle,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+
+              // Arrow icon
+              Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
+            ],
           ),
         ),
       ),
