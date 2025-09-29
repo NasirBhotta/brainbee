@@ -22,7 +22,6 @@ class QuizRepositoryImpl implements QuizRepository {
 
       var data = jsonDecode(response.body);
 
-      print("the data is $data");
       return BookData.fromJson(data['data']);
     } catch (e) {
       throw Exception('Failed to load quizzes: $e');
@@ -32,14 +31,14 @@ class QuizRepositoryImpl implements QuizRepository {
   @override
   Future<QuizData> generateQuiz({
     required String topicKey,
-    required int grade,
+    required String bookName,
   }) async {
     try {
       final response = await apiService.post(
-        '/api/quizzes/generate',
+        '/api/openai/quiz/generate',
         data: {
-          'topic_key': topicKey,
-          'grade': grade.toString(),
+          'topic_query': topicKey,
+          'subject': bookName,
           'num_questions': 5,
           'difficulty_target': 'medium',
         },
@@ -60,7 +59,6 @@ class QuizRepositoryImpl implements QuizRepository {
       );
       final Map<String, dynamic> data = jsonDecode(response.body);
 
-      print("the quiz data is $data");
       return QuizData.fromJson(data);
     } catch (e) {
       throw Exception('Failed to load quiz: $e');

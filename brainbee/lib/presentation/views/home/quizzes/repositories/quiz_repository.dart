@@ -8,7 +8,10 @@ abstract class QuizRepository {
     required int grade,
   });
 
-  Future<QuizData> generateQuiz({required String topicKey, required int grade});
+  Future<QuizData> generateQuiz({
+    required String topicKey,
+    required String bookName,
+  });
 
   Future<QuizData> getQuizById(String quizId);
 

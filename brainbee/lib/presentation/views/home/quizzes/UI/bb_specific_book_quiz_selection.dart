@@ -1,4 +1,5 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
+import 'package:brainbee/core/widgets/quiz%20generation/bb_chapter_card.dart';
 
 import 'package:brainbee/presentation/views/dashboard/UI/bb_progress_bar.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_coin_popup.dart';
@@ -54,7 +55,9 @@ class _BbSpecificBookQuizSelectionState
     Navigator.pushNamed(context, AppRoutes.quizzesList, arguments: topic);
   }
 
-  void _onSelectChapterTap() {}
+  void _onSelectChapterTap() {
+    Navigator.pushNamed(context, AppRoutes.chapterSelection);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -165,7 +168,7 @@ class _BbSpecificBookQuizSelectionState
 
                       final chapterIndex = index - 1;
                       if (chapterIndex < state.bookData.chapters.length) {
-                        return _ChapterCard(
+                        return BbChapterCard.fromChapter(
                           chapter: state.bookData.chapters[chapterIndex],
                           onTopicTap: _onTopicTap,
                         );
@@ -276,82 +279,6 @@ class _ChapterSelectionHeader extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ChapterCard extends StatelessWidget {
-  final Chapter chapter;
-  final void Function(Topic topic) onTopicTap;
-
-  const _ChapterCard({required this.chapter, required this.onTopicTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ExpansionTile(
-        shape: Border(top: BorderSide.none, bottom: BorderSide.none),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: BBColors.primaryColor.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            Icons.book,
-            color: BBColors.secondaryColor.withValues(alpha: 1),
-            size: 24,
-          ),
-        ),
-        title: Text(
-          chapter.chapter.toString(),
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          "Read More...",
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: BBColors.secondaryColor),
-        ),
-        children:
-            chapter.topics.map((topic) {
-              return ListTile(
-                style: ListTileStyle.drawer,
-                leading: const CircleAvatar(
-                  radius: 16,
-                  backgroundColor: Colors.grey,
-                  child: Text(
-                    "?",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                title: Text(topic.topic),
-
-                onTap:
-                    () => onTopicTap(
-                      chapter.topics.firstWhere((t) => t.topic == topic.topic),
-                    ),
-              );
-            }).toList(),
       ),
     );
   }

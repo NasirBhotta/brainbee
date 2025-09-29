@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
-import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/widgets/popups/bb_invite_popUp.dart';
+import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 
 class Subject {
   final String name;
@@ -19,7 +20,8 @@ class Subject {
 }
 
 class BBBookSelectionForBattle extends StatelessWidget {
-  final List<Subject> subjects = [
+  // All available subjects
+  static final List<Subject> _allSubjects = [
     Subject(
       name: 'English',
       flashcardCount: 104,
@@ -52,7 +54,14 @@ class BBBookSelectionForBattle extends StatelessWidget {
     ),
   ];
 
-  BBBookSelectionForBattle({super.key});
+  const BBBookSelectionForBattle({super.key});
+
+  // Helper method to get registered subjects only
+  List<Subject> _getRegisteredSubjects(List<String> registeredSubjects) {
+    return _allSubjects.where((subject) {
+      return registeredSubjects.contains(subject.name);
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,102 +82,49 @@ class BBBookSelectionForBattle extends StatelessWidget {
           },
         ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: subjects.length,
-        itemBuilder: (context, index) {
-          final subject = subjects[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: BBColors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: ListTile(
-                leading: Image.asset(subject.imgPath, scale: 13),
-                title: BBText(
-                  data: subject.name,
-                  style: context.textStyle.titleMedium?.copyWith(fontSize: 16),
-                ),
+      body: BlocConsumer<StudentBloc, StudentState>(
+        listener: (context, state) {
+          if (state is StudentDataError) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
+          }
+        },
+        builder: (context, state) {
+          if (state is StudentDataLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-                onTap: () {
-                  _showStudyModeDialog(context, subject, index);
-                },
-              ),
-            ),
-          );
+          if (state is StudentDataLoaded) {
+            final registeredSubjects = _getRegisteredSubjects(
+              state.student.subjects,
+            );
+
+            if (registeredSubjects.isEmpty) {
+              return _EmptySubjectsWidget();
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: registeredSubjects.length,
+              itemBuilder: (context, index) {
+                final subject = registeredSubjects[index];
+                return _SubjectCard(
+                  subject: subject,
+                  onTap: () => _showStudyModeDialog(context, subject),
+                );
+              },
+            );
+          }
+
+          // Default fallback for other states
+          return _EmptySubjectsWidget();
         },
       ),
     );
   }
 
-  void _showStudyModeDialog(BuildContext context, Subject subject, int index) {
-    // showDialog(
-    //   context: context,
-    //   builder: (BuildContext context) {
-    //     return AlertDialog(
-    //       shape: RoundedRectangleBorder(
-    //         borderRadius: BorderRadius.circular(15),
-    //       ),
-    //       title: Center(
-    //         child: BBText(
-    //           data: 'Battle Mode',
-    //           style: Theme.of(
-    //             context,
-    //           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-    //         ),
-    //       ),
-    //       content: Column(
-    //         mainAxisSize: MainAxisSize.min,
-    //         children: [
-    //           BBText(
-    //             data: 'How would you like to Compete in ${subject.name}?',
-    //             style: Theme.of(context).textTheme.bodyMedium,
-    //             textAlign: TextAlign.center,
-    //           ),
-    //           const SizedBox(height: 20),
-    //           Row(
-    //             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-    //             children: [
-    //               buildStudyModeButton(
-    //                 context,
-
-    //                 label: 'By Chapter',
-    //                 onTap: () {
-    //                   Navigator.pushReplacement(
-    //                     context,
-    //                     MaterialPageRoute(
-    //                       builder:
-    //                           (context) =>
-    //                               BBChapterSelectionScreen(subject: subject),
-    //                     ),
-    //                   );
-    //                 },
-    //               ),
-    //               buildStudyModeButton(
-    //                 context,
-
-    //                 label: 'Whole Book',
-    //                 onTap: () {
-    //                   Navigator.pop(context);
-    //                   showInvitationPopUp(
-    //                     context: context,
-    //                     button1Label: "Share invitation code",
-    //                     title: "Invite Friends",
-    //                     desc: "Are you ready?",
-    //                     button2Label: "Invite Friends",
-    //                   );
-    //                 },
-    //               ),
-    //             ],
-    //           ),
-    //         ],
-    //       ),
-    //     );
-    //   },
-    // );
-
+  void _showStudyModeDialog(BuildContext context, Subject subject) {
     showInvitationPopUp(
       context: context,
       title: 'Battle Mode',
@@ -176,6 +132,158 @@ class BBBookSelectionForBattle extends StatelessWidget {
       button1Label: 'By Chapter',
       button2Label: 'Whole Book',
       subject: subject,
+    );
+  }
+}
+
+// Extracted widget for subject card with improved design
+class _SubjectCard extends StatelessWidget {
+  final Subject subject;
+  final VoidCallback onTap;
+
+  const _SubjectCard({required this.subject, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: BBColors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // Subject icon with colored background
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: subject.color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Image.asset(
+                      subject.imgPath,
+                      width: 32,
+                      height: 32,
+                      color: subject.color,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Subject details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        BBText(
+                          data: subject.name,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleMedium?.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        BBText(
+                          data:
+                              '${subject.flashcardCount} flashcards available',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600], fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Arrow icon
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Colors.grey[400],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Empty state widget when no subjects are registered
+class _EmptySubjectsWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(30),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          color: Colors.blue[50],
+          border: Border.all(color: Colors.blue[200]!),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.school_outlined, size: 80, color: Colors.blue[400]),
+            const SizedBox(height: 20),
+            BBText(
+              data: "No Subjects Registered",
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Colors.blue[700],
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            BBText(
+              data: "Please register your subjects to participate in battles",
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: Colors.blue[600]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[600],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const BBText(
+                data: "Go Back",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -28,12 +28,12 @@ class StartExistingQuiz extends QuizEvent {
 
 class GenerateNewQuiz extends QuizEvent {
   final String topicKey;
-  final int grade;
+  final String bookName;
 
-  const GenerateNewQuiz({required this.topicKey, required this.grade});
+  const GenerateNewQuiz({required this.topicKey, required this.bookName});
 
   @override
-  List<Object> get props => [topicKey, grade];
+  List<Object> get props => [topicKey, bookName];
 }
 
 class RefreshQuizzes extends QuizEvent {

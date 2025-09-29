@@ -5,10 +5,12 @@ import 'package:brainbee/presentation/views/extras/achievements/badges/models/ba
 import 'package:brainbee/presentation/views/extras/coinquests/UI/bb_coin_quests.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_edit_goals.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
+import 'package:brainbee/presentation/views/home/quizzes/UI/bb_list_chapters_topics.dart';
 import 'package:brainbee/presentation/views/home/quizzes/UI/bb_quizzes_list.dart';
 import 'package:brainbee/presentation/views/home/quizzes/UI/bb_specific_book_quiz_selection.dart';
 import 'package:brainbee/presentation/views/home/quizzes/models/book_model.dart';
 import 'package:brainbee/presentation/views/onboarding/bb_combined_onbaord.dart';
+import 'package:brainbee/routes/dummy_bood_data.dart';
 import 'package:flutter/material.dart';
 
 class AppRoutes {
@@ -23,6 +25,7 @@ class AppRoutes {
   static const String quizTaking = '/quiz-taking';
   static const String quizzesList = '/quizzes-list';
   static const String quizGeneration = '/quiz-generation';
+  static const String chapterSelection = '/chapter-selection';
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
@@ -58,7 +61,9 @@ class AppRoutes {
         return BbQuizzesListScreen(topic: topic);
       },
 
-      // quizGeneration: (context) {},
+      chapterSelection: (context) {
+        return BbChapterSectionsScreen(bookData: bookData);
+      },
     };
   }
 

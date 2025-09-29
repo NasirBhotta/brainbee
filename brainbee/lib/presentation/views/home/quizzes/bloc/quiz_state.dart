@@ -67,3 +67,12 @@ class BookDataError extends QuizState {
   @override
   List<Object> get props => [message];
 }
+
+class QuizGenerated extends QuizState {
+  final String message;
+
+  const QuizGenerated(this.message);
+
+  @override
+  List<Object> get props => [message];
+}

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:bloc/bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/models/book_model.dart';
@@ -60,12 +59,12 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     try {
       emit(QuizGenerating(message: 'Generating new quiz for topic...'));
 
-      final newQuiz = await quizRepository.generateQuiz(
+      await quizRepository.generateQuiz(
         topicKey: event.topicKey,
-        grade: event.grade,
+        bookName: event.bookName,
       );
 
-      emit(QuizStarted(quiz: newQuiz));
+      emit(QuizGenerated("Quiz generated successfully, go back to take quiz"));
     } catch (e) {
       emit(QuizError(message: 'Failed to generate quiz: ${e.toString()}'));
     }
