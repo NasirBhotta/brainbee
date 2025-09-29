@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
-import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
 import 'package:brainbee/presentation/views/learn/flashcards/bb_selectChap_flashcards.dart';
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
-import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 
 class BBFlashcards extends StatelessWidget {
+  int grade = 0;
   // All available subjects
   static final List<Subject> _allSubjects = [
     Subject(
@@ -43,7 +42,7 @@ class BBFlashcards extends StatelessWidget {
     ),
   ];
 
-  const BBFlashcards({super.key});
+  BBFlashcards({super.key});
 
   // Helper method to get registered subjects only
   List<Subject> _getRegisteredSubjects(List<String> registeredSubjects) {
@@ -85,6 +84,7 @@ class BBFlashcards extends StatelessWidget {
           }
 
           if (state is StudentDataLoaded) {
+            grade = state.student.grade;
             final registeredSubjects = _getRegisteredSubjects(
               state.student.subjects,
             );
@@ -105,8 +105,10 @@ class BBFlashcards extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder:
-                            (context) =>
-                                BbSelectchapFlashcards(subject: subject),
+                            (context) => BBChapterSelectionScreen(
+                              subject: subject.name,
+                              grade: grade,
+                            ),
                       ),
                     );
                   },

@@ -13,6 +13,9 @@ import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/bloc/quiz_bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/repositories/quiz_repository_impl.dart';
 import 'package:brainbee/presentation/views/home/quizzes/services/quiz_api_service.dart';
+import 'package:brainbee/presentation/views/learn/bloc/learn_bloc.dart';
+import 'package:brainbee/presentation/views/learn/repository/flashcard_repository_impl.dart';
+import 'package:brainbee/presentation/views/learn/services/flashcard_api_service.dart';
 import 'package:brainbee/presentation/views/settings/bloc/setting_bloc.dart';
 import 'package:brainbee/presentation/views/settings/repository/settings_repo.dart';
 import 'package:brainbee/repositories/badge_repository.dart';
@@ -76,6 +79,15 @@ void main(List<String> args) async {
               (_) => QuizBloc(
                 quizRepository: QuizRepositoryImpl(
                   apiService: QuizApiService(),
+                ),
+              ),
+        ),
+
+        BlocProvider(
+          create:
+              (_) => BookContentBloc(
+                repository: FlashCardContentRepositoryImpl(
+                  apiService: FlashCardContentApiService(),
                 ),
               ),
         ),
