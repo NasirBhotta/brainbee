@@ -1,3 +1,4 @@
+import 'package:brainbee/presentation/views/learn/flashcards/bb_specific_chapter_selection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
@@ -105,10 +106,14 @@ class BBFlashcards extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder:
-                            (context) => BBChapterSelectionScreen(
+                            (context) => BbSpecificBookFlashcardSelection(
+                              student: state.student,
                               subject: subject.name,
-                              grade: grade,
                             ),
+                        // BBChapterSelectionScreen(
+                        //   subject: subject.name,
+                        //   grade: grade,
+                        // ),
                       ),
                     );
                   },

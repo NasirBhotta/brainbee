@@ -47,3 +47,35 @@ class BookContentError extends BookContentState {
   @override
   List<Object?> get props => [message];
 }
+
+class FlashcardInitial extends BookContentState {}
+
+class FlashcardLoading extends BookContentState {}
+
+class FlashcardsLoaded extends BookContentState {
+  final List<Flashcard> flashcards;
+
+  const FlashcardsLoaded({required this.flashcards});
+
+  @override
+  List<Object> get props => [flashcards];
+}
+
+class FlashcardGenerating extends BookContentState {}
+
+class FlashcardGenerated extends BookContentState {
+  final String message;
+  const FlashcardGenerated({required this.message});
+
+  @override
+  List<Object> get props => [message];
+}
+
+class FlashcardError extends BookContentState {
+  final String message;
+
+  const FlashcardError({required this.message});
+
+  @override
+  List<Object> get props => [message];
+}

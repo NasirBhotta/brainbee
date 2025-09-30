@@ -1,4 +1,5 @@
 import 'package:brainbee/presentation/views/learn/model/flashcard_models/content.model.dart';
+import 'package:brainbee/presentation/views/learn/model/flashcard_models/flashcard_model.dart';
 
 abstract class FlashCardContentRepository {
   /// Fetches all chapters for a specific subject and grade
@@ -16,4 +17,15 @@ abstract class FlashCardContentRepository {
 
   /// Fetches chapter details by chapter ID
   Future<BookChapter> getChapterById(String chapterId);
+
+  Future<List<Flashcard>> getFlashcardsForBook({
+    required String studentId,
+    required String bookName,
+  });
+
+  Future<String> generateFlashcards({
+    required String studentId,
+    required String subject,
+    required String topicQuery,
+  });
 }

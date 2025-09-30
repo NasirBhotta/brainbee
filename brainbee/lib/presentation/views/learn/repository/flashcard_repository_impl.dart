@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:brainbee/presentation/views/learn/model/flashcard_models/content.model.dart';
+import 'package:brainbee/presentation/views/learn/model/flashcard_models/flashcard_model.dart';
 import 'package:brainbee/presentation/views/learn/repository/flashcard_repo.dart';
 import 'package:brainbee/presentation/views/learn/services/flashcard_api_service.dart';
 
@@ -75,6 +76,43 @@ class FlashCardContentRepositoryImpl implements FlashCardContentRepository {
       throw Exception('Failed to load chapter: ${e.message}');
     } catch (e) {
       throw Exception('Failed to load chapter: $e');
+    }
+  }
+
+  @override
+  Future<List<Flashcard>> getFlashcardsForBook({
+    required String studentId,
+    required String bookName,
+  }) async {
+    try {
+      final response = await apiService.getFlashcardsForBook(
+        studentId: studentId,
+        bookName: bookName,
+      );
+      final flashcardResponse = flashcardResponseFromJson(response.body);
+      return flashcardResponse.flashcards;
+    } catch (e) {
+      throw Exception('Failed to load flashcards: $e');
+    }
+  }
+
+  @override
+  Future<String> generateFlashcards({
+    required String studentId,
+    required String subject,
+    required String topicQuery,
+  }) async {
+    try {
+      final response = await apiService.generateFlashcards(
+        studentId: studentId,
+        subject: subject,
+        topicQuery: topicQuery,
+      );
+      final data = jsonDecode(response.body);
+      // Assuming the response has a 'message' field on success
+      return data['message'] ?? 'Flashcards generated successfully!';
+    } catch (e) {
+      throw Exception('Failed to generate flashcards: $e');
     }
   }
 }

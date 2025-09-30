@@ -88,6 +88,47 @@ class FlashCardContentApiService {
     }
   }
 
+  Future<http.Response> getFlashcardsForBook({
+    required String studentId,
+    required String bookName,
+  }) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/openai/flashcard/book/$bookName');
+
+      final response = await _client
+          .get(uri, headers: await _headers)
+          .timeout(timeout);
+
+      print("response is ${response.body}");
+      return _handleResponse(response);
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // Generate new flashcards
+  Future<http.Response> generateFlashcards({
+    required String studentId,
+    required String subject,
+    required String topicQuery,
+  }) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/openai/flashcard/generate');
+      final body = jsonEncode({
+        "student_id": studentId,
+        "subject": subject,
+        "topic_query": topicQuery,
+      });
+
+      final response = await _client
+          .post(uri, headers: await _headers, body: body)
+          .timeout(timeout);
+      return _handleResponse(response);
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   // Handle response and check for errors
   http.Response _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {

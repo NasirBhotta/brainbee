@@ -3,6 +3,7 @@
 
 import 'package:brainbee/presentation/views/learn/bloc/learn_bloc.dart';
 import 'package:brainbee/presentation/views/learn/model/flashcard_models/content.model.dart';
+import 'package:brainbee/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
@@ -258,9 +259,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
   }
 
   void _handleSectionTap(ChapterSection section) {
-    // Handle section tap - navigate to flashcards or content view
-    // You can pass the section data to the next screen
-    print('Section tapped: ${section.sectionTitle}');
+    Navigator.pushNamed(context, AppRoutes.flashCardScreen);
   }
 }
 
@@ -405,7 +404,6 @@ class _ExpandableChapterCardState extends State<_ExpandableChapterCard> {
                 ),
                 child: Column(
                   children: [
-                    const Divider(height: 1, thickness: 1),
                     ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),

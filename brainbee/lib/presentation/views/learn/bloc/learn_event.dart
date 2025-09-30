@@ -44,3 +44,28 @@ class LoadChapterById extends BookContentEvent {
 class ResetBookContent extends BookContentEvent {
   const ResetBookContent();
 }
+
+class LoadFlashcards extends BookContentEvent {
+  final String studentId;
+  final String bookName;
+
+  const LoadFlashcards({required this.studentId, required this.bookName});
+
+  @override
+  List<Object> get props => [studentId, bookName];
+}
+
+class GenerateFlashcards extends BookContentEvent {
+  final String studentId;
+  final String subject;
+  final String topicQuery;
+
+  const GenerateFlashcards({
+    required this.studentId,
+    required this.subject,
+    required this.topicQuery,
+  });
+
+  @override
+  List<Object> get props => [studentId, subject, topicQuery];
+}

@@ -9,6 +9,7 @@ import 'package:brainbee/presentation/views/home/quizzes/UI/bb_list_chapters_top
 import 'package:brainbee/presentation/views/home/quizzes/UI/bb_quizzes_list.dart';
 import 'package:brainbee/presentation/views/home/quizzes/UI/bb_specific_book_quiz_selection.dart';
 import 'package:brainbee/presentation/views/home/quizzes/models/book_model.dart';
+import 'package:brainbee/presentation/views/learn/flashcards/bb_generate_flashcards.dart';
 import 'package:brainbee/presentation/views/onboarding/bb_combined_onbaord.dart';
 import 'package:brainbee/routes/dummy_bood_data.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,7 @@ class AppRoutes {
   static const String quizzesList = '/quizzes-list';
   static const String quizGeneration = '/quiz-generation';
   static const String chapterSelection = '/chapter-selection';
+  static const String flashCardScreen = '/flashcard-generation';
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
@@ -63,6 +65,10 @@ class AppRoutes {
 
       chapterSelection: (context) {
         return BbChapterSectionsScreen(bookData: bookData);
+      },
+
+      flashCardScreen: (context) {
+        return BBFlashCardsScreen();
       },
     };
   }
