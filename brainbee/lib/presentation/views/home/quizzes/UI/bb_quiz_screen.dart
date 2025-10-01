@@ -3,8 +3,6 @@ import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/utils/helper/bb_confirmation_dialog.dart';
 import 'package:brainbee/core/utils/helper/bb_result_extention.dart';
-import 'package:brainbee/core/widgets/popups/bb_confirmation_dialog.dart';
-import 'package:brainbee/core/widgets/popups/bb_result_dialog.dart';
 import 'package:brainbee/presentation/views/home/quizzes/bloc/quiz_bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/models/quiz_data_model.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_battle_report_card.dart';
@@ -16,10 +14,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class BBInAppQuizScreen extends StatefulWidget {
   final String quizTitle;
   final String quizId;
+  final String studentId;
   const BBInAppQuizScreen({
     super.key,
     this.quizTitle = "Topic Quiz",
     required this.quizId,
+    required this.studentId,
   });
 
   @override
@@ -37,7 +37,7 @@ class _BBInAppQuizScreenState extends State<BBInAppQuizScreen> {
   int timeSpent = 0;
   List<int?> answers = [];
   List<String> explanations = [];
-  int timeRemaining = 30; // Increased time for reading longer questions
+  int timeRemaining = 30;
   late Timer timer;
   late Timer totalTimeTimer;
   int totalQuizTime = 0;
@@ -136,10 +136,44 @@ class _BBInAppQuizScreenState extends State<BBInAppQuizScreen> {
     } else {
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
-          _showResultDialog();
+          print("We are submitting the quiz");
+          _submitQuizAndShowResult();
+
+          // here we have to submitQuiz performance
         }
       });
     }
+  }
+
+  Future<void> _submitQuizAndShowResult() async {
+    if (quizData == null) {
+      print("quiz data is null");
+      _showResultDialog();
+      return;
+    }
+
+    // Prepare answers in the format the backend expects
+    final answersPayload = <Map<String, dynamic>>[];
+    for (int i = 0; i < answers.length; i++) {
+      answersPayload.add({
+        'question_id': quizData!.questions[i].id,
+        'selected_index': answers[i], // can be null if timeout
+      });
+    }
+
+    print("answer payload is $answersPayload");
+
+    // Submit to backend
+    context.read<QuizBloc>().add(
+      SubmitQuizPerformance(
+        studentId: widget.studentId,
+        quizId: widget.quizId,
+        answers: answersPayload,
+      ),
+    );
+
+    // Show result dialog immediately (don't wait for submission)
+    _showResultDialog();
   }
 
   void _showResultDialog() {
@@ -591,6 +625,9 @@ class _BBInAppQuizScreenState extends State<BBInAppQuizScreen> {
       cancelButtonText: "Cancel",
       onConfirm: () {
         Navigator.pop(context);
+        if (answers.isNotEmpty) {
+          _submitQuizAndShowResult();
+        }
         _navigateToReportCard();
       },
     );

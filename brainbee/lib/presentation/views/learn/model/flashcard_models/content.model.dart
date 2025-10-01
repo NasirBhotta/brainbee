@@ -93,21 +93,53 @@ class BookChapter {
   }
 }
 
-class ChapterSection {
-  final String sectionTitle;
+class SubSection {
+  final String subsectionTitle;
   final String content;
 
-  ChapterSection({required this.sectionTitle, required this.content});
+  SubSection({required this.subsectionTitle, required this.content});
 
-  factory ChapterSection.fromJson(Map<String, dynamic> json) {
-    return ChapterSection(
-      sectionTitle: json['section_title'] as String,
+  factory SubSection.fromJson(Map<String, dynamic> json) {
+    return SubSection(
+      subsectionTitle: json['subsection_title'] as String,
       content: json['content'] as String,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'section_title': sectionTitle, 'content': content};
+    return {'subsection_title': subsectionTitle, 'content': content};
+  }
+}
+
+class ChapterSection {
+  final String sectionTitle;
+  final String content;
+  final List<SubSection> subsections;
+
+  ChapterSection({
+    required this.sectionTitle,
+    required this.content,
+    required this.subsections,
+  });
+
+  factory ChapterSection.fromJson(Map<String, dynamic> json) {
+    var list = json['subsections'] as List? ?? [];
+    List<SubSection> subsectionsList =
+        list.map((e) => SubSection.fromJson(e)).toList();
+
+    return ChapterSection(
+      sectionTitle: json['section_title'] as String,
+      content: json['content'] as String,
+      subsections: subsectionsList,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'section_title': sectionTitle,
+      'content': content,
+      'subsections': subsections.map((e) => e.toJson()).toList(),
+    };
   }
 }
 

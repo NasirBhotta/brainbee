@@ -21,4 +21,10 @@ abstract class QuizRepository {
     required int grade,
     String? subject,
   });
+
+  Future<Map<String, dynamic>> submitQuizPerformance({
+    required String studentId,
+    required String quizId,
+    required List<Map<String, dynamic>> answers,
+  });
 }

@@ -54,3 +54,18 @@ class LoadQuizById extends QuizEvent {
   @override
   List<Object> get props => [quizId];
 }
+
+class SubmitQuizPerformance extends QuizEvent {
+  final String studentId;
+  final String quizId;
+  final List<Map<String, dynamic>> answers;
+
+  const SubmitQuizPerformance({
+    required this.studentId,
+    required this.quizId,
+    required this.answers,
+  });
+
+  @override
+  List<Object> get props => [studentId, quizId, answers];
+}

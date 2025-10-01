@@ -18,6 +18,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     on<GenerateNewQuiz>(_onGenerateNewQuiz);
     on<RefreshQuizzes>(_onRefreshQuizzes);
     on<LoadQuizById>(_onLoadQuizById);
+    on<SubmitQuizPerformance>(_onSubmitQuizPerformance);
   }
 
   Future<void> _onLoadSubjectQuizzes(
@@ -67,6 +68,27 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       emit(QuizGenerated("Quiz generated successfully, go back to take quiz"));
     } catch (e) {
       emit(QuizError(message: 'Failed to generate quiz: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onSubmitQuizPerformance(
+    SubmitQuizPerformance event,
+    Emitter<QuizState> emit,
+  ) async {
+    try {
+      emit(const QuizSubmitting());
+
+      final result = await quizRepository.submitQuizPerformance(
+        studentId: event.studentId,
+        quizId: event.quizId,
+        answers: event.answers,
+      );
+
+      emit(QuizSubmitted(result: result));
+    } catch (e) {
+      emit(
+        QuizSubmissionError(message: 'Failed to submit quiz: ${e.toString()}'),
+      );
     }
   }
 

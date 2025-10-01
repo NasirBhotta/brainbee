@@ -1,3 +1,4 @@
+import 'package:brainbee/core/models/subject_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
@@ -5,50 +6,27 @@ import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/widgets/popups/bb_invite_popUp.dart';
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 
-class Subject {
-  final String name;
-  final int flashcardCount;
-  final String imgPath;
-  final Color color;
-
-  Subject({
-    required this.name,
-    required this.flashcardCount,
-    required this.imgPath,
-    required this.color,
-  });
-}
-
 class BBBookSelectionForBattle extends StatelessWidget {
   // All available subjects
   static final List<Subject> _allSubjects = [
     Subject(
       name: 'English',
-      flashcardCount: 104,
       imgPath: 'assets/text-book.png',
       color: Colors.red,
     ),
-    Subject(
-      name: 'Biology',
-      flashcardCount: 34,
-      imgPath: 'assets/dna.png',
-      color: Colors.green,
-    ),
+    Subject(name: 'Biology', imgPath: 'assets/dna.png', color: Colors.green),
     Subject(
       name: 'Mathematics',
-      flashcardCount: 35,
       imgPath: 'assets/compass.png',
       color: Colors.blue,
     ),
     Subject(
       name: 'Chemistry',
-      flashcardCount: 29,
       imgPath: 'assets/chemistry.png',
       color: Colors.pink,
     ),
     Subject(
       name: 'Physics',
-      flashcardCount: 25,
       imgPath: 'assets/molecule.png',
       color: Colors.amber,
     ),
@@ -176,12 +154,7 @@ class _SubjectCard extends StatelessWidget {
                       color: subject.color.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Image.asset(
-                      subject.imgPath,
-                      width: 32,
-                      height: 32,
-                      color: subject.color,
-                    ),
+                    child: Image.asset(subject.imgPath, width: 32, height: 32),
                   ),
                   const SizedBox(width: 16),
 
@@ -199,13 +172,6 @@ class _SubjectCard extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                             color: Colors.black87,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        BBText(
-                          data:
-                              '${subject.flashcardCount} flashcards available',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.grey[600], fontSize: 13),
                         ),
                       ],
                     ),

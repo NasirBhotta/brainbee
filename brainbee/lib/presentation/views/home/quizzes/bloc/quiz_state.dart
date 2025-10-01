@@ -76,3 +76,30 @@ class QuizGenerated extends QuizState {
   @override
   List<Object> get props => [message];
 }
+
+class QuizSubmitting extends QuizState {
+  final String message;
+
+  const QuizSubmitting({this.message = 'Submitting quiz results...'});
+
+  @override
+  List<Object> get props => [message];
+}
+
+class QuizSubmitted extends QuizState {
+  final Map<String, dynamic> result;
+
+  const QuizSubmitted({required this.result});
+
+  @override
+  List<Object> get props => [result];
+}
+
+class QuizSubmissionError extends QuizState {
+  final String message;
+
+  const QuizSubmissionError({required this.message});
+
+  @override
+  List<Object> get props => [message];
+}

@@ -52,11 +52,19 @@ class _BbSpecificBookQuizSelectionState
   }
 
   void _onTopicTap(Topic topic) {
-    Navigator.pushNamed(context, AppRoutes.quizzesList, arguments: topic);
+    Navigator.pushNamed(
+      context,
+      AppRoutes.quizzesList,
+      arguments: [topic, widget.student],
+    );
   }
 
   void _onSelectChapterTap() {
-    Navigator.pushNamed(context, AppRoutes.chapterSelection);
+    Navigator.pushNamed(
+      context,
+      AppRoutes.chapterSelection,
+      arguments: widget.student,
+    );
   }
 
   @override

@@ -96,4 +96,23 @@ class QuizRepositoryImpl implements QuizRepository {
       return {};
     }
   }
+
+  @override
+  Future<Map<String, dynamic>> submitQuizPerformance({
+    required String studentId,
+    required String quizId,
+    required List<Map<String, dynamic>> answers,
+  }) async {
+    try {
+      final response = await apiService.post(
+        '/api/student/submit-quiz',
+        data: {'student_id': studentId, 'quiz_id': quizId, 'answers': answers},
+      );
+
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      return data;
+    } catch (e) {
+      throw Exception('Failed to submit quiz performance: $e');
+    }
+  }
 }

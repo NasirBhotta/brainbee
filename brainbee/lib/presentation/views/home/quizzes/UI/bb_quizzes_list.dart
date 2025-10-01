@@ -1,12 +1,18 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
+import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 import 'package:brainbee/presentation/views/home/quizzes/UI/bb_quiz_screen.dart';
 import 'package:brainbee/presentation/views/home/quizzes/models/book_model.dart';
 import 'package:flutter/material.dart';
 
 class BbQuizzesListScreen extends StatefulWidget {
   final Topic topic;
-  const BbQuizzesListScreen({super.key, required this.topic});
+  final StudentModel student;
+  const BbQuizzesListScreen({
+    super.key,
+    required this.topic,
+    required this.student,
+  });
 
   @override
   State<BbQuizzesListScreen> createState() => _BbQuizzesListScreenState();
@@ -45,6 +51,7 @@ class _BbQuizzesListScreenState extends State<BbQuizzesListScreen> {
                   builder:
                       (context) => BBInAppQuizScreen(
                         quizId: widget.topic.quizzes[index].id,
+                        studentId: widget.student.id,
                       ),
                 ),
               );

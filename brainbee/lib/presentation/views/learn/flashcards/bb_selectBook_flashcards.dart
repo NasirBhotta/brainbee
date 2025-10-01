@@ -1,10 +1,11 @@
+import 'package:brainbee/core/models/subject_model.dart';
 import 'package:brainbee/presentation/views/learn/flashcards/bb_specific_chapter_selection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
-import 'package:brainbee/presentation/views/learn/flashcards/bb_selectChap_flashcards.dart';
+
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 
 class BBFlashcards extends StatelessWidget {
@@ -13,31 +14,26 @@ class BBFlashcards extends StatelessWidget {
   static final List<Subject> _allSubjects = [
     Subject(
       name: 'English',
-      flashcardCount: 105,
+
       imgPath: 'assets/text-book.png',
       color: Colors.red,
     ),
-    Subject(
-      name: 'Biology',
-      flashcardCount: 34,
-      imgPath: 'assets/dna.png',
-      color: Colors.green,
-    ),
+    Subject(name: 'Biology', imgPath: 'assets/dna.png', color: Colors.green),
     Subject(
       name: 'Mathematics',
-      flashcardCount: 35,
+
       imgPath: 'assets/compass.png',
       color: Colors.blue,
     ),
     Subject(
       name: 'Chemistry',
-      flashcardCount: 29,
+
       imgPath: 'assets/chemistry.png',
       color: Colors.pink,
     ),
     Subject(
       name: 'Physics',
-      flashcardCount: 25,
+
       imgPath: 'assets/molecule.png',
       color: Colors.amber,
     ),
@@ -170,12 +166,7 @@ class _FlashcardSubjectCard extends StatelessWidget {
                       color: subject.color.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Image.asset(
-                      subject.imgPath,
-                      width: 32,
-                      height: 32,
-                      color: subject.color,
-                    ),
+                    child: Image.asset(subject.imgPath, width: 32, height: 32),
                   ),
                   const SizedBox(width: 16),
 
@@ -194,26 +185,26 @@ class _FlashcardSubjectCard extends StatelessWidget {
                             color: Colors.black87,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.style,
-                              size: 16,
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(width: 4),
-                            BBText(
-                              data: '${subject.flashcardCount} Flashcards',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
+                        // const SizedBox(height: 4),
+                        // Row(
+                        //   children: [
+                        //     Icon(
+                        //       Icons.style,
+                        //       size: 16,
+                        //       color: Colors.grey[600],
+                        //     ),
+                        //     const SizedBox(width: 4),
+                        //     BBText(
+                        //       data: '${subject.flashcardCount} Flashcards',
+                        //       style: Theme.of(
+                        //         context,
+                        //       ).textTheme.bodySmall?.copyWith(
+                        //         color: Colors.grey[600],
+                        //         fontSize: 13,
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
                       ],
                     ),
                   ),

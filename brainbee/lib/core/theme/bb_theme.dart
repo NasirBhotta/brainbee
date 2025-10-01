@@ -116,6 +116,12 @@ class BrainBeeTheme {
         fontWeight: FontWeight.w500,
       ),
     ),
+
+    textSelectionTheme: TextSelectionThemeData(
+      selectionColor: Colors.green.withValues(alpha: 0.3), // highlight color
+      cursorColor: Colors.red, // cursor color
+      selectionHandleColor: Colors.green, // handle dots color
+    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: Colors.white,

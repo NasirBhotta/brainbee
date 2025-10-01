@@ -59,8 +59,10 @@ class AppRoutes {
       },
 
       quizzesList: (context) {
-        final topic = ModalRoute.of(context)!.settings.arguments as Topic;
-        return BbQuizzesListScreen(topic: topic);
+        final args = ModalRoute.of(context)!.settings.arguments as List;
+        final topic = args[0] as Topic;
+        final student = args[1] as StudentModel;
+        return BbQuizzesListScreen(topic: topic, student: student);
       },
 
       chapterSelection: (context) {
