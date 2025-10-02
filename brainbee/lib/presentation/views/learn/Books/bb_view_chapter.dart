@@ -1,7 +1,15 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
+import 'package:brainbee/core/widgets/AI/bb_chat_widget.dart';
+import 'package:brainbee/presentation/views/bot/UI/bb_initial_bot_screen.dart';
+import 'package:brainbee/presentation/views/bot/bloc/bot_bloc.dart';
+import 'package:brainbee/presentation/views/learn/Books/bb_ai_response_dialog.dart';
 import 'package:brainbee/presentation/views/learn/model/flashcard_models/content.model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BbViewChapter extends StatefulWidget {
   final BookChapter chapter;
@@ -17,12 +25,15 @@ class _BbViewChapterState extends State<BbViewChapter> {
   bool showOptions = false;
   bool isLoading = false;
   String? errorMessage;
+  final FocusNode _selectionFocusNode = FocusNode();
 
-  void _handleTextSelection(String text) {
-    setState(() {
-      selectedText = text.trim();
-      showOptions = selectedText.isNotEmpty;
-    });
+  void _handleTextSelection(SelectedContent? selectedContent) {
+    if (selectedContent != null) {
+      setState(() {
+        selectedText = selectedContent.plainText.trim();
+        showOptions = selectedText.isNotEmpty;
+      });
+    }
   }
 
   void _hideOptions() {
@@ -32,33 +43,56 @@ class _BbViewChapterState extends State<BbViewChapter> {
     });
   }
 
-  void _handleSummarization() {
-    if (selectedText.isNotEmpty) {
-      _showActionDialog(
-        'Summarization',
-        'Generating summary for the selected text...',
-      );
-    }
+  void _handleSummarization() async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _selectionFocusNode.unfocus();
+    });
+    if (selectedText.isEmpty) return;
+
+    _showLoadingDialog('Generating summary...');
+
+    // Get studentId from SharedPreferences or your auth system
+    final prefs = await SharedPreferences.getInstance();
+    final studentId = prefs.getString('studentId') ?? '';
+
+    // Use BotBloc to send message
+    context.read<BotBloc>().add(
+      SendMessage(
+        question:
+            'Please provide a concise/short summary which should be 1/3rd of the following text: "$selectedText"',
+        studentId: studentId,
+        sessionId: null,
+      ),
+    );
+
+    // Listen for response (see below)
   }
 
-  void _handleExplanation() {
-    if (selectedText.isNotEmpty) {
-      _showActionDialog(
-        'Explanation',
-        'Generating explanation for the selected text...',
-      );
-    }
+  void _handleExplanation() async {
+    if (selectedText.isEmpty) return;
+
+    _showLoadingDialog('Generating explanation...');
+
+    final prefs = await SharedPreferences.getInstance();
+    final studentId = prefs.getString('studentId') ?? '';
+
+    context.read<BotBloc>().add(
+      SendMessage(
+        question: 'Please explain this in simple terms: "$selectedText"',
+        studentId: studentId,
+        sessionId: null,
+      ),
+    );
   }
 
-  void _handleChatWithAI() {
+  void _handleChatWithAI() async {
     if (selectedText.isNotEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder:
-              (context) => ChatWithAIScreen(
-                bookTitle: widget.chapter.bookTitle,
-                chapterTitle: widget.chapter.chapterTitle,
+              (context) => BbChatWidget(
+                chatType: ChatType.newChat,
                 selectedText: selectedText,
               ),
         ),
@@ -66,205 +100,197 @@ class _BbViewChapterState extends State<BbViewChapter> {
     }
   }
 
-  void _showActionDialog(String action, String message) {
+  void _showLoadingDialog(String message) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(action),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Selected Text:'),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  selectedText,
-                  style: const TextStyle(fontStyle: FontStyle.italic),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(message),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            content: Row(
+              children: [
+                const CircularProgressIndicator(color: BBColors.primaryColor),
+                const SizedBox(width: 16),
+                Expanded(child: Text(message)),
+              ],
             ),
-          ],
-        );
-      },
+          ),
+    );
+  }
+
+  void _showResultDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => ImprovedAIResponseDialog(title: title, content: content),
     );
   }
 
   @override
+  void dispose() {
+    _selectionFocusNode.dispose(); // Add this
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SelectableText(
-              widget.chapter.bookTitle,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+    return BlocListener<BotBloc, BotState>(
+      listener: (context, state) {
+        if (state is SendMessageSuccess) {
+          Navigator.of(context).pop(); // Close loading dialog
+          _showResultDialog('AI Response', state.response);
+        } else if (state is SendMessageFailure) {
+          Navigator.of(context).pop(); // Close loading dialog
+          _showResultDialog('Error', state.error);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F8F8),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.chapter.bookTitle,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            SelectableText(
-              'Chapter ${widget.chapter.chapterNumber}',
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-            ),
-          ],
-        ),
-      ),
-      body: GestureDetector(
-        onTap: _hideOptions,
-        child: Stack(
-          children: [
-            // Main content
-            SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Chapter Title
-                  SelectableText(
-                    widget.chapter.chapterTitle,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                      height: 1.3,
-                    ),
-                    onSelectionChanged: (selection, cause) {
-                      if (selection.start != selection.end) {
-                        final text = widget.chapter.chapterTitle.substring(
-                          selection.start,
-                          selection.end,
-                        );
-                        _handleTextSelection(text);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Chapter Introduction
-                  if (widget.chapter.chapterIntro.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: BBColors.primaryColor.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: BBColors.primaryColor.withOpacity(0.2),
-                        ),
-                      ),
-                      child: SelectableText(
-                        widget.chapter.chapterIntro,
-                        style: TextStyle(
-                          fontSize: 16,
-                          height: 1.6,
-                          color: Colors.grey[800],
-                          fontStyle: FontStyle.italic,
-                        ),
-                        onSelectionChanged: (selection, cause) {
-                          if (selection.start != selection.end) {
-                            final text = widget.chapter.chapterIntro.substring(
-                              selection.start,
-                              selection.end,
-                            );
-                            _handleTextSelection(text);
-                          }
-                        },
-                      ),
-                    ),
-
-                  const SizedBox(height: 32),
-
-                  // Sections
-                  ...widget.chapter.sections.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final section = entry.value;
-                    return _buildSection(section, index + 1);
-                  }),
-
-                  const SizedBox(height: 80), // Space for floating buttons
-                ],
+              Text(
+                'Chapter ${widget.chapter.chapterNumber}',
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
               ),
-            ),
-
-            // Floating action options
-            if (showOptions)
-              Positioned(
-                bottom: 30,
-                left: 20,
-                right: 20,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
+            ],
+          ),
+        ),
+        body: GestureDetector(
+          onTap: _hideOptions,
+          child: Stack(
+            children: [
+              // Main content wrapped in SelectableRegion
+              SelectableRegion(
+                focusNode: _selectionFocusNode,
+                selectionControls: MaterialTextSelectionControls(),
+                onSelectionChanged:
+                    (SelectedContent? value) => _handleTextSelection(value),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const BBText(
-                        data: 'Selected Text Actions',
-                        style: TextStyle(
+                      // Chapter Title
+                      Text(
+                        widget.chapter.chapterTitle,
+                        style: const TextStyle(
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: BBColors.primaryColor,
+                          color: Colors.black87,
+                          height: 1.3,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildActionButton(
-                            icon: Icons.summarize,
-                            label: 'Summarize',
-                            onTap: _handleSummarization,
+                      const SizedBox(height: 24),
+
+                      // Chapter Introduction
+                      if (widget.chapter.chapterIntro.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: BBColors.primaryColor.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: BBColors.primaryColor.withOpacity(0.2),
+                            ),
                           ),
-                          _buildActionButton(
-                            icon: Icons.lightbulb_outline,
-                            label: 'Explain',
-                            onTap: _handleExplanation,
+                          child: Text(
+                            widget.chapter.chapterIntro,
+                            style: TextStyle(
+                              fontSize: 16,
+                              height: 1.6,
+                              color: Colors.grey[800],
+                              fontStyle: FontStyle.italic,
+                            ),
                           ),
-                          _buildActionButton(
-                            icon: Icons.chat_bubble_outline,
-                            label: 'Chat AI',
-                            onTap: _handleChatWithAI,
-                          ),
-                        ],
-                      ),
+                        ),
+
+                      const SizedBox(height: 32),
+
+                      // Sections
+                      ...widget.chapter.sections.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final section = entry.value;
+                        return _buildSection(section, index + 1);
+                      }),
+
+                      const SizedBox(height: 80), // Space for floating buttons
                     ],
                   ),
                 ),
               ),
-          ],
+
+              // Floating action options
+              if (showOptions)
+                Positioned(
+                  bottom: 30,
+                  left: 20,
+                  right: 20,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const BBText(
+                          data: 'Selected Text Actions',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: BBColors.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildActionButton(
+                              icon: Icons.summarize,
+                              label: 'Summarize',
+                              onTap: _handleSummarization,
+                            ),
+                            _buildActionButton(
+                              icon: Icons.lightbulb_outline,
+                              label: 'Explain',
+                              onTap: _handleExplanation,
+                            ),
+                            _buildActionButton(
+                              icon: Icons.chat_bubble_outline,
+                              label: 'Chat AI',
+                              onTap: _handleChatWithAI,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -274,8 +300,8 @@ class _BbViewChapterState extends State<BbViewChapter> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Title - Selectable
-        SelectableText(
+        // Section Title
+        Text(
           '$sectionNumber. ${section.sectionTitle}',
           style: const TextStyle(
             fontSize: 22,
@@ -283,13 +309,6 @@ class _BbViewChapterState extends State<BbViewChapter> {
             color: BBColors.primaryColor,
             height: 1.4,
           ),
-          onSelectionChanged: (selection, cause) {
-            if (selection.start != selection.end) {
-              final fullText = '$sectionNumber. ${section.sectionTitle}';
-              final text = fullText.substring(selection.start, selection.end);
-              _handleTextSelection(text);
-            }
-          },
         ),
         const SizedBox(height: 12),
 
@@ -297,26 +316,17 @@ class _BbViewChapterState extends State<BbViewChapter> {
         if (section.content.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
-            child: SelectableText(
+            child: Text(
               section.content,
               style: const TextStyle(
                 fontSize: 16,
                 height: 1.7,
                 color: Colors.black87,
               ),
-              onSelectionChanged: (selection, cause) {
-                if (selection.start != selection.end) {
-                  final text = section.content.substring(
-                    selection.start,
-                    selection.end,
-                  );
-                  _handleTextSelection(text);
-                }
-              },
             ),
           ),
 
-        // Subsections - with null check
+        // Subsections
         if (section.subsections.isNotEmpty)
           ...section.subsections.asMap().entries.map((entry) {
             final subIndex = entry.key;
@@ -339,8 +349,8 @@ class _BbViewChapterState extends State<BbViewChapter> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Subsection Title - Selectable
-          SelectableText(
+          // Subsection Title
+          Text(
             '$sectionNumber.$subNumber ${subsection.subsectionTitle}',
             style: TextStyle(
               fontSize: 18,
@@ -348,34 +358,17 @@ class _BbViewChapterState extends State<BbViewChapter> {
               color: Colors.grey[800],
               height: 1.4,
             ),
-            onSelectionChanged: (selection, cause) {
-              if (selection.start != selection.end) {
-                final fullText =
-                    '$sectionNumber.$subNumber ${subsection.subsectionTitle}';
-                final text = fullText.substring(selection.start, selection.end);
-                _handleTextSelection(text);
-              }
-            },
           ),
           const SizedBox(height: 8),
 
           // Subsection Content
-          SelectableText(
+          Text(
             subsection.content,
             style: const TextStyle(
               fontSize: 16,
               height: 1.7,
               color: Colors.black87,
             ),
-            onSelectionChanged: (selection, cause) {
-              if (selection.start != selection.end) {
-                final text = subsection.content.substring(
-                  selection.start,
-                  selection.end,
-                );
-                _handleTextSelection(text);
-              }
-            },
           ),
         ],
       ),
@@ -415,7 +408,7 @@ class _BbViewChapterState extends State<BbViewChapter> {
   }
 }
 
-// Chat with AI Screen
+// Chat with AI Screen (unchanged)
 class ChatWithAIScreen extends StatefulWidget {
   final String bookTitle;
   final String chapterTitle;

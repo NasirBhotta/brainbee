@@ -10,8 +10,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class BbChatWidget extends StatefulWidget {
   final ChatType chatType;
   final String? sessionId;
+  final String? selectedText;
 
-  const BbChatWidget({super.key, this.sessionId, required this.chatType});
+  const BbChatWidget({
+    super.key,
+    this.sessionId,
+    required this.chatType,
+    this.selectedText,
+  });
 
   @override
   State<BbChatWidget> createState() => _BbChatWidgetState();
@@ -33,6 +39,12 @@ class _BbChatWidgetState extends State<BbChatWidget> {
 
   void _initializeChat() {
     // Get student ID immediately
+
+    if (widget.selectedText == '' || widget.selectedText == null) {
+    } else {
+      _messageController.text = widget.selectedText!;
+    }
+
     final studentState = context.read<StudentBloc>().state;
     if (studentState is StudentDataLoaded) {
       studentId = studentState.student.id;
