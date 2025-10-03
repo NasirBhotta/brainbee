@@ -10,3 +10,15 @@ sealed class BookScoreEvent extends Equatable {
 class LoadOverallScore extends BookScoreEvent {}
 
 class RefreshOverallScore extends BookScoreEvent {}
+
+class LoadBookScore extends BookScoreEvent {
+  final String bookId;
+
+  const LoadBookScore(this.bookId);
+}
+
+class RefreshBookScore extends BookScoreEvent {
+  final String bookId;
+
+  const RefreshBookScore(this.bookId);
+}

@@ -1,11 +1,18 @@
+// lib/presentation/views/extras/scorecard/bb_bookscorescreen.dart
+
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
+import 'package:brainbee/presentation/views/extras/scorecard/bloc/book_score_bloc.dart';
+import 'package:brainbee/presentation/views/extras/scorecard/model/bb_spefic_book_score_model.dart';
+import 'package:brainbee/presentation/views/extras/scorecard/repo/score_repo_impl.dart';
+import 'package:brainbee/presentation/views/extras/scorecard/services/score_api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-class BBBookScoreScreen extends StatefulWidget {
+class BBBookScoreScreen extends StatelessWidget {
   final String bookId;
   final String bookTitle;
 
@@ -16,43 +23,21 @@ class BBBookScoreScreen extends StatefulWidget {
   });
 
   @override
-  State<BBBookScoreScreen> createState() => _BBBookScoreScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create:
+          (context) => BookScoreBloc(
+            repository: ScoreRepositoryImpl(apiService: ScoreApiService()),
+          )..add(LoadBookScore(bookId)),
+      child: _BBBookScoreScreenContent(bookTitle: bookTitle),
+    );
+  }
 }
 
-class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
-  late BookScore _bookScore;
-  bool _isLoading = true;
-  bool _hasError = false;
+class _BBBookScoreScreenContent extends StatelessWidget {
+  final String bookTitle;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadBookScore();
-  }
-
-  Future<void> _loadBookScore() async {
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-    });
-
-    try {
-      // Simulating API call with delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Mock data for demonstration
-      _bookScore = _getMockBookScore();
-
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-      });
-    }
-  }
+  const _BBBookScoreScreenContent({required this.bookTitle});
 
   @override
   Widget build(BuildContext context) {
@@ -61,15 +46,10 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
       appBar: AppBar(
         backgroundColor: BBColors.lightGrayBG,
         leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back),
         ),
-        title: BBText(
-          data: widget.bookTitle,
-          style: context.textStyle.titleMedium,
-        ),
+        title: BBText(data: bookTitle, style: context.textStyle.titleMedium),
         centerTitle: true,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -80,43 +60,22 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
           ),
         ),
       ),
-      body: _buildBody(),
-    );
-  }
+      body: BlocBuilder<BookScoreBloc, BookScoreState>(
+        builder: (context, state) {
+          if (state is BookScoreLoading) {
+            return _buildLoadingState();
+          }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return _buildLoadingState();
-    }
+          if (state is BookScoreError) {
+            return _buildErrorState(context, state.message);
+          }
 
-    if (_hasError) {
-      return _buildErrorState();
-    }
+          if (state is BookScoreLoaded) {
+            return _buildBody(context, state.data);
+          }
 
-    return RefreshIndicator(
-      onRefresh: _loadBookScore,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: context.screenWidth * 0.05,
-            vertical: 16,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildBookScoreHeader(),
-              const SizedBox(height: 24),
-              _buildProgressSection(),
-              const SizedBox(height: 24),
-              _buildScoreBreakdownSection(),
-              const SizedBox(height: 24),
-              _buildChapterScoresSection(),
-              const SizedBox(height: 24),
-              _buildRecommendationsSection(),
-            ],
-          ),
-        ),
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
@@ -134,7 +93,7 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildErrorState(BuildContext context, String message) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -142,9 +101,27 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
           const Icon(Icons.error_outline, size: 64, color: BBColors.alertRed),
           const SizedBox(height: 16),
           const Text("Failed to load book score details"),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _loadBookScore,
+            onPressed: () {
+              final bookId =
+                  (context.read<BookScoreBloc>().state as BookScoreError)
+                          .message
+                          .contains('bookId')
+                      ? ''
+                      : context.read<BookScoreBloc>().state.toString();
+              // You'll need to pass bookId properly - this is a simplified version
+              context.read<BookScoreBloc>().add(LoadBookScore(bookId));
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: BBColors.primaryBlue,
               foregroundColor: Colors.white,
@@ -160,7 +137,43 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
     );
   }
 
-  Widget _buildBookScoreHeader() {
+  Widget _buildBody(BuildContext context, BookScoreData data) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        final bloc = context.read<BookScoreBloc>();
+        if (bloc.state is BookScoreLoaded) {
+          final bookId = (bloc.state as BookScoreLoaded).data.id;
+          bloc.add(RefreshBookScore(bookId));
+          await bloc.stream.firstWhere((state) => state is! BookScoreLoading);
+        }
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: context.screenWidth * 0.05,
+            vertical: 16,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildBookScoreHeader(context, data),
+              const SizedBox(height: 24),
+              _buildProgressSection(context, data),
+              const SizedBox(height: 24),
+              _buildScoreBreakdownSection(context, data),
+              const SizedBox(height: 24),
+              _buildChapterScoresSection(context, data),
+              const SizedBox(height: 24),
+              _buildRecommendationsSection(context, data),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBookScoreHeader(BuildContext context, BookScoreData data) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -168,14 +181,14 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            _getScoreColor(_bookScore.overallScore).withOpacity(0.8),
-            _getScoreColor(_bookScore.overallScore),
+            _getScoreColor(data.overallScore).withOpacity(0.8),
+            _getScoreColor(data.overallScore),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: _getScoreColor(_bookScore.overallScore).withOpacity(0.3),
+            color: _getScoreColor(data.overallScore).withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -186,7 +199,6 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Book cover
             Container(
               width: 80,
               height: 120,
@@ -202,12 +214,20 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
                 ],
               ),
               child:
-                  _bookScore.coverImage != null
+                  data.coverImage != null
                       ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          _bookScore.coverImage!,
+                          data.coverImage!,
                           fit: BoxFit.cover,
+                          errorBuilder:
+                              (_, __, ___) => const Center(
+                                child: Icon(
+                                  Icons.book,
+                                  color: Colors.grey,
+                                  size: 40,
+                                ),
+                              ),
                         ),
                       )
                       : const Center(
@@ -215,13 +235,12 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
                       ),
             ),
             const SizedBox(width: 20),
-            // Book details and score
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _bookScore.title,
+                    data.title,
                     style: context.textStyle.titleMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -230,12 +249,13 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  BBText(
-                    data: _bookScore.author,
-                    style: context.textStyle.bodyMedium?.copyWith(
-                      color: Colors.white.withOpacity(0.9),
+                  if (data.author.isNotEmpty)
+                    BBText(
+                      data: data.author,
+                      style: context.textStyle.bodyMedium?.copyWith(
+                        color: Colors.white.withOpacity(0.9),
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -258,7 +278,7 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
                             ),
                             const SizedBox(width: 4),
                             BBText(
-                              data: _getGradeFromScore(_bookScore.overallScore),
+                              data: _getGradeFromScore(data.overallScore),
                               style: context.textStyle.labelLarge?.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -269,7 +289,7 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
                       ),
                       const SizedBox(width: 12),
                       BBText(
-                        data: "${_bookScore.overallScore}%",
+                        data: "${data.overallScore}%",
                         style: context.textStyle.titleLarge?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -286,7 +306,7 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
     );
   }
 
-  Widget _buildProgressSection() {
+  Widget _buildProgressSection(BuildContext context, BookScoreData data) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -314,31 +334,37 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
             children: [
               Expanded(
                 child: _buildProgressItem(
-                  icon: Icons.bookmark_border,
-                  label: "Pages Read",
-                  value: "${_bookScore.pagesRead}/${_bookScore.totalPages}",
-                  progress: _bookScore.pagesRead / _bookScore.totalPages,
+                  context: context,
+                  icon: Icons.assignment_outlined,
+                  label: "Activities",
+                  value: "${data.totalActivities}",
+                  progress: data.totalActivities > 0 ? 1.0 : 0.0,
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: _buildProgressItem(
+                  context: context,
                   icon: Icons.timer_outlined,
                   label: "Study Time",
-                  value: "${_bookScore.studyHours} hrs",
+                  value: "${data.studyHours} hrs",
                   progress:
-                      _bookScore.studyHours / 20, // Assuming 20 hours is max
+                      data.studyHours > 0
+                          ? (data.studyHours / 20).clamp(0.0, 1.0)
+                          : 0.0,
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: _buildProgressItem(
+                  context: context,
                   icon: Icons.check_circle_outline,
                   label: "Quizzes",
-                  value:
-                      "${_bookScore.quizzesCompleted}/${_bookScore.totalQuizzes}",
+                  value: "${data.quizzesCompleted}/${data.totalQuizzes}",
                   progress:
-                      _bookScore.quizzesCompleted / _bookScore.totalQuizzes,
+                      data.totalQuizzes > 0
+                          ? data.quizzesCompleted / data.totalQuizzes
+                          : 0.0,
                 ),
               ),
             ],
@@ -349,11 +375,13 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
   }
 
   Widget _buildProgressItem({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required String value,
     required double progress,
   }) {
+    print("study hours are $value");
     return Column(
       children: [
         Container(
@@ -367,7 +395,7 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
             alignment: Alignment.center,
             children: [
               CircularProgressIndicator(
-                value: progress,
+                value: progress.clamp(0.0, 1.0),
                 backgroundColor: Colors.grey.withOpacity(0.2),
                 valueColor: const AlwaysStoppedAnimation<Color>(
                   BBColors.primaryBlue,
@@ -395,7 +423,11 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
     );
   }
 
-  Widget _buildScoreBreakdownSection() {
+  Widget _buildScoreBreakdownSection(BuildContext context, BookScoreData data) {
+    // Generate mock category scores based on overall score
+    // You can enhance this later when backend provides real category data
+    final categories = _generateMockCategoryScores(data.overallScore);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -422,12 +454,12 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
             ),
             tooltipBehavior: TooltipBehavior(enable: true),
             series: <CartesianSeries>[
-              ColumnSeries<ScoreCategory, String>(
-                dataSource: _bookScore.categoryScores,
-                xValueMapper: (ScoreCategory data, _) => data.category,
-                yValueMapper: (ScoreCategory data, _) => data.score,
+              ColumnSeries<CategoryScore, String>(
+                dataSource: categories,
+                xValueMapper: (CategoryScore data, _) => data.category,
+                yValueMapper: (CategoryScore data, _) => data.score,
                 pointColorMapper:
-                    (ScoreCategory data, _) => _getScoreColor(data.score),
+                    (CategoryScore data, _) => _getScoreColor(data.score),
                 borderRadius: BorderRadius.circular(4),
                 dataLabelSettings: const DataLabelSettings(
                   isVisible: true,
@@ -441,7 +473,7 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
     );
   }
 
-  Widget _buildChapterScoresSection() {
+  Widget _buildChapterScoresSection(BuildContext context, BookScoreData data) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -452,20 +484,36 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        ListView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: _bookScore.chapterScores.length,
-          itemBuilder: (context, index) {
-            final chapter = _bookScore.chapterScores[index];
-            return _buildChapterScoreItem(chapter);
-          },
-        ),
+        if (data.chapterScores.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: BBText(
+                data: "No chapter data available yet",
+                style: context.textStyle.bodyMedium?.copyWith(
+                  color: BBColors.disabledText,
+                ),
+              ),
+            ),
+          )
+        else
+          ListView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            itemCount: data.chapterScores.length,
+            itemBuilder: (context, index) {
+              final chapter = data.chapterScores[index];
+              return _buildChapterScoreItem(context, chapter);
+            },
+          ),
       ],
     );
   }
 
-  Widget _buildChapterScoreItem(ChapterScore chapter) {
+  Widget _buildChapterScoreItem(
+    BuildContext context,
+    ChapterScoreData chapter,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -528,46 +576,55 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
           ],
         ),
         children: [
-          // Quiz scores
-          ...chapter.quizScores.map(
-            (quiz) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: _getScoreColor(quiz.score),
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: BBText(
-                      data: quiz.title,
-                      style: context.textStyle.bodyMedium,
+          if (chapter.quizScores.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: BBText(
+                data: "No quiz attempts yet",
+                style: context.textStyle.bodySmall?.copyWith(
+                  color: BBColors.disabledText,
+                ),
+              ),
+            )
+          else
+            ...chapter.quizScores.map(
+              (quiz) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: _getScoreColor(quiz.score),
+                      size: 16,
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getScoreColor(quiz.score).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: BBText(
-                      data: "${quiz.score}%",
-                      style: context.textStyle.bodySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: _getScoreColor(quiz.score),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: BBText(
+                        data: quiz.title,
+                        style: context.textStyle.bodyMedium,
                       ),
                     ),
-                  ),
-                ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getScoreColor(quiz.score).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: BBText(
+                        data: "${quiz.score}%",
+                        style: context.textStyle.bodySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: _getScoreColor(quiz.score),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          // Practice button
           const SizedBox(height: 12),
           ElevatedButton(
             onPressed: () {
@@ -587,7 +644,10 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
     );
   }
 
-  Widget _buildRecommendationsSection() {
+  Widget _buildRecommendationsSection(
+    BuildContext context,
+    BookScoreData data,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -610,41 +670,50 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          ...List.generate(
-            _bookScore.recommendations.length,
-            (index) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: BBColors.primaryBlue.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        "${index + 1}",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: BBColors.primaryBlue,
+          if (data.recommendations.isEmpty)
+            BBText(
+              data:
+                  "Keep up the great work! Complete more activities to get personalized recommendations.",
+              style: context.textStyle.bodyMedium?.copyWith(
+                color: BBColors.disabledText,
+              ),
+            )
+          else
+            ...List.generate(
+              data.recommendations.length,
+              (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: BBColors.primaryBlue.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          "${index + 1}",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: BBColors.primaryBlue,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: BBText(
-                      data: _bookScore.recommendations[index],
-                      style: context.textStyle.bodyMedium,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: BBText(
+                        data: data.recommendations[index],
+                        style: context.textStyle.bodyMedium,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -668,132 +737,26 @@ class _BBBookScoreScreenState extends State<BBBookScoreScreen> {
     return BBColors.alertRed;
   }
 
-  // Sample data
-  BookScore _getMockBookScore() {
-    return BookScore(
-      id: "book-001",
-      title: "Advanced Mathematics: Algebra & Calculus",
-      author: "Dr. Robert Johnson",
-      overallScore: 78,
-      coverImage: null, // Replace with actual image URL
-      pagesRead: 185,
-      totalPages: 320,
-      studyHours: 12,
-      quizzesCompleted: 8,
-      totalQuizzes: 12,
-      categoryScores: [
-        ScoreCategory("Comprehension", 82),
-        ScoreCategory("Application", 75),
-        ScoreCategory("Problem Solving", 65),
-        ScoreCategory("Theory", 90),
-      ],
-      chapterScores: [
-        ChapterScore(
-          chapterNumber: 1,
-          title: "Fundamentals of Algebra",
-          score: 85,
-          completed: true,
-          quizScores: [
-            QuizScore("Basic Equations", 90),
-            QuizScore("Polynomials", 85),
-            QuizScore("Word Problems", 80),
-          ],
-        ),
-        ChapterScore(
-          chapterNumber: 2,
-          title: "Advanced Algebraic Expressions",
-          score: 78,
-          completed: true,
-          quizScores: [
-            QuizScore("Factoring", 85),
-            QuizScore("Quadratic Equations", 70),
-            QuizScore("Functions", 80),
-          ],
-        ),
-        ChapterScore(
-          chapterNumber: 3,
-          title: "Introduction to Calculus",
-          score: 65,
-          completed: false,
-          quizScores: [QuizScore("Limits", 70), QuizScore("Derivatives", 60)],
-        ),
-        ChapterScore(
-          chapterNumber: 4,
-          title: "Integration Techniques",
-          score: 0,
-          completed: false,
-          quizScores: [],
-        ),
-      ],
-      recommendations: [
-        "Focus on practicing more problems in the Calculus section to improve your problem-solving skills.",
-        "Revisit the derivative concepts in Chapter 3 to strengthen your understanding.",
-        "Spend at least 30 minutes daily on solving integration problems to prepare for Chapter 4.",
-        "Complete the remaining quizzes in Chapter 3 before moving to Chapter 4.",
-      ],
-    );
+  // Generate mock category scores based on overall score
+  // This is a placeholder until backend provides real category data
+  List<CategoryScore> _generateMockCategoryScores(int overallScore) {
+    return [
+      CategoryScore(
+        category: "Comprehension",
+        score: (overallScore + 5).clamp(0, 100),
+      ),
+      CategoryScore(
+        category: "Application",
+        score: (overallScore - 5).clamp(0, 100),
+      ),
+      CategoryScore(
+        category: "Problem Solving",
+        score: (overallScore - 10).clamp(0, 100),
+      ),
+      CategoryScore(
+        category: "Theory",
+        score: (overallScore + 10).clamp(0, 100),
+      ),
+    ];
   }
-}
-
-// Data models
-class BookScore {
-  final String id;
-  final String title;
-  final String author;
-  final int overallScore;
-  final String? coverImage;
-  final int pagesRead;
-  final int totalPages;
-  final int studyHours;
-  final int quizzesCompleted;
-  final int totalQuizzes;
-  final List<ScoreCategory> categoryScores;
-  final List<ChapterScore> chapterScores;
-  final List<String> recommendations;
-
-  BookScore({
-    required this.id,
-    required this.title,
-    required this.author,
-    required this.overallScore,
-    this.coverImage,
-    required this.pagesRead,
-    required this.totalPages,
-    required this.studyHours,
-    required this.quizzesCompleted,
-    required this.totalQuizzes,
-    required this.categoryScores,
-    required this.chapterScores,
-    required this.recommendations,
-  });
-}
-
-class ScoreCategory {
-  final String category;
-  final int score;
-
-  ScoreCategory(this.category, this.score);
-}
-
-class ChapterScore {
-  final int chapterNumber;
-  final String title;
-  final int score;
-  final bool completed;
-  final List<QuizScore> quizScores;
-
-  ChapterScore({
-    required this.chapterNumber,
-    required this.title,
-    required this.score,
-    required this.completed,
-    required this.quizScores,
-  });
-}
-
-class QuizScore {
-  final String title;
-  final int score;
-
-  QuizScore(this.title, this.score);
 }

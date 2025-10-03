@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:brainbee/presentation/views/extras/scorecard/model/bb_book_score.model.dart';
+import 'package:brainbee/presentation/views/extras/scorecard/model/bb_spefic_book_score_model.dart';
 import 'package:brainbee/presentation/views/extras/scorecard/repo/score_repo.dart';
 import 'package:equatable/equatable.dart';
 
@@ -11,6 +12,8 @@ class BookScoreBloc extends Bloc<BookScoreEvent, BookScoreState> {
   BookScoreBloc({required this.repository}) : super(BookScoreInitial()) {
     on<LoadOverallScore>(_onLoadOverallScore);
     on<RefreshOverallScore>(_onRefreshOverallScore);
+    on<LoadBookScore>(_onLoadBookScore);
+    on<RefreshBookScore>(_onRefreshBookScore);
   }
 
   Future<void> _onLoadOverallScore(
@@ -47,6 +50,31 @@ class BookScoreBloc extends Bloc<BookScoreEvent, BookScoreState> {
       }
     } catch (e) {
       emit(OverallScoreError(e.toString()));
+    }
+  }
+
+  Future<void> _onLoadBookScore(
+    LoadBookScore event,
+    Emitter<BookScoreState> emit,
+  ) async {
+    emit(BookScoreLoading());
+    try {
+      final data = await repository.getBookScore(event.bookId);
+      emit(BookScoreLoaded(data));
+    } catch (e) {
+      emit(BookScoreError(e.toString()));
+    }
+  }
+
+  Future<void> _onRefreshBookScore(
+    RefreshBookScore event,
+    Emitter<BookScoreState> emit,
+  ) async {
+    try {
+      final data = await repository.getBookScore(event.bookId);
+      emit(BookScoreLoaded(data));
+    } catch (e) {
+      emit(BookScoreError(e.toString()));
     }
   }
 }

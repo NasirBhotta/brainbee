@@ -3,6 +3,7 @@
 import 'dart:convert';
 
 import 'package:brainbee/presentation/views/extras/scorecard/model/bb_book_score.model.dart';
+import 'package:brainbee/presentation/views/extras/scorecard/model/bb_spefic_book_score_model.dart';
 import 'package:brainbee/presentation/views/extras/scorecard/repo/score_repo.dart';
 import 'package:brainbee/presentation/views/extras/scorecard/services/score_api_service.dart';
 
@@ -26,12 +27,12 @@ class ScoreRepositoryImpl implements ScoreRepository {
   }
 
   @override
-  Future<dynamic> getBookScore(String bookId) async {
+  Future<BookScoreData> getBookScore(String bookId) async {
     try {
       final response = await apiService.getBookScore(bookId);
       final Map<String, dynamic> jsonData = jsonDecode(response.body);
-      // Return the data portion - you'll need to create BookScore model later
-      return jsonData['data'];
+      final bookScoreResponse = BookScoreResponse.fromJson(jsonData);
+      return bookScoreResponse.data;
     } on ScoreApiException catch (e) {
       throw Exception('Failed to load book score: ${e.message}');
     } catch (e) {

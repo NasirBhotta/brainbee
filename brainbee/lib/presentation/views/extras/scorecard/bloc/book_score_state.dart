@@ -24,3 +24,17 @@ class OverallScoreError extends BookScoreState {
 
   const OverallScoreError(this.message);
 }
+
+class BookScoreLoading extends BookScoreState {}
+
+class BookScoreLoaded extends BookScoreState {
+  final BookScoreData data;
+
+  const BookScoreLoaded(this.data);
+}
+
+class BookScoreError extends BookScoreState {
+  final String message;
+
+  const BookScoreError(this.message);
+}
