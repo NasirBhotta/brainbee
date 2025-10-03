@@ -18,7 +18,7 @@ class OverallScoreData {
   final int overallScore;
   final int totalBooks;
   final int totalQuizzesCompleted;
-  final int totalStudyHours;
+  final double totalStudyHours;
   final List<SubjectScore> subjectScores;
   final List<WeakPoint> weakPoints;
 
@@ -36,7 +36,7 @@ class OverallScoreData {
       overallScore: json['overallScore'] as int,
       totalBooks: json['totalBooks'] as int,
       totalQuizzesCompleted: json['totalQuizzesCompleted'] as int,
-      totalStudyHours: json['totalStudyHours'] as int,
+      totalStudyHours: json['totalStudyHours'] as double,
       subjectScores:
           (json['subjectScores'] as List)
               .map((e) => SubjectScore.fromJson(e as Map<String, dynamic>))

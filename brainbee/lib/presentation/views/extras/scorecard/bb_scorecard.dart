@@ -1,73 +1,56 @@
+// lib/presentation/views/extras/scorecard/bb_overall_score_screen.dart
+
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/presentation/views/extras/scorecard/bb_bookscorescreen.dart';
+import 'package:brainbee/presentation/views/extras/scorecard/bloc/book_score_bloc.dart';
+import 'package:brainbee/presentation/views/extras/scorecard/model/bb_book_score.model.dart';
+import 'package:brainbee/presentation/views/extras/scorecard/repo/score_repo_impl.dart';
+import 'package:brainbee/presentation/views/extras/scorecard/services/score_api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-class BBOverallScoreScreen extends StatefulWidget {
+class BBOverallScoreScreen extends StatelessWidget {
   const BBOverallScoreScreen({super.key});
 
   @override
-  State<BBOverallScoreScreen> createState() => _BBOverallScoreScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create:
+          (context) => BookScoreBloc(
+            repository: ScoreRepositoryImpl(apiService: ScoreApiService()),
+          )..add(LoadOverallScore()),
+      child: const _BBOverallScoreScreenContent(),
+    );
+  }
 }
 
-class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
+class _BBOverallScoreScreenContent extends StatefulWidget {
+  const _BBOverallScoreScreenContent();
+
+  @override
+  State<_BBOverallScoreScreenContent> createState() =>
+      _BBOverallScoreScreenContentState();
+}
+
+class _BBOverallScoreScreenContentState
+    extends State<_BBOverallScoreScreenContent>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late List<SubjectScore> _subjectScoreData;
-  late List<WeakPoint> _weakPointsData;
-  bool _isLoading = true;
-  bool _hasError = false;
-  bool _hasNoScores = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadData();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-    });
-
-    try {
-      // Simulating data fetch with a delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Mock data for demonstration
-      _subjectScoreData = _getSubjectScoreData();
-      _weakPointsData = _getWeakPointsData();
-
-      // Check if scores are available
-      if (_subjectScoreData.isEmpty) {
-        setState(() {
-          _isLoading = false;
-          _hasNoScores = true;
-        });
-        return;
-      }
-
-      setState(() {
-        _isLoading = false;
-        _hasNoScores = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-      });
-    }
   }
 
   @override
@@ -96,25 +79,39 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
           ),
         ),
       ),
-      body: _buildBody(),
+      body: BlocBuilder<BookScoreBloc, BookScoreState>(
+        builder: (context, state) {
+          if (state is OverallScoreLoading) {
+            return _buildLoadingState();
+          }
+
+          if (state is OverallScoreError) {
+            return _buildErrorState(context, state.message);
+          }
+
+          if (state is OverallScoreEmpty) {
+            return _buildNoScoresState(context);
+          }
+
+          if (state is OverallScoreLoaded) {
+            return _buildBody(context, state.data);
+          }
+
+          return const SizedBox.shrink();
+        },
+      ),
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return _buildLoadingState();
-    }
-
-    if (_hasError) {
-      return _buildErrorState();
-    }
-
-    if (_hasNoScores) {
-      return _buildNoScoresState();
-    }
-
+  Widget _buildBody(BuildContext context, OverallScoreData data) {
     return RefreshIndicator(
-      onRefresh: _loadData,
+      onRefresh: () async {
+        context.read<BookScoreBloc>().add(RefreshOverallScore());
+        // Wait for the state to update
+        await context.read<BookScoreBloc>().stream.firstWhere(
+          (state) => state is! OverallScoreLoading,
+        );
+      },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
@@ -125,11 +122,11 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildOverallScoreCard(),
+              _buildOverallScoreCard(data),
               const SizedBox(height: 24),
               _buildTabBar(),
               const SizedBox(height: 16),
-              _buildTabContent(),
+              _buildTabContent(data),
             ],
           ),
         ),
@@ -150,7 +147,7 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildErrorState(BuildContext context, String message) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -158,9 +155,20 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
           const Icon(Icons.error_outline, size: 64, color: BBColors.alertRed),
           const SizedBox(height: 16),
           const Text("Failed to retrieve your overall score"),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _loadData,
+            onPressed: () {
+              context.read<BookScoreBloc>().add(LoadOverallScore());
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: BBColors.primaryBlue,
               foregroundColor: Colors.white,
@@ -176,7 +184,7 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
     );
   }
 
-  Widget _buildNoScoresState() {
+  Widget _buildNoScoresState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -220,9 +228,8 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
     );
   }
 
-  Widget _buildOverallScoreCard() {
-    final int overallScore = _calculateOverallScore();
-    final String grade = _getGradeFromScore(overallScore);
+  Widget _buildOverallScoreCard(OverallScoreData data) {
+    final String grade = _getGradeFromScore(data.overallScore);
 
     return Container(
       width: double.infinity,
@@ -231,14 +238,14 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            _getScoreColor(overallScore).withOpacity(0.8),
-            _getScoreColor(overallScore),
+            _getScoreColor(data.overallScore).withOpacity(0.8),
+            _getScoreColor(data.overallScore),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: _getScoreColor(overallScore).withOpacity(0.3),
+            color: _getScoreColor(data.overallScore).withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -246,7 +253,6 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
       ),
       child: Stack(
         children: [
-          // Decorative circles in background
           Positioned(
             top: -30,
             right: -20,
@@ -271,7 +277,6 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
               ),
             ),
           ),
-          // Content
           Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -280,7 +285,6 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Score and grade
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,7 +310,7 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
                               ),
                               const SizedBox(width: 12),
                               BBText(
-                                data: "$overallScore%",
+                                data: "${data.overallScore}%",
                                 style: context.textStyle.headlineLarge
                                     ?.copyWith(
                                       color: Colors.white.withOpacity(0.9),
@@ -319,7 +323,6 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
                         ],
                       ),
                     ),
-                    // Circular progress indicator
                     Container(
                       width: 80,
                       height: 80,
@@ -331,7 +334,7 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
                         alignment: Alignment.center,
                         children: [
                           CircularProgressIndicator(
-                            value: overallScore / 100,
+                            value: data.overallScore / 100,
                             strokeWidth: 8,
                             backgroundColor: Colors.white.withOpacity(0.1),
                             valueColor: const AlwaysStoppedAnimation<Color>(
@@ -339,7 +342,7 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
                             ),
                           ),
                           BBText(
-                            data: "$overallScore",
+                            data: "${data.overallScore}",
                             style: context.textStyle.titleLarge?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -351,24 +354,23 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
                   ],
                 ),
                 const SizedBox(height: 16),
-                // Stats row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildStatItem(
                       icon: Icons.book_outlined,
                       label: "Books",
-                      value: "${_subjectScoreData.length}",
+                      value: "${data.totalBooks}",
                     ),
                     _buildStatItem(
                       icon: Icons.check_circle_outline,
                       label: "Quizzes",
-                      value: "27",
+                      value: "${data.totalQuizzesCompleted}",
                     ),
                     _buildStatItem(
                       icon: Icons.timer_outlined,
                       label: "Hours",
-                      value: "14",
+                      value: "${data.totalStudyHours}",
                     ),
                   ],
                 ),
@@ -436,17 +438,20 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
     );
   }
 
-  Widget _buildTabContent() {
+  Widget _buildTabContent(OverallScoreData data) {
     return SizedBox(
-      height: context.screenHeight * 0.5, // Adjust as needed
+      height: context.screenHeight * 0.5,
       child: TabBarView(
         controller: _tabController,
-        children: [_buildSubjectBreakdown(), _buildImprovementAreas()],
+        children: [
+          _buildSubjectBreakdown(data.subjectScores),
+          _buildImprovementAreas(data.weakPoints),
+        ],
       ),
     );
   }
 
-  Widget _buildSubjectBreakdown() {
+  Widget _buildSubjectBreakdown(List<SubjectScore> subjectScores) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -461,7 +466,6 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
           ),
         ),
         const SizedBox(height: 8),
-        // Chart
         SizedBox(
           height: 200,
           child: SfCartesianChart(
@@ -479,7 +483,7 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
             tooltipBehavior: TooltipBehavior(enable: true),
             series: <CartesianSeries>[
               ColumnSeries<SubjectScore, String>(
-                dataSource: _subjectScoreData,
+                dataSource: subjectScores,
                 xValueMapper: (SubjectScore data, _) => data.subject,
                 yValueMapper: (SubjectScore data, _) => data.score,
                 pointColorMapper:
@@ -494,14 +498,13 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
           ),
         ),
         const SizedBox(height: 16),
-        // Subject list
         Expanded(
           child: ListView.builder(
             physics: const BouncingScrollPhysics(),
             padding: EdgeInsets.zero,
-            itemCount: _subjectScoreData.length,
+            itemCount: subjectScores.length,
             itemBuilder: (context, index) {
-              final subject = _subjectScoreData[index];
+              final subject = subjectScores[index];
               return _buildSubjectScoreItem(subject);
             },
           ),
@@ -518,7 +521,7 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
           MaterialPageRoute(
             builder:
                 (context) => BBBookScoreScreen(
-                  bookId: subject.id.toString(),
+                  bookId: subject.id,
                   bookTitle: subject.subject,
                 ),
           ),
@@ -540,7 +543,6 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
         ),
         child: Row(
           children: [
-            // Subject icon
             Container(
               width: 40,
               height: 40,
@@ -557,7 +559,6 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
               ),
             ),
             const SizedBox(width: 16),
-            // Subject name and details
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -580,7 +581,6 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
               ),
             ),
             const SizedBox(width: 16),
-            // Score
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -617,7 +617,41 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
     );
   }
 
-  Widget _buildImprovementAreas() {
+  Widget _buildImprovementAreas(List<WeakPoint> weakPoints) {
+    if (weakPoints.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.emoji_events,
+                size: 64,
+                color: BBColors.successGreen.withOpacity(0.5),
+              ),
+              const SizedBox(height: 16),
+              BBText(
+                data: "Great job!",
+                style: context.textStyle.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              BBText(
+                data:
+                    "You don't have any weak areas at the moment. Keep up the excellent work!",
+                style: context.textStyle.bodyMedium?.copyWith(
+                  color: BBColors.disabledText,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -636,9 +670,9 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
           child: ListView.builder(
             physics: const BouncingScrollPhysics(),
             padding: EdgeInsets.zero,
-            itemCount: _weakPointsData.length,
+            itemCount: weakPoints.length,
             itemBuilder: (context, index) {
-              final weakPoint = _weakPointsData[index];
+              final weakPoint = weakPoints[index];
               return _buildWeakPointItem(weakPoint);
             },
           ),
@@ -663,7 +697,6 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
       ),
       child: Column(
         children: [
-          // Header
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -709,7 +742,6 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
               ],
             ),
           ),
-          // Content
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -772,31 +804,26 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
   }
 
   IconData _getSubjectIcon(String subject) {
-    switch (subject) {
-      case "Mathematics":
-        return Icons.calculate_outlined;
-      case "Science":
-        return Icons.science_outlined;
-      case "English":
-        return Icons.menu_book_outlined;
-      case "History":
-        return Icons.public_outlined;
-      case "Geography":
-        return Icons.map_outlined;
-      default:
-        return Icons.book_outlined;
+    // Extract the main subject name (e.g., "Biology" from "Biology 9th Class")
+    final subjectLower = subject.toLowerCase();
+
+    if (subjectLower.contains('math')) {
+      return Icons.calculate_outlined;
+    } else if (subjectLower.contains('biolog')) {
+      return Icons.science_outlined;
+    } else if (subjectLower.contains('chemistry')) {
+      return Icons.science_outlined;
+    } else if (subjectLower.contains('physics')) {
+      return Icons.science_outlined;
+    } else if (subjectLower.contains('english')) {
+      return Icons.menu_book_outlined;
+    } else if (subjectLower.contains('history')) {
+      return Icons.public_outlined;
+    } else if (subjectLower.contains('geography')) {
+      return Icons.map_outlined;
+    } else {
+      return Icons.book_outlined;
     }
-  }
-
-  int _calculateOverallScore() {
-    if (_subjectScoreData.isEmpty) return 0;
-
-    int totalScore = 0;
-    for (var subject in _subjectScoreData) {
-      totalScore += subject.score;
-    }
-
-    return totalScore ~/ _subjectScoreData.length;
   }
 
   String _getGradeFromScore(int score) {
@@ -815,52 +842,4 @@ class _BBOverallScoreScreenState extends State<BBOverallScoreScreen>
     if (score >= 60) return BBColors.orangeAccent;
     return BBColors.alertRed;
   }
-
-  List<SubjectScore> _getSubjectScoreData() {
-    return [
-      SubjectScore(1, "Mathematics", 88, 18, 20),
-      SubjectScore(2, "Science", 76, 15, 20),
-      SubjectScore(3, "English", 92, 10, 10),
-      SubjectScore(4, "History", 65, 8, 10),
-      SubjectScore(5, "Geography", 45, 5, 15),
-    ];
-  }
-
-  List<WeakPoint> _getWeakPointsData() {
-    return [
-      WeakPoint("Geography - Map Reading", 45, [
-        "Review the basic principles of map coordinates and scales",
-        "Practice with interactive map exercises in the Geography section",
-        "Complete at least 3 map reading quizzes this week",
-      ]),
-      WeakPoint("Mathematics - Algebra", 55, [
-        "Focus on equation solving techniques in the Algebra chapter",
-        "Watch the tutorial videos on algebraic expressions",
-        "Practice with step-by-step problem solving in the exercises",
-      ]),
-      WeakPoint("History - Modern Era", 58, [
-        "Review the timeline of major events in the Modern Era chapter",
-        "Use flashcards to memorize key dates and figures",
-        "Take the chapter quiz again after reviewing the material",
-      ]),
-    ];
-  }
-}
-
-class SubjectScore {
-  final int id;
-  final String subject;
-  final int score;
-  final int completed;
-  final int total;
-
-  SubjectScore(this.id, this.subject, this.score, this.completed, this.total);
-}
-
-class WeakPoint {
-  final String topic;
-  final int score;
-  final List<String> suggestions;
-
-  WeakPoint(this.topic, this.score, this.suggestions);
 }
