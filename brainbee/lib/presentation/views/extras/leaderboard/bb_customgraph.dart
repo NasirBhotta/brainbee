@@ -2,7 +2,7 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
-import 'package:brainbee/presentation/views/extras/leaderboard/bb_leaderboard.dart';
+import 'package:brainbee/presentation/views/extras/leaderboard/models/bb_leaderboard_model.dart';
 import 'package:flutter/material.dart';
 
 class PodiumScreen extends StatefulWidget {
@@ -69,14 +69,18 @@ class _PodiumScreenState extends State<PodiumScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                buildAnimatedPodiumTile(
-                  widget.data![1].name,
-                  widget.data![1].score,
-                  "🇫🇷",
-                  widget.data![1].position,
-                  1,
-                  _animation2,
+                Transform.translate(
+                  offset: const Offset(9, 0), // move right
+                  child: buildAnimatedPodiumTile(
+                    widget.data![1].name,
+                    widget.data![1].score,
+                    "🇫🇷",
+                    widget.data![1].position,
+                    1,
+                    _animation2,
+                  ),
                 ),
+
                 buildAnimatedPodiumTile(
                   widget.data![0].name,
                   widget.data![0].score,
@@ -86,13 +90,17 @@ class _PodiumScreenState extends State<PodiumScreen>
                   _animation1,
                   isWinner: true,
                 ),
-                buildAnimatedPodiumTile(
-                  widget.data![2].name,
-                  widget.data![2].score,
-                  "🇨🇦",
-                  widget.data![2].position,
-                  3,
-                  _animation3,
+
+                Transform.translate(
+                  offset: const Offset(-9, 0), // move right
+                  child: buildAnimatedPodiumTile(
+                    widget.data![2].name,
+                    widget.data![2].score,
+                    "🇨🇦",
+                    widget.data![2].position,
+                    3,
+                    _animation3,
+                  ),
                 ),
               ],
             ),
@@ -234,7 +242,7 @@ class PodiumPainter extends CustomPainter {
             : size.width * 0.9;
 
     double sideWidthTopLeftCorer =
-        num == 3 ? size.width * 0.0005 : size.width * 0.12;
+        num == 3 ? size.width * 0.0006 : size.width * 0.12;
     // Top face
     Path top = Path();
     top.moveTo(0, size.height * 0.3);

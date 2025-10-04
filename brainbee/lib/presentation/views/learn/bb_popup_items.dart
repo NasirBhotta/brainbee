@@ -8,8 +8,8 @@ import 'package:brainbee/presentation/views/extras/Rewards/bb_rewards.dart';
 import 'package:brainbee/presentation/views/extras/achievements/badges/bb_badges.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/UI/bb_coin_quests.dart';
 import 'package:brainbee/presentation/views/extras/leaderboard/bb_leaderboard.dart';
-import 'package:brainbee/presentation/views/extras/reportcard/bb_reportcard.dart';
-import 'package:brainbee/presentation/views/extras/scorecard/bb_scorecard.dart';
+import 'package:brainbee/presentation/views/extras/score_&_reportcard/reportcard/bb_reportcard.dart';
+import 'package:brainbee/presentation/views/extras/score_&_reportcard/scorecard/bb_scorecard.dart';
 import 'package:brainbee/presentation/views/learn/flashcards/bb_selectBook_flashcards.dart';
 
 import 'package:flutter/material.dart';

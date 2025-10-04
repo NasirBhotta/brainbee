@@ -1,7 +1,5 @@
 // lib/presentation/views/extras/scorecard/models/book_score_models.dart
 
-import 'package:flutter_math_fork/flutter_math.dart';
-
 class BookScoreResponse {
   final String status;
   final BookScoreData data;
@@ -106,11 +104,13 @@ class QuizScoreData {
   final String quizId;
   final String title;
   final int score;
+  final String difficultyTarget;
 
   QuizScoreData({
     required this.quizId,
     required this.title,
     required this.score,
+    required this.difficultyTarget,
   });
 
   factory QuizScoreData.fromJson(Map<String, dynamic> json) {
@@ -118,6 +118,7 @@ class QuizScoreData {
       quizId: json['quizId'] as String,
       title: json['title'] as String,
       score: json['score'] as int,
+      difficultyTarget: json['difficultyTarget'] as String,
     );
   }
 }

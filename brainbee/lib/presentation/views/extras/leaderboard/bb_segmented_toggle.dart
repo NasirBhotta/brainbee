@@ -1,9 +1,11 @@
+// lib/presentation/views/extras/leaderboard/bb_segmented_toggle.dart
+
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:flutter/material.dart';
 
-enum TimeToggleOption { weekly, monthly }
+enum TimeToggleOption { weekly, monthly, overall }
 
 class BBSegmentedToggle extends StatefulWidget {
   final Function(TimeToggleOption) onOptionSelected;
@@ -38,8 +40,9 @@ class _BBSegmentedToggleState extends State<BBSegmentedToggle> {
       margin: const EdgeInsets.all(8),
       child: Row(
         children: [
-          _buildOptions(TimeToggleOption.weekly, "weekly"),
-          _buildOptions(TimeToggleOption.monthly, "monthly"),
+          _buildOptions(TimeToggleOption.weekly, "Weekly"),
+          _buildOptions(TimeToggleOption.monthly, "Monthly"),
+          _buildOptions(TimeToggleOption.overall, "Overall"),
         ],
       ),
     );
@@ -58,23 +61,21 @@ class _BBSegmentedToggleState extends State<BBSegmentedToggle> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
-          padding: const EdgeInsets.only(top: 6, bottom: 6),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           decoration: BoxDecoration(
-            color: isSelected ? BBColors.black : BBColors.white,
             gradient:
                 isSelected
                     ? const LinearGradient(
                       colors: [BBColors.primaryColor, BBColors.secondaryColor],
                     )
                     : null,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
           ),
           alignment: Alignment.center,
-
           child: BBText(
             data: label,
             style: context.textStyle.labelMedium?.copyWith(
-              fontWeight: FontWeight.normal,
+              fontWeight: FontWeight.w500,
               color: isSelected ? BBColors.white : BBColors.black,
             ),
           ),

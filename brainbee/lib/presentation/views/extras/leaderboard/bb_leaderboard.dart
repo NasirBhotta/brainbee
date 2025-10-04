@@ -1,144 +1,64 @@
+// lib/presentation/views/extras/leaderboard/bb_leaderboard.dart
+
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/presentation/views/extras/leaderboard/bb_customgraph.dart';
 import 'package:brainbee/presentation/views/extras/leaderboard/bb_segmented_toggle.dart';
+import 'package:brainbee/presentation/views/extras/leaderboard/bloc/leaderboard_bloc.dart';
+import 'package:brainbee/presentation/views/extras/leaderboard/bloc/leaderboard_event.dart';
+import 'package:brainbee/presentation/views/extras/leaderboard/bloc/leaderboard_state.dart';
+import 'package:brainbee/presentation/views/extras/leaderboard/models/bb_leaderboard_model.dart';
+import 'package:brainbee/presentation/views/extras/leaderboard/repo/bb_leaderboard_repo_impl.dart';
+import 'package:brainbee/presentation/views/extras/leaderboard/services/bb_leaderboard_api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class LeaderboardEntry {
-  final String id;
-  final String name;
-  final String classGrade;
-  final int score;
-  final int position;
-
-  LeaderboardEntry({
-    required this.id,
-    required this.name,
-    required this.classGrade,
-    required this.score,
-    required this.position,
-  });
-}
-
-class BBleaderBoard extends StatefulWidget {
+// Main entry point with BlocProvider
+class BBleaderBoard extends StatelessWidget {
   const BBleaderBoard({super.key});
 
   @override
-  State<BBleaderBoard> createState() => _BBleaderBoardState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create:
+          (context) => LeaderboardBloc(
+            repository: LeaderboardRepositoryImpl(
+              apiService: LeaderboardApiService(),
+            ),
+          ),
+      child: const _BBleaderBoardView(),
+    );
+  }
 }
 
-class _BBleaderBoardState extends State<BBleaderBoard> {
-  final List<Map<String, dynamic>> leaderboardData = [
-    {
-      'id': 'S001',
-      'name': 'Ali Raza',
-      'classGrade': 'Grade 6',
-      'score': 950,
-      'position': 1,
-    },
-    {
-      'id': 'S002',
-      'name': 'Fatima Noor',
-      'classGrade': 'Grade 6',
-      'score': 910,
-      'position': 2,
-    },
-    {
-      'id': 'S003',
-      'name': 'Ahmed Khan',
-      'classGrade': 'Grade 6',
-      'score': 880,
-      'position': 3,
-    },
-    {
-      'id': 'S004',
-      'name': 'Sara Malik',
-      'classGrade': 'Grade 6',
-      'score': 860,
-      'position': 4,
-    },
-    {
-      'id': 'S005',
-      'name': 'Usman Tariq',
-      'classGrade': 'Grade 6',
-      'score': 830,
-      'position': 5,
-    },
-  ];
+// Internal view widget
+class _BBleaderBoardView extends StatefulWidget {
+  const _BBleaderBoardView();
 
-  bool _isloding = true;
-  bool _hasError = false;
-  final bool _isError = false;
-  List<LeaderboardEntry>? studentData;
+  @override
+  State<_BBleaderBoardView> createState() => _BBleaderBoardViewState();
+}
+
+class _BBleaderBoardViewState extends State<_BBleaderBoardView> {
+  TimeToggleOption selectedOption = TimeToggleOption.weekly;
 
   @override
   void initState() {
     super.initState();
-
-    _fetchData();
+    // Fetch initial data
+    context.read<LeaderboardBloc>().add(const FetchLeaderboard(type: 'weekly'));
   }
 
-  Future<void> _fetchData() async {
-    setState(() {
-      _isloding = true;
-      _hasError = false;
-    });
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (_isError) {
-      setState(() {
-        _isloding = false;
-        _hasError = true;
-      });
-      return;
-    } else {
-      setState(() {
-        _isloding = false;
-        _hasError = false;
-        studentData = [];
-      });
-
-      studentData = [
-        LeaderboardEntry(
-          id: 'S001',
-          name: 'Ali Raza',
-          classGrade: 'Grade 6',
-          score: 950,
-          position: 1,
-        ),
-        LeaderboardEntry(
-          id: 'S002',
-          name: 'Fatima Noor',
-          classGrade: 'Grade 6',
-          score: 910,
-          position: 2,
-        ),
-        LeaderboardEntry(
-          id: 'S003',
-          name: 'Ahmed Khan',
-          classGrade: 'Grade 6',
-          score: 880,
-          position: 3,
-        ),
-        LeaderboardEntry(
-          id: 'S004',
-          name: 'Sara Malik',
-          classGrade: 'Grade 6',
-          score: 860,
-          position: 4,
-        ),
-        LeaderboardEntry(
-          id: 'S005',
-          name: 'Usman Tariq',
-          classGrade: 'Grade 6',
-          score: 830,
-          position: 5,
-        ),
-      ];
-
-      return;
+  String _getTypeFromOption(TimeToggleOption option) {
+    switch (option) {
+      case TimeToggleOption.weekly:
+        return 'weekly';
+      case TimeToggleOption.monthly:
+        return 'monthly';
+      case TimeToggleOption.overall:
+        return 'overall';
     }
   }
 
@@ -147,7 +67,6 @@ class _BBleaderBoardState extends State<BBleaderBoard> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: BBColors.lightGrayBG,
-
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: BBColors.borderGray, height: 1),
@@ -158,54 +77,100 @@ class _BBleaderBoardState extends State<BBleaderBoard> {
         ),
         centerTitle: true,
       ),
-
       body: _buildBody(),
     );
   }
 
   Widget _buildBody() {
-    if (_isloding) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(BBColors.secondaryColor),
-        ),
-      );
-    }
-    if (_hasError) {
-      return _buildErrorState();
-    }
-    return _buildClassList();
+    return BlocBuilder<LeaderboardBloc, LeaderboardState>(
+      builder: (context, state) {
+        if (state is LeaderboardLoading) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                BBColors.secondaryColor,
+              ),
+            ),
+          );
+        }
+
+        if (state is LeaderboardError) {
+          return _buildErrorState(state.message);
+        }
+
+        if (state is LeaderboardLoaded) {
+          return _buildLeaderboardList(state.data);
+        }
+
+        return const Center(child: Text('No data available'));
+      },
+    );
   }
 
-  Widget _buildClassList() {
+  Widget _buildLeaderboardList(LeaderboardData data) {
     return RefreshIndicator(
-      onRefresh: _fetchData,
+      onRefresh: () async {
+        context.read<LeaderboardBloc>().add(
+          RefreshLeaderboard(type: _getTypeFromOption(selectedOption)),
+        );
+      },
       child: ListView(
         children: [
           BBSegmentedToggle(
-            onOptionSelected: (timeToggleOption) {},
-            initialOption: TimeToggleOption.weekly,
+            onOptionSelected: (timeToggleOption) {
+              setState(() {
+                selectedOption = timeToggleOption;
+              });
+              context.read<LeaderboardBloc>().add(
+                FetchLeaderboard(type: _getTypeFromOption(timeToggleOption)),
+              );
+            },
+            initialOption: selectedOption,
           ),
-          SizedBox(
-            height: context.screenHeight * 0.5,
-            child: PodiumScreen(
-              data:
-                  studentData?.where((people) {
-                    return people.position >= 1 && people.position <= 3;
-                  }).toList(),
+          // Only show podium if we have at least 3 entries
+          if (data.leaderboard.length >= 3) ...[
+            SizedBox(
+              height: context.screenHeight * 0.5,
+              child: PodiumScreen(
+                data:
+                    data.leaderboard
+                        .where((entry) => entry.rank >= 1 && entry.rank <= 3)
+                        .toList(),
+              ),
             ),
-          ),
-          ...studentData!.asMap().entries.map((e) {
-            var index = e.key;
-            return _buildListTile(e.value, index);
+          ] else if (data.leaderboard.isEmpty) ...[
+            const SizedBox(height: 100),
+            Center(
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.emoji_events_outlined,
+                    size: 64,
+                    color: Colors.grey,
+                  ),
+                  const SizedBox(height: 16),
+                  BBText(
+                    data: 'No leaderboard data available',
+                    style: context.textStyle.titleMedium?.copyWith(
+                      color: BBColors.disabledText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 100),
+          ],
+          // Show all entries in list
+          ...data.leaderboard.map((entry) {
+            return _buildListTile(entry);
           }),
         ],
       ),
     );
   }
 
-  Widget _buildListTile(LeaderboardEntry item, int index) {
-    int position = index + 1;
+  Widget _buildListTile(LeaderboardEntry item) {
+    int position = item.rank;
     bool isTopThree = position <= 3;
 
     IconData crownIcon;
@@ -267,21 +232,25 @@ class _BBleaderBoardState extends State<BBleaderBoard> {
             ),
           ),
           const SizedBox(width: 10),
-
           CircleAvatar(
             radius: 28,
             backgroundColor: BBColors.secondaryColor.withOpacity(0.2),
-            child: Text(
-              item.name.isNotEmpty ? item.name[0].toUpperCase() : '?',
-              style: context.textStyle.titleLarge?.copyWith(
-                color: BBColors.primaryColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            backgroundImage:
+                item.profilePic != null && item.profilePic!.isNotEmpty
+                    ? NetworkImage(item.profilePic!)
+                    : null,
+            child:
+                item.profilePic == null || item.profilePic!.isEmpty
+                    ? Text(
+                      item.name.isNotEmpty ? item.name[0].toUpperCase() : '?',
+                      style: context.textStyle.titleLarge?.copyWith(
+                        color: BBColors.primaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                    : null,
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,14 +271,44 @@ class _BBleaderBoardState extends State<BBleaderBoard> {
               ],
             ),
           ),
-
           if (isTopThree) Icon(crownIcon, color: crownColor, size: 28),
         ],
       ),
     );
   }
 
-  Widget _buildErrorState() {
-    return const SizedBox.shrink();
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const SizedBox(height: 16),
+          BBText(
+            data: 'Error loading leaderboard',
+            style: context.textStyle.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: BBText(
+              data: message,
+              style: context.textStyle.bodyMedium?.copyWith(
+                color: BBColors.disabledText,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              context.read<LeaderboardBloc>().add(
+                FetchLeaderboard(type: _getTypeFromOption(selectedOption)),
+              );
+            },
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
   }
 }

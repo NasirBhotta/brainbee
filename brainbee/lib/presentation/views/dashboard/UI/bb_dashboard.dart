@@ -5,8 +5,8 @@ import 'package:brainbee/presentation/views/extras/achievements/badges/UI/bb_bad
 import 'package:brainbee/presentation/views/extras/bb_extrapopup.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/UI/bb_coin_quests.dart';
 import 'package:brainbee/presentation/views/extras/leaderboard/bb_leaderboard.dart';
-import 'package:brainbee/presentation/views/extras/reportcard/bb_reportcard.dart';
-import 'package:brainbee/presentation/views/extras/scorecard/bb_scorecard.dart';
+import 'package:brainbee/presentation/views/extras/score_&_reportcard/reportcard/bb_reportcard.dart';
+import 'package:brainbee/presentation/views/extras/score_&_reportcard/scorecard/bb_scorecard.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_home.dart';
 import 'package:brainbee/presentation/views/learn/Books/bb_select_book.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
