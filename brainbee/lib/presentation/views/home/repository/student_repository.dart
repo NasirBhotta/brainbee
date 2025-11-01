@@ -70,11 +70,15 @@ class StudentRepository {
 
       // Transform API response to match StudentModel structure
       final userData = responseData['data']['user'];
+
+      print("The user data is $userData");
       final transformedResponse = _transformUserDataToStudentModel(
         userData,
         token,
       );
-
+      print(
+        "the transformed response is ${transformedResponse['user']['score']}",
+      );
       print(
         "the student updated data is ${StudentModel.fromJson(transformedResponse)}",
       );
@@ -125,7 +129,7 @@ class StudentRepository {
             {"wins": 0, "losses": 0, "totalBattles": 0},
         "enrolledClasses": userData['enrolledClasses'] ?? [],
         "chapter_levels": userData['chapter_levels'] ?? {},
-        "score": userData['score'] ?? 0,
+        "score": userData['performanceSummary']['overallScore'] ?? 0,
         "topic_performance": userData['topic_performance'] ?? {},
         "goal": _transformGoal(
           userData['goals'] != null && userData['goals'].isNotEmpty

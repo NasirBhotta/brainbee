@@ -1,19 +1,15 @@
-// lib/blocs/badge/badge_bloc.dart
-import 'dart:async';
-import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
-import 'package:brainbee/presentation/views/extras/achievements/badges/services/badge_api_services.dart';
+// lib/presentation/views/extras/achievements/badges/bloc/badge_bloc.dart
+
 import 'package:brainbee/repositories/badge_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'badge_event.dart';
-import 'badge_state.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/bloc/badge_event.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/bloc/badge_state.dart';
+import 'package:brainbee/core/utils/badge_utills/badge_utills.dart';
 
 class BadgeBloc extends Bloc<BadgeEvent, BadgeState> {
-  final BadgeRepository _repository;
+  final BadgeRepository repository;
 
-  BadgeBloc({required BadgeRepository repository})
-    : _repository = repository,
-      super(BadgeInitial()) {
+  BadgeBloc({required this.repository}) : super(BadgeInitial()) {
     on<LoadBadges>(_onLoadBadges);
     on<RefreshBadges>(_onRefreshBadges);
     on<RetryLoadBadges>(_onRetryLoadBadges);
@@ -21,95 +17,85 @@ class BadgeBloc extends Bloc<BadgeEvent, BadgeState> {
 
   Future<void> _onLoadBadges(LoadBadges event, Emitter<BadgeState> emit) async {
     emit(BadgeLoading());
-    await _loadBadges(event.studentId, emit);
+
+    try {
+      final badges = await repository.getAllBadgesForStudent(event.studentId);
+      final categorized = BadgeUtils.groupBadgesByCategory(badges);
+      final earnedCount = BadgeUtils.filterEarnedBadges(badges).length;
+
+      emit(
+        BadgeLoaded(
+          badges: badges,
+          categorizedBadges: categorized,
+          totalBadgesCount: badges.length,
+          earnedBadgesCount: earnedCount,
+          hasEarnedBadges: earnedCount > 0,
+        ),
+      );
+    } catch (e) {
+      emit(
+        BadgeError(
+          message: e.toString(),
+          isNetworkError:
+              e.toString().contains('internet') ||
+              e.toString().contains('connection'),
+        ),
+      );
+    }
   }
 
   Future<void> _onRefreshBadges(
     RefreshBadges event,
     Emitter<BadgeState> emit,
   ) async {
-    final currentState = state;
-    if (currentState is BadgeLoaded) {
+    if (state is BadgeLoaded) {
+      final currentState = state as BadgeLoaded;
+
       emit(
         BadgeRefreshing(
           currentBadges: currentState.badges,
           categorizedBadges: currentState.categorizedBadges,
-          earnedBadgesCount: currentState.earnedBadgesCount,
           totalBadgesCount: currentState.totalBadgesCount,
+          earnedBadgesCount: currentState.earnedBadgesCount,
           hasEarnedBadges: currentState.hasEarnedBadges,
         ),
       );
     }
-    await _loadBadges(event.studentId, emit);
+
+    try {
+      final badges = await repository.refreshBadges(event.studentId);
+      final categorized = BadgeUtils.groupBadgesByCategory(badges);
+      final earnedCount = BadgeUtils.filterEarnedBadges(badges).length;
+
+      emit(
+        BadgeLoaded(
+          badges: badges,
+          categorizedBadges: categorized,
+          totalBadgesCount: badges.length,
+          earnedBadgesCount: earnedCount,
+          hasEarnedBadges: earnedCount > 0,
+        ),
+      );
+    } catch (e) {
+      if (state is BadgeRefreshing) {
+        final refreshingState = state as BadgeRefreshing;
+        emit(
+          BadgeLoaded(
+            badges: refreshingState.currentBadges,
+            categorizedBadges: refreshingState.categorizedBadges,
+            totalBadgesCount: refreshingState.totalBadgesCount,
+            earnedBadgesCount: refreshingState.earnedBadgesCount,
+            hasEarnedBadges: refreshingState.hasEarnedBadges,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _onRetryLoadBadges(
     RetryLoadBadges event,
     Emitter<BadgeState> emit,
   ) async {
-    emit(BadgeLoading());
-    await _loadBadges(event.studentId, emit);
-  }
-
-  Future<void> _loadBadges(String studentId, Emitter<BadgeState> emit) async {
-    try {
-      final response = await _repository.getBadges(studentId);
-
-      if (response.success) {
-        final categorizedBadges = _categorizeBadges(response.badges);
-        final earnedBadges =
-            response.badges.where((badge) => badge.isEarned).toList();
-
-        emit(
-          BadgeLoaded(
-            badges: response.badges,
-            categorizedBadges: categorizedBadges,
-            earnedBadgesCount: earnedBadges.length,
-            totalBadgesCount: response.badges.length,
-            hasEarnedBadges: earnedBadges.isNotEmpty,
-          ),
-        );
-      } else {
-        emit(
-          BadgeError(
-            message: response.message ?? 'Failed to load badges',
-            studentId: studentId,
-          ),
-        );
-      }
-    } on BadgeApiException catch (e) {
-      emit(
-        BadgeError(
-          message: e.message,
-          isNetworkError: _isNetworkError(e),
-          studentId: studentId,
-        ),
-      );
-    } catch (e) {
-      emit(
-        BadgeError(
-          message: 'An unexpected error occurred. Please try again.',
-          studentId: studentId,
-        ),
-      );
-    }
-  }
-
-  Map<BbBadgeCategory, List<BbBadge>> _categorizeBadges(List<BbBadge> badges) {
-    final Map<BbBadgeCategory, List<BbBadge>> categorized = {};
-
-    for (final badge in badges) {
-      categorized.putIfAbsent(badge.category, () => []).add(badge);
-    }
-
-    return categorized;
-  }
-
-  bool _isNetworkError(BadgeApiException exception) {
-    return exception.statusCode == -1 ||
-        exception.statusCode == 408 ||
-        exception.message.toLowerCase().contains('internet') ||
-        exception.message.toLowerCase().contains('connection') ||
-        exception.message.toLowerCase().contains('network');
+    add(LoadBadges(studentId: event.studentId));
   }
 }

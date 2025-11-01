@@ -1,3 +1,4 @@
+import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/models/quiz_question_model.dart';
 import 'package:brainbee/presentation/views/learn/battle/bb_reportcard_pdf.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/models/bb_question.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 enum QuizType { battle, inAppQuiz }
@@ -450,6 +452,7 @@ class _BBQuizReportCardScreenState extends State<BBQuizReportCardScreen> {
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () {
+            context.read<StudentBloc>().add(StudentFetchData());
             Navigator.pop(context);
             Navigator.pop(context);
             Navigator.pop(context);

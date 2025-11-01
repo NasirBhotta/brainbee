@@ -18,7 +18,7 @@ import 'package:brainbee/presentation/views/learn/repository/flashcard_repositor
 import 'package:brainbee/presentation/views/learn/services/flashcard_api_service.dart';
 import 'package:brainbee/presentation/views/settings/bloc/setting_bloc.dart';
 import 'package:brainbee/presentation/views/settings/repository/settings_repo.dart';
-import 'package:brainbee/repositories/badge_repository.dart';
+import 'package:brainbee/repositories/badge_repo_impl.dart';
 import 'package:brainbee/routes/app_routes.dart';
 import 'package:brainbee/services/bb_notifications.dart';
 
@@ -48,9 +48,7 @@ void main(List<String> args) async {
         BlocProvider(
           create:
               (_) => BadgeBloc(
-                repository: BadgeRepositoryImpl(
-                  apiService: BadgeApiServiceImpl(),
-                ),
+                repository: BadgeRepositoryImpl(apiService: BadgeApiService()),
               ),
         ),
 

@@ -1,6 +1,7 @@
-// lib/blocs/badge/badge_state.dart
-import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
+// lib/presentation/views/extras/achievements/badges/bloc/badge_state.dart
+
 import 'package:equatable/equatable.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
 
 abstract class BadgeState extends Equatable {
   const BadgeState();
@@ -16,15 +17,15 @@ class BadgeLoading extends BadgeState {}
 class BadgeLoaded extends BadgeState {
   final List<BbBadge> badges;
   final Map<BbBadgeCategory, List<BbBadge>> categorizedBadges;
-  final int earnedBadgesCount;
   final int totalBadgesCount;
+  final int earnedBadgesCount;
   final bool hasEarnedBadges;
 
   const BadgeLoaded({
     required this.badges,
     required this.categorizedBadges,
-    required this.earnedBadgesCount,
     required this.totalBadgesCount,
+    required this.earnedBadgesCount,
     required this.hasEarnedBadges,
   });
 
@@ -32,39 +33,24 @@ class BadgeLoaded extends BadgeState {
   List<Object?> get props => [
     badges,
     categorizedBadges,
-    earnedBadgesCount,
     totalBadgesCount,
+    earnedBadgesCount,
     hasEarnedBadges,
   ];
-}
-
-class BadgeError extends BadgeState {
-  final String message;
-  final bool isNetworkError;
-  final String? studentId;
-
-  const BadgeError({
-    required this.message,
-    this.isNetworkError = false,
-    this.studentId,
-  });
-
-  @override
-  List<Object?> get props => [message, isNetworkError, studentId];
 }
 
 class BadgeRefreshing extends BadgeState {
   final List<BbBadge> currentBadges;
   final Map<BbBadgeCategory, List<BbBadge>> categorizedBadges;
-  final int earnedBadgesCount;
   final int totalBadgesCount;
+  final int earnedBadgesCount;
   final bool hasEarnedBadges;
 
   const BadgeRefreshing({
     required this.currentBadges,
     required this.categorizedBadges,
-    required this.earnedBadgesCount,
     required this.totalBadgesCount,
+    required this.earnedBadgesCount,
     required this.hasEarnedBadges,
   });
 
@@ -72,8 +58,18 @@ class BadgeRefreshing extends BadgeState {
   List<Object?> get props => [
     currentBadges,
     categorizedBadges,
-    earnedBadgesCount,
     totalBadgesCount,
+    earnedBadgesCount,
     hasEarnedBadges,
   ];
+}
+
+class BadgeError extends BadgeState {
+  final String message;
+  final bool isNetworkError;
+
+  const BadgeError({required this.message, this.isNetworkError = false});
+
+  @override
+  List<Object?> get props => [message, isNetworkError];
 }

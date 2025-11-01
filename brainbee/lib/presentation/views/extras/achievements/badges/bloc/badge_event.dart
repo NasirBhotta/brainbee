@@ -1,4 +1,5 @@
-// lib/blocs/badge/badge_event.dart
+// lib/presentation/views/extras/achievements/badges/bloc/badge_event.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class BadgeEvent extends Equatable {

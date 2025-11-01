@@ -33,7 +33,11 @@ class AppRoutes {
     return {
       auth: (context) => const BbCombinedOnbaord(),
       home: (context) => const BBDashboard(),
-      badgeView: (context) => const BadgesScreen(studentId: 'S001'),
+      badgeView: (context) {
+        final student =
+            ModalRoute.of(context)!.settings.arguments as StudentModel;
+        return BadgesScreen(studentId: student.id);
+      },
       editGoals: (context) {
         final student =
             ModalRoute.of(context)!.settings.arguments as StudentModel;

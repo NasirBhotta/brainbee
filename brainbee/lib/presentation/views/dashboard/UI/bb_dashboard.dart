@@ -49,38 +49,9 @@ class _BBDashboardState extends State<BBDashboard>
       'navigateTo': BbSelectBook(),
     },
   ];
-  List<Map<String, dynamic>> extraPopUP = [
-    {
-      'title': 'Score',
-      'imgPath': 'assets/battle.png',
-      'navigateTo': BBOverallScoreScreen(),
-    },
-    {
-      'title': 'Report Card',
-      'imgPath': 'assets/exercise.png',
-      'navigateTo': ReportCardScreen(),
-    },
-    {
-      'title': 'Leaderboard',
-      'imgPath': 'assets/flash-card.png',
-      'navigateTo': BBleaderBoard(),
-    },
-    {
-      'title': 'Rewards',
-      'imgPath': 'assets/text-book.png',
-      'navigateTo': RewardCatalogScreen(),
-    },
-    {
-      'title': 'Coin Quests',
-      'imgPath': 'assets/text-book.png',
-      'navigateTo': BBCoinQuestScreen(userId: "S001"),
-    },
-    {
-      'title': 'Badges',
-      'imgPath': 'assets/text-book.png',
-      'navigateTo': BadgesScreen(studentId: "S001"),
-    },
-  ];
+
+  // This will be populated in the build method with the actual userId
+  List<Map<String, dynamic>> extraPopUP = [];
 
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
@@ -108,6 +79,42 @@ class _BBDashboardState extends State<BBDashboard>
     super.dispose();
   }
 
+  // Helper method to build extraPopUP list with userId
+  List<Map<String, dynamic>> _buildExtraPopUp(String userId) {
+    return [
+      {
+        'title': 'Score',
+        'imgPath': 'assets/battle.png',
+        'navigateTo': BBOverallScoreScreen(),
+      },
+      {
+        'title': 'Report Card',
+        'imgPath': 'assets/exercise.png',
+        'navigateTo': ReportCardScreen(),
+      },
+      {
+        'title': 'Leaderboard',
+        'imgPath': 'assets/flash-card.png',
+        'navigateTo': BBleaderBoard(),
+      },
+      {
+        'title': 'Rewards',
+        'imgPath': 'assets/text-book.png',
+        'navigateTo': RewardCatalogScreen(),
+      },
+      {
+        'title': 'Coin Quests',
+        'imgPath': 'assets/text-book.png',
+        'navigateTo': BBCoinQuestScreen(userId: userId),
+      },
+      {
+        'title': 'Badges',
+        'imgPath': 'assets/text-book.png',
+        'navigateTo': BadgesScreen(studentId: userId),
+      },
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,6 +140,10 @@ class _BBDashboardState extends State<BBDashboard>
             return _buildShimmerUI();
           } else if (state is StudentDataLoaded) {
             print("updated goal is ${state.student.toJson()}");
+
+            // Build extraPopUP with the actual userId
+            extraPopUP = _buildExtraPopUp(state.student.id);
+
             dashBoardScreens = [
               BBhome(student: state.student),
               BBhome(student: state.student),
@@ -373,8 +384,6 @@ class _BBDashboardState extends State<BBDashboard>
   }
 
   Widget _buildActualDashboard(StudentDataLoaded state) {
-    // Your actual dashboard implementation goes here
-    // You can return your original dashboard widget stack
     return Stack(
       children: [
         Positioned.fill(
@@ -498,7 +507,6 @@ class _BBDashboardState extends State<BBDashboard>
               height: 70,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.15),
@@ -517,6 +525,7 @@ class _BBDashboardState extends State<BBDashboard>
   }
 
   Widget _buildErrorScreen(String message) {
+    print("Error occurred: $message");
     return Container(
       padding: const EdgeInsets.all(24),
       child: Center(

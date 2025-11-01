@@ -1,8 +1,13 @@
-// lib/screens/badge_detail_screen.dart
+// ==========================================
+// COMPLETE FILE: lib/presentation/views/extras/achievements/badges/screens/badge_detail_screen.dart
+// ==========================================
+import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_date_formatter.dart';
+import 'package:brainbee/core/utils/badge_utills/badge_utills.dart';
 import 'package:brainbee/core/widgets/badges/badge_icon_widget.dart';
+import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
 import 'package:flutter/material.dart';
-import '../models/badge_model.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BadgeDetailScreen extends StatelessWidget {
   final BbBadge badge;
@@ -12,18 +17,18 @@ class BadgeDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: BBColors.lightGrayBG,
       appBar: AppBar(
         title: Text(
           badge.name,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 18),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: BBColors.white,
+        foregroundColor: BBColors.darkHeading,
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: Colors.grey[200]),
+          child: Container(height: 1, color: BBColors.borderGray),
         ),
       ),
       body: SingleChildScrollView(
@@ -32,7 +37,7 @@ class BadgeDetailScreen extends StatelessWidget {
             // Badge hero section
             Container(
               width: double.infinity,
-              color: Colors.white,
+              color: BBColors.white,
               padding: const EdgeInsets.all(32),
               child: Column(
                 children: [
@@ -44,7 +49,7 @@ class BadgeDetailScreen extends StatelessWidget {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.blue.withOpacity(0.3),
+                                  color: BBColors.primaryColor.withOpacity(0.3),
                                   blurRadius: 20,
                                   spreadRadius: 5,
                                 ),
@@ -57,20 +62,18 @@ class BadgeDetailScreen extends StatelessWidget {
                       showEarnedIndicator: false,
                     ),
                   ),
-
                   const SizedBox(height: 24),
 
                   // Badge name
                   Text(
                     badge.name,
-                    style: const TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: BBColors.darkHeading,
                     ),
                     textAlign: TextAlign.center,
                   ),
-
                   const SizedBox(height: 8),
 
                   // Badge status
@@ -82,11 +85,14 @@ class BadgeDetailScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color:
                           badge.isEarned
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.grey.withOpacity(0.1),
+                              ? BBColors.successGreen.withOpacity(0.1)
+                              : BBColors.disabledText.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: badge.isEarned ? Colors.green : Colors.grey,
+                        color:
+                            badge.isEarned
+                                ? BBColors.successGreen
+                                : BBColors.disabledText,
                         width: 1,
                       ),
                     ),
@@ -99,18 +105,20 @@ class BadgeDetailScreen extends StatelessWidget {
                               : Icons.lock_outline,
                           size: 16,
                           color:
-                              badge.isEarned ? Colors.green : Colors.grey[600],
+                              badge.isEarned
+                                  ? BBColors.successGreen
+                                  : BBColors.disabledText,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           badge.isEarned ? 'Earned' : 'Not Earned',
-                          style: TextStyle(
+                          style: GoogleFonts.poppins(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color:
                                 badge.isEarned
-                                    ? Colors.green
-                                    : Colors.grey[600],
+                                    ? BBColors.successGreen
+                                    : BBColors.disabledText,
                           ),
                         ),
                       ],
@@ -121,10 +129,10 @@ class BadgeDetailScreen extends StatelessWidget {
                   if (badge.isEarned && badge.earnedDate != null) ...[
                     const SizedBox(height: 12),
                     Text(
-                      'Earned on ${DateFormatter.formatBadgeDate((badge.earnedDate!))}',
-                      style: TextStyle(
+                      'Earned on ${DateFormatter.formatBadgeDate(badge.earnedDate!)}',
+                      style: GoogleFonts.poppins(
                         fontSize: 14,
-                        color: Colors.grey[600],
+                        color: BBColors.bodyText,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -154,14 +162,20 @@ class BadgeDetailScreen extends StatelessWidget {
 
             _DetailCard(
               title: 'Category',
-              content: badge.category.name,
-              icon: _getCategoryIcon(badge.category),
+              content: _getCategoryDisplayName(badge.category),
+              icon: BadgeUtils.getCategoryIcon(badge.category),
             ),
 
             // Progress section for unearned badges
-            if (!badge.isEarned) ...[
+            if (!badge.isEarned && badge.currentProgress > 0) ...[
               const SizedBox(height: 12),
               _ProgressCard(badge: badge),
+            ],
+
+            // Motivational section for unearned badges with no progress
+            if (!badge.isEarned && badge.currentProgress == 0) ...[
+              const SizedBox(height: 12),
+              _MotivationalCard(),
             ],
 
             const SizedBox(height: 32),
@@ -171,18 +185,18 @@ class BadgeDetailScreen extends StatelessWidget {
     );
   }
 
-  IconData _getCategoryIcon(BbBadgeCategory category) {
+  String _getCategoryDisplayName(BbBadgeCategory category) {
     switch (category) {
       case BbBadgeCategory.score:
-        return Icons.star_outline;
+        return 'Score Achievement';
       case BbBadgeCategory.streak:
-        return Icons.local_fire_department_outlined;
+        return 'Streak Achievement';
       case BbBadgeCategory.achievement:
-        return Icons.emoji_events_outlined;
+        return 'General Achievement';
       case BbBadgeCategory.participation:
-        return Icons.people_outline;
+        return 'Participation';
       case BbBadgeCategory.milestone:
-        return Icons.flag_outlined;
+        return 'Milestone';
     }
   }
 }
@@ -204,7 +218,7 @@ class _DetailCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: BBColors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -219,14 +233,14 @@ class _DetailCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 20, color: Colors.blue),
+              Icon(icon, size: 20, color: BBColors.primaryColor),
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(
+                style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: BBColors.darkHeading,
                 ),
               ),
             ],
@@ -234,9 +248,9 @@ class _DetailCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             content,
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               fontSize: 14,
-              color: Colors.grey[700],
+              color: BBColors.bodyText,
               height: 1.4,
             ),
           ),
@@ -253,57 +267,161 @@ class _ProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final progressPercentage = badge.progressPercentage;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.05),
+        color: BBColors.primaryColor.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withOpacity(0.2), width: 1),
+        border: Border.all(
+          color: BBColors.primaryColor.withOpacity(0.2),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.trending_up, size: 20, color: Colors.blue),
+              Icon(Icons.trending_up, size: 20, color: BBColors.primaryColor),
               const SizedBox(width: 8),
-              const Text(
-                'Keep Going!',
-                style: TextStyle(
+              Text(
+                'Your Progress',
+                style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.blue,
+                  color: BBColors.primaryColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Progress',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: BBColors.bodyText,
+                ),
+              ),
+              Text(
+                '${badge.currentProgress}/${badge.targetValue}',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: BBColors.primaryColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progressPercentage,
+              backgroundColor: BBColors.borderGray,
+              valueColor: AlwaysStoppedAnimation<Color>(BBColors.primaryColor),
+              minHeight: 6,
+            ),
+          ),
+          const SizedBox(height: 6),
+
+          Text(
+            '${(progressPercentage * 100).toInt()}% complete',
+            style: GoogleFonts.poppins(fontSize: 12, color: BBColors.bodyText),
+          ),
+          const SizedBox(height: 12),
+
+          Text(
+            'Keep going! You\'re making great progress towards earning this badge.',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: BBColors.bodyText,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MotivationalCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            BBColors.primaryColor.withOpacity(0.1),
+            BBColors.secondaryColor.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: BBColors.primaryColor.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.rocket_launch, size: 20, color: BBColors.primaryColor),
+              const SizedBox(width: 8),
+              Text(
+                'Ready to Start?',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: BBColors.primaryColor,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            'Complete the required actions to unlock this badge and add it to your collection.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.blue[700],
+            'Complete the required activities to unlock this badge and add it to your collection. Every step brings you closer to your goal!',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: BBColors.bodyText,
               height: 1.4,
             ),
           ),
           const SizedBox(height: 16),
 
-          // Motivational CTA
-          Container(
+          SizedBox(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.blue,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Text(
-              'Start Learning',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: BBColors.primaryColor,
+                foregroundColor: BBColors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Start Learning',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),

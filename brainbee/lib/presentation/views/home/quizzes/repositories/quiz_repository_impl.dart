@@ -105,8 +105,13 @@ class QuizRepositoryImpl implements QuizRepository {
   }) async {
     try {
       final response = await apiService.post(
-        '/api/student/submit-quiz',
-        data: {'student_id': studentId, 'quiz_id': quizId, 'answers': answers},
+        '/api/student/quiz/submit-quiz',
+        data: {
+          'bookId': "6891ad05a45067414d66897a",
+          'quiz_id': quizId,
+          'answers': answers,
+          'timeSpentSeconds': 50,
+        },
       );
 
       final Map<String, dynamic> data = jsonDecode(response.body);

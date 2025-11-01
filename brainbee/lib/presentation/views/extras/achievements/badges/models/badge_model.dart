@@ -1,130 +1,137 @@
-// lib/models/Bbbadge_model.dart
-import 'package:equatable/equatable.dart';
+// lib/presentation/views/extras/achievements/badges/models/badge_model.dart
 
-enum BbBadgeCategory { score, streak, achievement, milestone, participation }
-
-enum BbBadgeStatus { earned, unearned, expired }
-
-class BbBadge extends Equatable {
-  final String id;
+class BbBadge {
+  final String badgeId;
   final String name;
   final String description;
-  final String iconUrl;
-  final BbBadgeCategory category;
-  final BbBadgeStatus status;
-  final DateTime? earnedDate;
   final String earningCriteria;
-  final int? requiredValue;
-  final String? iconAsset; // For local assets
+  final BbBadgeCategory category;
+  final String iconUrl;
+  final String? iconAsset; // Local asset path (optional)
+  final bool isEarned;
+  final DateTime? earnedDate;
+  final int currentProgress;
+  final int targetValue;
+  final bool isExpired; // For time-limited badges
 
-  const BbBadge({
-    required this.id,
+  BbBadge({
+    required this.badgeId,
     required this.name,
     required this.description,
-    required this.iconUrl,
-    required this.category,
-    required this.status,
-    this.earnedDate,
     required this.earningCriteria,
-    this.requiredValue,
+    required this.category,
+    required this.iconUrl,
     this.iconAsset,
+    required this.isEarned,
+    this.earnedDate,
+    required this.currentProgress,
+    required this.targetValue,
+    this.isExpired = false,
   });
 
   factory BbBadge.fromJson(Map<String, dynamic> json) {
     return BbBadge(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      iconUrl: json['iconUrl'] as String,
-      category: BbBadgeCategory.values.firstWhere(
-        (e) => e.name == json['category'],
-        orElse: () => BbBadgeCategory.achievement,
-      ),
-      status: BbBadgeStatus.values.firstWhere(
-        (e) => e.name == json['status'],
-        orElse: () => BbBadgeStatus.unearned,
-      ),
+      badgeId: json['badgeId'] ?? '',
+      name: json['badgeName'] ?? '',
+      description: json['badgeDescription'] ?? '',
+      earningCriteria: json['badgeEarningCriteria'] ?? '',
+      category: _parseBadgeCategory(json['badgeCategory']),
+      iconUrl: json['badgeIconUrl'] ?? '',
+      iconAsset: json['badgeIconAsset'], // Optional local asset
+      isEarned: json['isEarned'] ?? false,
       earnedDate:
           json['earnedDate'] != null
-              ? DateTime.parse(json['earnedDate'] as String)
+              ? DateTime.tryParse(json['earnedDate'])
               : null,
-      earningCriteria: json['earningCriteria'] as String,
-      requiredValue: json['requiredValue'] as int?,
-      iconAsset: json['iconAsset'] as String?,
+      currentProgress: json['currentProgress'] ?? 0,
+      targetValue: json['targetValue'] ?? 0,
+      isExpired: json['isExpired'] ?? false,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'iconUrl': iconUrl,
-      'category': category.name,
-      'status': status.name,
-      'earnedDate': earnedDate?.toIso8601String(),
-      'earningCriteria': earningCriteria,
-      'requiredValue': requiredValue,
-      'iconAsset': iconAsset,
-    };
+  static BbBadgeCategory _parseBadgeCategory(String? category) {
+    switch (category?.toLowerCase()) {
+      case 'score':
+        return BbBadgeCategory.score;
+      case 'streak':
+        return BbBadgeCategory.streak;
+      case 'achievement':
+        return BbBadgeCategory.achievement;
+      case 'participation':
+        return BbBadgeCategory.participation;
+      case 'milestone':
+        return BbBadgeCategory.milestone;
+      default:
+        return BbBadgeCategory.achievement;
+    }
   }
 
-  BbBadge copyWith({
-    String? id,
-    String? name,
-    String? description,
-    String? iconUrl,
-    BbBadgeCategory? category,
-    BbBadgeStatus? status,
-    DateTime? earnedDate,
-    String? earningCriteria,
-    int? requiredValue,
-    String? iconAsset,
-  }) {
-    return BbBadge(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      description: description ?? this.description,
-      iconUrl: iconUrl ?? this.iconUrl,
-      category: category ?? this.category,
-      status: status ?? this.status,
-      earnedDate: earnedDate ?? this.earnedDate,
-      earningCriteria: earningCriteria ?? this.earningCriteria,
-      requiredValue: requiredValue ?? this.requiredValue,
-      iconAsset: iconAsset ?? this.iconAsset,
-    );
+  double get progressPercentage {
+    if (targetValue == 0) return 0.0;
+    return (currentProgress / targetValue).clamp(0.0, 1.0);
   }
-
-  bool get isEarned => status == BbBadgeStatus.earned;
-  bool get isUnearned => status == BbBadgeStatus.unearned;
-  bool get isExpired => status == BbBadgeStatus.expired;
 
   String get categoryDisplayName {
     switch (category) {
       case BbBadgeCategory.score:
-        return 'Score';
+        return 'Score Achievement';
       case BbBadgeCategory.streak:
-        return 'Streak';
+        return 'Streak Achievement';
       case BbBadgeCategory.achievement:
-        return 'Achievement';
-      case BbBadgeCategory.milestone:
-        return 'Milestone';
+        return 'General Achievement';
       case BbBadgeCategory.participation:
         return 'Participation';
+      case BbBadgeCategory.milestone:
+        return 'Milestone';
     }
   }
 
-  @override
-  List<Object?> get props => [
-    id,
-    name,
-    description,
-    iconUrl,
-    category,
-    status,
-    earnedDate,
-    earningCriteria,
-    requiredValue,
-    iconAsset,
-  ];
+  Map<String, dynamic> toJson() {
+    return {
+      'badgeId': badgeId,
+      'badgeName': name,
+      'badgeDescription': description,
+      'badgeEarningCriteria': earningCriteria,
+      'badgeCategory': category.name,
+      'badgeIconUrl': iconUrl,
+      'badgeIconAsset': iconAsset,
+      'isEarned': isEarned,
+      'earnedDate': earnedDate?.toIso8601String(),
+      'currentProgress': currentProgress,
+      'targetValue': targetValue,
+      'isExpired': isExpired,
+    };
+  }
+
+  BbBadge copyWith({
+    String? badgeId,
+    String? name,
+    String? description,
+    String? earningCriteria,
+    BbBadgeCategory? category,
+    String? iconUrl,
+    String? iconAsset,
+    bool? isEarned,
+    DateTime? earnedDate,
+    int? currentProgress,
+    int? targetValue,
+    bool? isExpired,
+  }) {
+    return BbBadge(
+      badgeId: badgeId ?? this.badgeId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      earningCriteria: earningCriteria ?? this.earningCriteria,
+      category: category ?? this.category,
+      iconUrl: iconUrl ?? this.iconUrl,
+      iconAsset: iconAsset ?? this.iconAsset,
+      isEarned: isEarned ?? this.isEarned,
+      earnedDate: earnedDate ?? this.earnedDate,
+      currentProgress: currentProgress ?? this.currentProgress,
+      targetValue: targetValue ?? this.targetValue,
+      isExpired: isExpired ?? this.isExpired,
+    );
+  }
 }
+
+enum BbBadgeCategory { score, streak, achievement, participation, milestone }

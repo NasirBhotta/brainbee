@@ -1,6 +1,10 @@
+// lib/core/widgets/badges/badge_detail_dialog.dart
+import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_date_formatter.dart';
+import 'package:brainbee/core/widgets/badges/badge_icon_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:brainbee/presentation/views/extras/achievements/badges/models/badge_model.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BadgeDetailDialog extends StatelessWidget {
   final BbBadge badge;
@@ -25,16 +29,20 @@ class BadgeDetailDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Badge Icon
-            SizedBox(width: 100, height: 100, child: _buildBadgeIcon()),
+            BadgeIconWidget(
+              badge: badge,
+              size: 100,
+              showEarnedIndicator: false,
+            ),
             const SizedBox(height: 16),
 
             // Badge Name
             Text(
               badge.name,
-              style: const TextStyle(
+              style: GoogleFonts.poppins(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: BBColors.darkHeading,
               ),
               textAlign: TextAlign.center,
             ),
@@ -49,7 +57,7 @@ class BadgeDetailDialog extends StatelessWidget {
               ),
               child: Text(
                 badge.categoryDisplayName,
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: _getCategoryColor(),
@@ -61,7 +69,10 @@ class BadgeDetailDialog extends StatelessWidget {
             // Badge Description
             Text(
               badge.description,
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: BBColors.bodyText,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -88,7 +99,7 @@ class BadgeDetailDialog extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         'Earning Criteria',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Colors.grey.shade800,
@@ -99,7 +110,10 @@ class BadgeDetailDialog extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     badge.earningCriteria,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey.shade700,
+                    ),
                   ),
                 ],
               ),
@@ -112,9 +126,11 @@ class BadgeDetailDialog extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.green.shade50,
+                  color: BBColors.successGreen.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green.shade200),
+                  border: Border.all(
+                    color: BBColors.successGreen.withOpacity(0.3),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,15 +140,15 @@ class BadgeDetailDialog extends StatelessWidget {
                         Icon(
                           Icons.check_circle_outline,
                           size: 16,
-                          color: Colors.green.shade600,
+                          color: BBColors.successGreen,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'Earned On',
-                          style: TextStyle(
+                          style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: Colors.green.shade800,
+                            color: BBColors.successGreen,
                           ),
                         ),
                       ],
@@ -140,9 +156,9 @@ class BadgeDetailDialog extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       DateFormatter.formatBadgeDetailDate(badge.earnedDate!),
-                      style: TextStyle(
+                      style: GoogleFonts.poppins(
                         fontSize: 14,
-                        color: Colors.green.shade700,
+                        color: BBColors.successGreen,
                       ),
                     ),
                   ],
@@ -158,80 +174,25 @@ class BadgeDetailDialog extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
+                  backgroundColor: BBColors.primaryColor,
+                  foregroundColor: BBColors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   'Close',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildBadgeIcon() {
-    Widget iconWidget;
-
-    if (badge.iconAsset != null) {
-      iconWidget = Image.asset(
-        badge.iconAsset!,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(),
-      );
-    } else {
-      iconWidget = Image.network(
-        badge.iconUrl,
-        fit: BoxFit.contain,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return const Center(child: CircularProgressIndicator(strokeWidth: 2));
-        },
-        errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(),
-      );
-    }
-
-    return iconWidget;
-  }
-
-  Widget _buildFallbackIcon() {
-    IconData iconData;
-    Color iconColor = _getCategoryColor();
-
-    switch (badge.category) {
-      case BbBadgeCategory.score:
-        iconData = Icons.star;
-        break;
-      case BbBadgeCategory.streak:
-        iconData = Icons.local_fire_department;
-        break;
-      case BbBadgeCategory.achievement:
-        iconData = Icons.emoji_events;
-        break;
-      case BbBadgeCategory.milestone:
-        iconData = Icons.flag;
-        break;
-      case BbBadgeCategory.participation:
-        iconData = Icons.group;
-        iconColor = iconColor;
-        break;
-    }
-
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: iconColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(50),
-      ),
-      child: Icon(iconData, color: iconColor, size: 50),
     );
   }
 
@@ -244,9 +205,9 @@ class BadgeDetailDialog extends StatelessWidget {
       case BbBadgeCategory.achievement:
         return Colors.amber;
       case BbBadgeCategory.milestone:
-        return Colors.blue;
+        return BBColors.primaryColor;
       case BbBadgeCategory.participation:
-        return Colors.purple;
+        return BBColors.successGreen;
     }
   }
 }

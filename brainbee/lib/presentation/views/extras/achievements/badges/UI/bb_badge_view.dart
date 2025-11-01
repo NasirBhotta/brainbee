@@ -1,5 +1,3 @@
-// lib/screens/badges_screen.dart
-import 'package:brainbee/core/constants/badge_constants.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/badge_utills/badge_utills.dart';
 import 'package:brainbee/core/widgets/badges/badge_category_section.dart';
@@ -24,19 +22,11 @@ class BadgesScreen extends StatefulWidget {
 class _BadgesScreenState extends State<BadgesScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  int _currentTabIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
-        setState(() {
-          _currentTabIndex = _tabController.index;
-        });
-      }
-    });
 
     // Load badges when screen initializes
     context.read<BadgeBloc>().add(LoadBadges(studentId: widget.studentId));
@@ -87,6 +77,15 @@ class _BadgesScreenState extends State<BadgesScreen>
           child: BlocBuilder<BadgeBloc, BadgeState>(
             builder: (context, state) {
               if (state is BadgeLoaded || state is BadgeRefreshing) {
+                final totalCount =
+                    state is BadgeLoaded
+                        ? state.totalBadgesCount
+                        : (state as BadgeRefreshing).totalBadgesCount;
+                final earnedCount =
+                    state is BadgeLoaded
+                        ? state.earnedBadgesCount
+                        : (state as BadgeRefreshing).earnedBadgesCount;
+
                 return Container(
                   color: BBColors.secondaryColor,
                   child: TabBar(
@@ -109,9 +108,7 @@ class _BadgesScreenState extends State<BadgesScreen>
                           children: [
                             const Icon(Icons.grid_view, size: 16),
                             const SizedBox(width: 6),
-                            Text(
-                              'All (${state is BadgeLoaded ? state.totalBadgesCount : (state as BadgeRefreshing).totalBadgesCount})',
-                            ),
+                            Text('All ($totalCount)'),
                           ],
                         ),
                       ),
@@ -121,9 +118,7 @@ class _BadgesScreenState extends State<BadgesScreen>
                           children: [
                             const Icon(Icons.star, size: 16),
                             const SizedBox(width: 6),
-                            Text(
-                              'Earned (${state is BadgeLoaded ? state.earnedBadgesCount : (state as BadgeRefreshing).earnedBadgesCount})',
-                            ),
+                            Text('Earned ($earnedCount)'),
                           ],
                         ),
                       ),
@@ -161,18 +156,18 @@ class _BadgesScreenState extends State<BadgesScreen>
                 TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildAllBadgesTab(categorizedBadges),
+                    _buildAllBadgesTab(categorizedBadges, badges),
                     _buildEarnedBadgesTab(badges, hasEarnedBadges),
                   ],
                 ),
                 if (state is BadgeRefreshing)
-                  Positioned(
+                  const Positioned(
                     top: 0,
                     left: 0,
                     right: 0,
                     child: SizedBox(
                       height: 3,
-                      child: const LinearProgressIndicator(
+                      child: LinearProgressIndicator(
                         backgroundColor: Colors.transparent,
                         valueColor: AlwaysStoppedAnimation<Color>(
                           BBColors.primaryColor,
@@ -246,7 +241,7 @@ class _BadgesScreenState extends State<BadgesScreen>
               },
               icon: const Icon(Icons.refresh, size: 18),
               label: Text(
-                AppConstants.retryButtonText,
+                'Retry',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -281,6 +276,7 @@ class _BadgesScreenState extends State<BadgesScreen>
 
   Widget _buildAllBadgesTab(
     Map<BbBadgeCategory, List<BbBadge>> categorizedBadges,
+    List<BbBadge> allBadges,
   ) {
     if (categorizedBadges.isEmpty) {
       return _buildEmptyState(
@@ -295,6 +291,8 @@ class _BadgesScreenState extends State<BadgesScreen>
         context.read<BadgeBloc>().add(
           RefreshBadges(studentId: widget.studentId),
         );
+        // Wait a bit for the refresh to complete
+        await Future.delayed(const Duration(milliseconds: 500));
       },
       color: BBColors.primaryColor,
       child: SingleChildScrollView(
@@ -302,7 +300,7 @@ class _BadgesScreenState extends State<BadgesScreen>
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: Column(
           children: [
-            _buildProgressCard(categorizedBadges),
+            _buildProgressCard(allBadges),
             const SizedBox(height: 16),
             ...BbBadgeCategory.values.map((category) {
               final badges = categorizedBadges[category] ?? [];
@@ -327,7 +325,7 @@ class _BadgesScreenState extends State<BadgesScreen>
       return _buildEmptyState(
         icon: Icons.star_border,
         title: 'No earned badges yet',
-        subtitle: AppConstants.noEarnedBadgesMessage,
+        subtitle: 'Complete activities to earn your first badge!',
       );
     }
 
@@ -340,6 +338,7 @@ class _BadgesScreenState extends State<BadgesScreen>
         context.read<BadgeBloc>().add(
           RefreshBadges(studentId: widget.studentId),
         );
+        await Future.delayed(const Duration(milliseconds: 500));
       },
       color: BBColors.primaryColor,
       child: SingleChildScrollView(
@@ -365,14 +364,10 @@ class _BadgesScreenState extends State<BadgesScreen>
     );
   }
 
-  Widget _buildProgressCard(
-    Map<BbBadgeCategory, List<BbBadge>> categorizedBadges,
-  ) {
-    final allBadges =
-        categorizedBadges.values.expand((badges) => badges).toList();
+  Widget _buildProgressCard(List<BbBadge> allBadges) {
     final earnedCount = BadgeUtils.filterEarnedBadges(allBadges).length;
     final totalCount = allBadges.length;
-    final progressPercentage = BadgeUtils.getProgressPercentage(allBadges);
+    final progressPercentage = totalCount > 0 ? earnedCount / totalCount : 0.0;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -574,12 +569,15 @@ class _BadgesScreenState extends State<BadgesScreen>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => UnearnedBadgeBottomSheet(badge: badge),
     );
   }
 }
 
-// lib/widgets/unearned_badge_bottom_sheet.dart
+// ==========================================
+// UPDATED: Unearned Badge Bottom Sheet with Progress
+// ==========================================
 class UnearnedBadgeBottomSheet extends StatelessWidget {
   final BbBadge badge;
 
@@ -587,6 +585,9 @@ class UnearnedBadgeBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final progressPercentage = badge.progressPercentage;
+    final hasProgress = badge.currentProgress > 0;
+
     return Container(
       decoration: const BoxDecoration(
         color: BBColors.white,
@@ -626,7 +627,7 @@ class UnearnedBadgeBottomSheet extends StatelessWidget {
                       color: BBColors.disabledText,
                     ),
                   ),
-                  Center(
+                  const Center(
                     child: Icon(Icons.lock, size: 28, color: BBColors.bodyText),
                   ),
                 ],
@@ -657,6 +658,67 @@ class UnearnedBadgeBottomSheet extends StatelessWidget {
             ),
             const SizedBox(height: 14),
 
+            // Progress indicator (if any progress exists)
+            if (hasProgress) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: BBColors.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: BBColors.primaryColor.withOpacity(0.3),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Progress',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: BBColors.secondaryColor,
+                          ),
+                        ),
+                        Text(
+                          '${badge.currentProgress}/${badge.targetValue}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: BBColors.secondaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progressPercentage,
+                        backgroundColor: BBColors.white,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          BBColors.primaryColor,
+                        ),
+                        minHeight: 6,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${(progressPercentage * 100).toInt()}% complete',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: BBColors.bodyText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
+
             // Earning criteria
             Container(
               width: double.infinity,
@@ -673,7 +735,7 @@ class UnearnedBadgeBottomSheet extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.lightbulb_outline,
                         size: 14,
                         color: BBColors.secondaryColor,

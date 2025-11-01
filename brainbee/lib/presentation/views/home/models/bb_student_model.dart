@@ -53,7 +53,7 @@ class StudentModel extends UserModel {
 
   factory StudentModel.fromJson(Map<String, dynamic> json) {
     final user = json['user'];
-
+    print("The user in the model is $user");
     return StudentModel(
       profileImage: user["profileImage"],
       id: user['id'] ?? user['_id'] ?? '',
