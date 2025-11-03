@@ -16,13 +16,12 @@ class BbChapterCard extends StatelessWidget {
     this.onItemTap,
   });
 
-  // Factory constructor to maintain compatibility with existing Chapter model
   factory BbChapterCard.fromChapter({
-    required dynamic chapter, // Your existing Chapter model
+    required Chapter chapter, // Your existing Chapter model
     required void Function(Topic topic) onTopicTap,
   }) {
     return BbChapterCard(
-      chapterTitle: chapter.chapter.toString(),
+      chapterTitle: "Chapter No ${chapter.chapter}",
       subtitle: "Read More...",
       items:
           chapter.topics
@@ -66,67 +65,117 @@ class BbChapterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ExpansionTile(
-        shape: const Border(top: BorderSide.none, bottom: BorderSide.none),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: BBColors.primaryColor.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            Icons.book,
-            color: BBColors.secondaryColor.withValues(alpha: 1),
-            size: 24,
-          ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: BBColors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        title: Text(
-          chapterTitle,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: BBColors.secondaryColor),
-        ),
-        children:
-            items.map((item) {
-              return ListTile(
-                style: ListTileStyle.drawer,
-                leading: CircleAvatar(
-                  radius: 16,
-                  backgroundColor: item.iconBackgroundColor ?? Colors.grey,
-                  child:
-                      item.icon ??
-                      const Text(
-                        "?",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: ExpansionTile(
+            shape: const Border(),
+            tilePadding: const EdgeInsets.all(16),
+            childrenPadding: EdgeInsets.zero,
+            backgroundColor: BBColors.white,
+            collapsedBackgroundColor: BBColors.white,
+            title: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        chapterTitle,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
                         ),
                       ),
+                    ],
+                  ),
                 ),
-                title: Text(item.title),
-                onTap: onItemTap != null ? () => onItemTap!(item) : null,
-              );
-            }).toList(),
+              ],
+            ),
+            trailing: const Icon(Icons.keyboard_arrow_down),
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  children:
+                      items.map((item) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              leading: CircleAvatar(
+                                radius: 18,
+                                backgroundColor:
+                                    item.iconBackgroundColor ??
+                                    BBColors.primaryColor.withOpacity(0.1),
+                                child:
+                                    item.icon ??
+                                    Icon(
+                                      Icons.topic_outlined,
+                                      color: BBColors.primaryColor,
+                                      size: 18,
+                                    ),
+                              ),
+                              title: Text(
+                                item.title,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w500),
+                              ),
+                              trailing: Icon(
+                                Icons.arrow_forward_ios,
+                                size: 14,
+                                color: Colors.grey.shade400,
+                              ),
+                              onTap:
+                                  onItemTap != null
+                                      ? () => onItemTap!(item)
+                                      : null,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -150,15 +199,8 @@ class BbChapterItem {
   factory BbChapterItem.fromTopic(dynamic topic) {
     return BbChapterItem(
       title: topic.topic, // Assuming topic has a 'topic' property
-      icon: const Text(
-        "?",
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      iconBackgroundColor: Colors.grey,
+      icon: Icon(Icons.topic_outlined, color: BBColors.primaryColor, size: 18),
+      iconBackgroundColor: BBColors.primaryColor.withOpacity(0.1),
       data: topic,
     );
   }
@@ -167,8 +209,12 @@ class BbChapterItem {
   factory BbChapterItem.fromSection(Map<String, dynamic> section) {
     return BbChapterItem(
       title: section['section_title'] ?? 'Unknown Section',
-      icon: const Text("📖", style: TextStyle(fontSize: 12)),
-      iconBackgroundColor: Colors.grey,
+      icon: Icon(
+        Icons.menu_book_rounded,
+        color: BBColors.primaryColor,
+        size: 18,
+      ),
+      iconBackgroundColor: BBColors.primaryColor.withOpacity(0.1),
       data: section,
     );
   }

@@ -37,31 +37,92 @@ class _BbQuizzesListScreenState extends State<BbQuizzesListScreen> {
           ),
         ),
       ),
-
-      body: ListView.separated(
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: widget.topic.quizzes.length,
         itemBuilder: (context, index) {
-          return ListTile(
-            title: BBText(data: "${widget.topic.topic} Quiz ${index + 1}"),
-            subtitle: Text('Click to start the quiz'),
-            trailing: Icon(Icons.arrow_forward_ios, size: 16.0),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder:
-                      (context) => BBInAppQuizScreen(
-                        quizId: widget.topic.quizzes[index].id,
-                        studentId: widget.student.id,
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: BBColors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => BBInAppQuizScreen(
+                              quizId: widget.topic.quizzes[index].id,
+                              studentId: widget.student.id,
+                            ),
                       ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: BBColors.primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.quiz_outlined,
+                              color: BBColors.primaryColor,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              BBText(
+                                data: "${widget.topic.topic} Quiz ${index + 1}",
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Click to start the quiz',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.grey,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              );
-            },
+              ),
+            ),
           );
         },
-        separatorBuilder: (context, index) {
-          return Divider(color: BBColors.borderGray, height: 0.5);
-        },
-        itemCount: widget.topic.quizzes.length,
       ),
     );
   }

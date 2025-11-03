@@ -121,6 +121,7 @@ class _BbSpecificBookFlashcardSelectionState
         slivers: [
           SliverAppBar(
             pinned: true,
+            backgroundColor: BBColors.white,
             centerTitle: true,
             title: Text("${widget.subject} Flashcards"),
             leading: IconButton(
