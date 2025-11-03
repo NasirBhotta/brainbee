@@ -1,5 +1,5 @@
-// 2. Select Subjects Screen
 import 'package:brainbee/core/constants/bb_colors.dart';
+import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/settings/bloc/setting_bloc.dart';
@@ -138,22 +138,15 @@ class _SelectSubjectsScreenState extends State<SelectSubjectsScreen> {
     final subjects = subjectsByGrade[widget.selectedGrade] ?? [];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF4DB6AC),
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Select Subjects',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text('Select Subjects', style: context.textStyle.titleMedium),
         centerTitle: true,
       ),
       body: MultiBlocListener(
@@ -173,7 +166,7 @@ class _SelectSubjectsScreenState extends State<SelectSubjectsScreen> {
                     const SnackBar(
                       content: Text('Subjects updated successfully!'),
                       backgroundColor: Colors.green,
-                      duration: Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
                     ),
                   );
 
@@ -191,7 +184,7 @@ class _SelectSubjectsScreenState extends State<SelectSubjectsScreen> {
                     SnackBar(
                       content: Text('Error updating subjects: ${state.error}'),
                       backgroundColor: Colors.red,
-                      duration: const Duration(seconds: 3),
+                      behavior: SnackBarBehavior.floating,
                     ),
                   );
                 } else {
@@ -213,124 +206,242 @@ class _SelectSubjectsScreenState extends State<SelectSubjectsScreen> {
             },
           ),
         ],
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Choose subjects for Grade ${selectedGrade ?? widget.selectedGrade}',
-                style: const TextStyle(
+              // Header Section
+              _buildSectionHeader('Academic Preferences'),
+              const SizedBox(height: 16),
+
+              // Info Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
                   color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: BBColors.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.school,
+                        color: BBColors.primaryColor,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Grade ${selectedGrade ?? widget.selectedGrade}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${selectedSubjects.length} subjects selected',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
-              Text(
-                '${selectedSubjects.length} subjects selected',
-                style: const TextStyle(color: Colors.white70, fontSize: 14),
-              ),
-              const SizedBox(height: 30),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 15,
-                    mainAxisSpacing: 15,
-                    childAspectRatio: 1.1,
-                  ),
-                  itemCount: subjects.length,
-                  itemBuilder: (context, index) {
-                    final subject = subjects[index];
-                    final isSelected = selectedSubjects.contains(
-                      subject['name'],
-                    );
 
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          if (isSelected) {
-                            selectedSubjects.remove(subject['name']);
-                          } else {
-                            selectedSubjects.add(subject['name']);
-                          }
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
+              const SizedBox(height: 30),
+
+              // Subjects Section
+              _buildSectionHeader('Available Subjects'),
+              const SizedBox(height: 16),
+
+              // Subjects Grid
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.0,
+                ),
+                itemCount: subjects.length,
+                itemBuilder: (context, index) {
+                  final subject = subjects[index];
+                  final isSelected = selectedSubjects.contains(subject['name']);
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (isSelected) {
+                          selectedSubjects.remove(subject['name']);
+                        } else {
+                          selectedSubjects.add(subject['name']);
+                        }
+                      });
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
                           color:
                               isSelected
-                                  ? Colors.white
-                                  : Colors.white.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(15),
-                          border:
-                              isSelected
-                                  ? Border.all(
-                                    color: const Color(0xFF4DB6AC),
-                                    width: 3,
-                                  )
-                                  : null,
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 8,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
+                                  ? BBColors.primaryColor
+                                  : Colors.grey[300]!,
+                          width: isSelected ? 2 : 1,
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(15),
-                              decoration: BoxDecoration(
-                                color: subject['color'].withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                subject['icon'],
-                                size: 35,
-                                color: subject['color'],
+                        boxShadow: [
+                          if (isSelected)
+                            BoxShadow(
+                              color: BBColors.primaryColor.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            )
+                          else
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: subject['color'].withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    subject['icon'],
+                                    size: 32,
+                                    color: subject['color'],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                  child: Text(
+                                    subject['name'],
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color:
+                                          isSelected
+                                              ? Colors.black87
+                                              : Colors.black54,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isSelected)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: BBColors.primaryColor,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              child: Text(
-                                subject['name'],
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (isSelected)
-                              const Padding(
-                                padding: EdgeInsets.only(top: 8),
-                                child: Icon(
-                                  Icons.check_circle,
-                                  color: Color(0xFF4DB6AC),
-                                  size: 20,
-                                ),
-                              ),
-                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 30),
+
+              // Helper Text
+              if (selectedSubjects.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.orange[700],
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Please select at least one subject to continue',
+                          style: TextStyle(
+                            color: Colors.orange[900],
+                            fontSize: 13,
+                          ),
                         ),
                       ),
-                    );
-                  },
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
+
+              const SizedBox(height: 40),
+
+              // Save Button
+              Container(
                 width: double.infinity,
-                height: 50,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  gradient:
+                      selectedSubjects.isNotEmpty && !isLoading
+                          ? const LinearGradient(
+                            colors: [
+                              BBColors.primaryColor,
+                              BBColors.secondaryColor,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                          : null,
+                  color:
+                      selectedSubjects.isEmpty || isLoading
+                          ? Colors.grey[300]
+                          : null,
+                ),
                 child: ElevatedButton(
                   onPressed:
                       selectedSubjects.isNotEmpty && !isLoading
@@ -344,29 +455,54 @@ class _SelectSubjectsScreenState extends State<SelectSubjectsScreen> {
                           }
                           : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF4DB6AC),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    disabledBackgroundColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   child:
                       isLoading
-                          ? const CircularProgressIndicator(
-                            color: BBColors.secondaryColor,
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
                           )
-                          : const Text(
+                          : Text(
                             'Save Selection',
-                            style: TextStyle(
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  selectedSubjects.isNotEmpty
+                                      ? BBColors.white
+                                      : Colors.grey[600],
                             ),
                           ),
                 ),
               ),
+
+              const SizedBox(height: 20),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        color: Colors.blue[600],
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
