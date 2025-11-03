@@ -3,7 +3,9 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/utils/helper/bb_getinitials.dart';
+import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
+import 'package:brainbee/presentation/views/onboarding/bb_combined_onbaord.dart';
 import 'package:brainbee/presentation/views/settings/UI/bb_app_settings.dart';
 import 'package:brainbee/presentation/views/settings/UI/bb_change_password.dart';
 import 'package:brainbee/presentation/views/settings/UI/bb_learn_and_earn.dart';
@@ -46,6 +48,113 @@ class _BBSettingsState extends State<BBSettings> {
     // Refresh student data when returning from any screen
     if (mounted && result == true) {
       context.read<StudentBloc>().add(StudentFetchData());
+    }
+  }
+
+  // Show logout confirmation dialog
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.logout, color: BBColors.secondaryColor),
+              SizedBox(width: 12),
+              Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: const Text(
+            'Are you sure you want to logout? You will need to login again to access your account.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                _handleLogout();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: BBColors.secondaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Handle logout process
+  void _handleLogout() async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: const Center(
+            child: Card(
+              elevation: 8,
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: BBColors.primaryColor),
+                    SizedBox(height: 16),
+                    Text(
+                      'Logging out...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    // Trigger logout event
+    context.read<AuthBloc>().add(AuthLogoutRequested());
+
+    // Wait a bit for cleanup to complete
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (mounted) {
+      // Close loading dialog
+      Navigator.of(context).pop();
+
+      // Navigate to onboarding screen and clear all navigation stack
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const BbCombinedOnbaord()),
+        (route) => false,
+      );
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Logged out successfully'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -234,6 +343,7 @@ class _BBSettingsState extends State<BBSettings> {
                       ),
                       const Divider(),
                       ListTile(
+                        onTap: _showLogoutDialog,
                         leading: const Icon(
                           Icons.logout,
                           color: BBColors.secondaryColor,
