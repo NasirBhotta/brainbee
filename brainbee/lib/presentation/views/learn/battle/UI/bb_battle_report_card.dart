@@ -1,6 +1,6 @@
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/models/quiz_question_model.dart';
-import 'package:brainbee/presentation/views/learn/battle/bb_reportcard_pdf.dart';
+import 'package:brainbee/presentation/views/learn/battle/UI/bb_reportcard_pdf.dart';
 import 'package:flutter/material.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
@@ -134,7 +134,7 @@ class _BBQuizReportCardScreenState extends State<BBQuizReportCardScreen> {
       } else {
         int correctIndex;
         if (widget.quizType == QuizType.battle) {
-          correctIndex = (currentQuestions[i] as Question).correctOptionIndex;
+          correctIndex = (currentQuestions[i] as Question).correctOptionIndex!;
         } else {
           correctIndex =
               (currentQuestions[i] as QuizQuestion).correctChoiceIndex;
@@ -234,9 +234,9 @@ class _BBQuizReportCardScreenState extends State<BBQuizReportCardScreen> {
 
       if (widget.quizType == QuizType.battle) {
         final question = currentQuestions[index] as Question;
-        correctIndex = question.correctOptionIndex;
+        correctIndex = question.correctOptionIndex!;
         questionText = question.text;
-        options = question.options;
+        options = question.options!;
         explanation = null;
       } else {
         final question = currentQuestions[index] as QuizQuestion;

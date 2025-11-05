@@ -1,10 +1,9 @@
 // screens/quiz_list_screen.dart
+import 'package:brainbee/core/models/bb_question.dart';
 import 'package:flutter/material.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 
 enum QuizStatus { notStarted, inProgress, overdue, submitted }
-
-enum QuestionType { mcq, shortAnswer, longAnswer }
 
 class Quiz {
   final String id;
@@ -39,24 +38,6 @@ class Quiz {
     final now = DateTime.now();
     return now.isAfter(startTime) && now.isBefore(effectiveDueTime);
   }
-}
-
-class Question {
-  final String id;
-  final String text;
-  final QuestionType type;
-  final List<String>? options;
-  final bool? isMultiSelect;
-  final String? answer;
-
-  Question({
-    required this.id,
-    required this.text,
-    required this.type,
-    this.options,
-    this.isMultiSelect,
-    this.answer,
-  });
 }
 
 class QuizListScreen extends StatefulWidget {
@@ -906,7 +887,7 @@ class _MCQQuizScreenState extends State<MCQQuizScreen>
         child: InkWell(
           onTap: () {
             setState(() {
-              answers[question.id] = option;
+              answers[question.id!] = option;
             });
           },
           borderRadius: BorderRadius.circular(8),
@@ -927,7 +908,7 @@ class _MCQQuizScreenState extends State<MCQQuizScreen>
                   groupValue: answers[question.id],
                   onChanged: (value) {
                     setState(() {
-                      answers[question.id] = value;
+                      answers[question.id!] = value;
                     });
                   },
                   activeColor: BBColors.primaryColor,
@@ -1064,7 +1045,7 @@ class _MCQQuizScreenState extends State<MCQQuizScreen>
               } else {
                 current.add(option);
               }
-              answers[question.id] = current;
+              answers[question.id!] = current;
             });
           },
           borderRadius: BorderRadius.circular(8),
@@ -1090,7 +1071,7 @@ class _MCQQuizScreenState extends State<MCQQuizScreen>
                       } else {
                         current.remove(option);
                       }
-                      answers[question.id] = current;
+                      answers[question.id!] = current;
                     });
                   },
                   activeColor: BBColors.primaryColor,

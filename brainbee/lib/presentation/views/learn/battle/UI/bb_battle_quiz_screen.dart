@@ -7,7 +7,7 @@ import 'package:brainbee/core/utils/helper/bb_confirmation_dialog.dart';
 import 'package:brainbee/core/utils/helper/bb_result_extention.dart';
 import 'package:brainbee/core/widgets/popups/bb_confirmation_dialog.dart';
 import 'package:brainbee/core/widgets/popups/bb_result_dialog.dart';
-import 'package:brainbee/presentation/views/learn/battle/bb_battle_report_card.dart';
+import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle_report_card.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -473,7 +473,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   Widget _buildOptions() {
     return Expanded(
       child: ListView.builder(
-        itemCount: questions[currentQuestionIndex].options.length,
+        itemCount: questions[currentQuestionIndex].options!.length,
         itemBuilder: (context, index) {
           final isSelected = selectedOptionIndex == index;
           final isCorrect =
@@ -554,7 +554,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
                   const SizedBox(width: 15),
                   Expanded(
                     child: BBText(
-                      data: questions[currentQuestionIndex].options[index],
+                      data: questions[currentQuestionIndex].options![index],
                       style: context.textStyle.labelMedium?.copyWith(
                         fontSize: 14,
                         color:

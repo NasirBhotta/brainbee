@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
-import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
-
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 
 class BBFlashcards extends StatelessWidget {
