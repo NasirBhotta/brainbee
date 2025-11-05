@@ -9,7 +9,7 @@ import 'package:brainbee/presentation/views/extras/score_&_reportcard/reportcard
 import 'package:brainbee/presentation/views/extras/score_&_reportcard/scorecard/bb_scorecard.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_home.dart';
 import 'package:brainbee/presentation/views/learn/Books/bb_select_book.dart';
-import 'package:brainbee/presentation/views/learn/battle/bb_book_selection.dart';
+import 'package:brainbee/presentation/views/learn/battle/UI/bb_book_selection.dart';
 import 'package:brainbee/presentation/views/learn/bb_learn_popup.dart';
 import 'package:brainbee/presentation/views/learn/flashcards/bb_selectBook_flashcards.dart';
 import 'package:flutter/material.dart';

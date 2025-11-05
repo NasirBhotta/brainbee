@@ -2,7 +2,7 @@
 import 'package:brainbee/core/models/bb_question.dart';
 import 'package:brainbee/core/widgets/popups/bb_result_dialog.dart';
 import 'package:brainbee/presentation/views/home/quizzes/models/quiz_question_model.dart';
-import 'package:brainbee/presentation/views/learn/battle/bb_battle_report_card.dart';
+import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle_report_card.dart';
 import 'package:flutter/material.dart';
 
 enum ResultType { win, lose, tie }

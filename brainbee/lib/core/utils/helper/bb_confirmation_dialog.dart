@@ -1,6 +1,6 @@
 import 'package:brainbee/core/models/bb_question.dart';
 import 'package:brainbee/core/widgets/popups/bb_confirmation_dialog.dart';
-import 'package:brainbee/presentation/views/learn/battle/bb_battle_report_card.dart';
+import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle_report_card.dart';
 import 'package:flutter/material.dart';
 
 extension DynamicQuitConfirmationDialogExtension on BuildContext {

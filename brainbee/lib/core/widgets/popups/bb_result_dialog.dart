@@ -4,7 +4,7 @@ import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/helper/bb_result_extention.dart';
 import 'package:brainbee/core/widgets/popups/bb_model_button.dart';
 import 'package:brainbee/presentation/views/home/quizzes/models/quiz_question_model.dart';
-import 'package:brainbee/presentation/views/learn/battle/bb_battle_report_card.dart';
+import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle_report_card.dart';
 import 'package:flutter/material.dart';
 
 class DynamicResultDialog extends StatelessWidget {

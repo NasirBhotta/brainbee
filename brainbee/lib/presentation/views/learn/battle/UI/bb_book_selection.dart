@@ -1,13 +1,14 @@
 import 'package:brainbee/core/models/subject_model.dart';
+import 'package:brainbee/presentation/views/learn/battle/bloc/battle_bloc.dart';
+import 'package:brainbee/presentation/views/learn/battle/models/battle_models.dart';
+import 'package:brainbee/presentation/views/learn/battle/UI/bb_searching_players.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
-import 'package:brainbee/core/widgets/popups/bb_invite_popUp.dart';
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 
 class BBBookSelectionForBattle extends StatelessWidget {
-  // All available subjects
   static final List<Subject> _allSubjects = [
     Subject(
       name: 'English',
@@ -34,7 +35,6 @@ class BBBookSelectionForBattle extends StatelessWidget {
 
   const BBBookSelectionForBattle({super.key});
 
-  // Helper method to get registered subjects only
   List<Subject> _getRegisteredSubjects(List<String> registeredSubjects) {
     return _allSubjects.where((subject) {
       return registeredSubjects.contains(subject.name);
@@ -55,66 +55,194 @@ class BBBookSelectionForBattle extends StatelessWidget {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: BlocConsumer<StudentBloc, StudentState>(
+      body: BlocListener<BattleBloc, BattleState>(
         listener: (context, state) {
-          if (state is StudentDataError) {
+          if (state is BattleSearching || state is BattleRoomCreated) {
+            _navigateToSearchScreen(context, state);
+          } else if (state is BattleError) {
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
-        builder: (context, state) {
-          if (state is StudentDataLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state is StudentDataLoaded) {
-            final registeredSubjects = _getRegisteredSubjects(
-              state.student.subjects,
-            );
-
-            if (registeredSubjects.isEmpty) {
-              return _EmptySubjectsWidget();
+        child: BlocBuilder<StudentBloc, StudentState>(
+          builder: (context, state) {
+            if (state is StudentDataLoading) {
+              return const Center(child: CircularProgressIndicator());
             }
 
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: registeredSubjects.length,
-              itemBuilder: (context, index) {
-                final subject = registeredSubjects[index];
-                return _SubjectCard(
-                  subject: subject,
-                  onTap: () => _showStudyModeDialog(context, subject),
-                );
-              },
-            );
-          }
+            if (state is StudentDataLoaded) {
+              final registeredSubjects = _getRegisteredSubjects(
+                state.student.subjects,
+              );
 
-          // Default fallback for other states
-          return _EmptySubjectsWidget();
-        },
+              if (registeredSubjects.isEmpty) {
+                return _EmptySubjectsWidget();
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: registeredSubjects.length,
+                itemBuilder: (context, index) {
+                  final subject = registeredSubjects[index];
+                  return _SubjectCard(
+                    subject: subject,
+                    onTap: () => _showStudyModeDialog(context, subject),
+                  );
+                },
+              );
+            }
+
+            if (state is StudentDataError) {
+              return Center(child: Text(state.message));
+            }
+
+            return _EmptySubjectsWidget();
+          },
+        ),
       ),
     );
   }
 
   void _showStudyModeDialog(BuildContext context, Subject subject) {
-    showInvitationPopUp(
+    showDialog(
       context: context,
-      title: 'Battle Mode',
-      desc: 'How would you like to compete in ${subject.name}?',
-      button1Label: 'By Chapter',
-      button2Label: 'Whole Book',
-      subject: subject,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: Text('Battle Mode - ${subject.name}'),
+            content: const Text('How would you like to compete?'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _navigateToChapterSelection(context, subject);
+                },
+                child: const Text('By Chapter'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _showMatchTypeDialog(context, subject, null);
+                },
+                child: const Text('Whole Book'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _navigateToChapterSelection(BuildContext context, Subject subject) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BBChapterSelectionScreen(subject: subject),
+      ),
+    );
+  }
+
+  void _showMatchTypeDialog(
+    BuildContext context,
+    Subject subject,
+    List<String>? chapters,
+  ) {
+    showDialog(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Match Type'),
+            content: const Text('Choose how you want to find an opponent'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _startRandomMatch(context, subject, chapters);
+                },
+                child: const Text('Random Match'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _createInvitationMatch(context, subject, chapters);
+                },
+                child: const Text('Create Invitation'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _startRandomMatch(
+    BuildContext context,
+    Subject subject,
+    List<String>? chapters,
+  ) {
+    context.read<BattleBloc>().add(
+      FindRandomOpponentEvent(subject: subject.name, chapters: chapters),
+    );
+  }
+
+  void _createInvitationMatch(
+    BuildContext context,
+    Subject subject,
+    List<String>? chapters,
+  ) {
+    context.read<BattleBloc>().add(
+      CreateBattleRoomEvent(
+        subject: subject.name,
+        mode: chapters == null ? BattleMode.wholeBook : BattleMode.byChapter,
+        chapters: chapters,
+      ),
+    );
+  }
+
+  void _navigateToSearchScreen(BuildContext context, BattleState state) {
+    final BattleRoom room;
+    final MatchType matchType;
+
+    if (state is BattleSearching) {
+      room = state.room;
+      matchType = MatchType.random;
+    } else if (state is BattleRoomCreated) {
+      room = state.room;
+      matchType = MatchType.invitation;
+    } else {
+      return;
+    }
+
+    // Get current user info from StudentBloc
+    final studentState = context.read<StudentBloc>().state;
+    String playerName = 'Player';
+    String playerInitial = 'P';
+    Color playerColor = const Color(0xFF8CAA56);
+
+    if (studentState is StudentDataLoaded) {
+      playerName = studentState.student.firstName ?? 'Player';
+      playerInitial = playerName.substring(0, 1).toUpperCase();
+      // You can get user's avatar color if available
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => BbSearchingPlayers(
+              matchType: matchType,
+              currentPlayerName: playerName,
+              currentPlayerInitial: playerInitial,
+              currentPlayerColor: playerColor,
+              invitationCode:
+                  matchType == MatchType.invitation
+                      ? room.invitationCode
+                      : null,
+            ),
+      ),
     );
   }
 }
 
-// Extracted widget for subject card with improved design
 class _SubjectCard extends StatelessWidget {
   final Subject subject;
   final VoidCallback onTap;
@@ -147,7 +275,6 @@ class _SubjectCard extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  // Subject icon with colored background
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -157,27 +284,16 @@ class _SubjectCard extends StatelessWidget {
                     child: Image.asset(subject.imgPath, width: 32, height: 32),
                   ),
                   const SizedBox(width: 16),
-
-                  // Subject details
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        BBText(
-                          data: subject.name,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleMedium?.copyWith(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
+                    child: BBText(
+                      data: subject.name,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
                     ),
                   ),
-
-                  // Arrow icon
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
@@ -193,7 +309,6 @@ class _SubjectCard extends StatelessWidget {
   }
 }
 
-// Empty state widget when no subjects are registered
 class _EmptySubjectsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -228,9 +343,7 @@ class _EmptySubjectsWidget extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue[600],
                 foregroundColor: Colors.white,
@@ -245,6 +358,249 @@ class _EmptySubjectsWidget extends StatelessWidget {
               child: const BBText(
                 data: "Go Back",
                 style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Import this for chapter selection
+class BBChapterSelectionScreen extends StatefulWidget {
+  final Subject subject;
+
+  const BBChapterSelectionScreen({super.key, required this.subject});
+
+  @override
+  _BBChapterSelectionScreenState createState() =>
+      _BBChapterSelectionScreenState();
+}
+
+class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
+  final Map<String, bool> _selectedChapters = {};
+  late List<String> _chapters;
+
+  @override
+  void initState() {
+    super.initState();
+    _chapters = _getChaptersForSubject(widget.subject.name);
+    for (var chapter in _chapters) {
+      _selectedChapters[chapter] = false;
+    }
+  }
+
+  List<String> _getChaptersForSubject(String subjectName) {
+    switch (subjectName) {
+      case 'English':
+        return [
+          'Parts of Speech',
+          'Reading Comprehension',
+          'Writing Skills',
+          'Grammar',
+          'Literature',
+        ];
+      case 'Mathematics':
+        return [
+          'Algebra',
+          'Geometry',
+          'Trigonometry',
+          'Calculus',
+          'Statistics',
+        ];
+      case 'Biology':
+        return [
+          'Cell Biology',
+          'Genetics',
+          'Human Anatomy',
+          'Ecology',
+          'Evolution',
+        ];
+      case 'Chemistry':
+        return [
+          'Atomic Structure',
+          'Chemical Bonding',
+          'Periodic Table',
+          'Organic Chemistry',
+          'Stoichiometry',
+        ];
+      case 'Physics':
+        return [
+          'Mechanics',
+          'Thermodynamics',
+          'Electromagnetism',
+          'Optics',
+          'Modern Physics',
+        ];
+      default:
+        return [];
+    }
+  }
+
+  void _startMatch(BuildContext context) {
+    final selectedChapters =
+        _selectedChapters.entries
+            .where((entry) => entry.value)
+            .map((entry) => entry.key)
+            .toList();
+
+    if (selectedChapters.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Match Type'),
+            content: const Text('Choose how you want to find an opponent'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  context.read<BattleBloc>().add(
+                    FindRandomOpponentEvent(
+                      subject: widget.subject.name,
+                      chapters: selectedChapters,
+                    ),
+                  );
+                },
+                child: const Text('Random Match'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  context.read<BattleBloc>().add(
+                    CreateBattleRoomEvent(
+                      subject: widget.subject.name,
+                      mode: BattleMode.byChapter,
+                      chapters: selectedChapters,
+                    ),
+                  );
+                },
+                child: const Text('Create Invitation'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F8F8),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: BBText(
+          data: 'Select Chapters - ${widget.subject.name}',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: BlocListener<BattleBloc, BattleState>(
+        listener: (context, state) {
+          if (state is BattleSearching || state is BattleRoomCreated) {
+            // Navigate handled in parent
+            Navigator.pop(context);
+          } else if (state is BattleError) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
+          }
+        },
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _chapters.length,
+                itemBuilder: (context, index) {
+                  final chapter = _chapters[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: BBColors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color:
+                              _selectedChapters[chapter]!
+                                  ? BBColors.primaryColor
+                                  : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                      child: CheckboxListTile(
+                        title: BBText(
+                          data: chapter,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color:
+                                _selectedChapters[chapter]!
+                                    ? BBColors.primaryColor
+                                    : Colors.black,
+                          ),
+                        ),
+                        value: _selectedChapters[chapter] ?? false,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            _selectedChapters[chapter] = value ?? false;
+                          });
+                        },
+                        checkColor: BBColors.white,
+                        activeColor: BBColors.primaryColor,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: BBColors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    offset: Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Selected: ${_selectedChapters.values.where((v) => v).length}',
+                  ),
+                  ElevatedButton(
+                    onPressed:
+                        _selectedChapters.values.contains(true)
+                            ? () => _startMatch(context)
+                            : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: BBColors.primaryColor,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const BBText(
+                      data: 'Start Match',
+                      style: TextStyle(
+                        color: BBColors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

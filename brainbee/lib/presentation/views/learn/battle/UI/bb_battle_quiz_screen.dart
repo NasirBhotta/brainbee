@@ -1,18 +1,25 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
-import 'package:brainbee/core/models/bb_question.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/utils/helper/bb_confirmation_dialog.dart';
 import 'package:brainbee/core/utils/helper/bb_result_extention.dart';
-import 'package:brainbee/core/widgets/popups/bb_confirmation_dialog.dart';
-import 'package:brainbee/core/widgets/popups/bb_result_dialog.dart';
 import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle_report_card.dart';
+import 'package:brainbee/presentation/views/learn/battle/bloc/battle_bloc.dart';
+import 'package:brainbee/presentation/views/learn/battle/models/battle_models.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class BBBattleQuizScreen extends StatefulWidget {
-  const BBBattleQuizScreen({super.key});
+  final BattleRoom room;
+  final BattleQuizData quizData;
+
+  const BBBattleQuizScreen({
+    super.key,
+    required this.room,
+    required this.quizData,
+  });
 
   @override
   State<BBBattleQuizScreen> createState() => _BBBattleQuizScreenState();
@@ -23,46 +30,18 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   int? selectedOptionIndex;
   bool isAnswerSubmitted = false;
   bool isCorrectAnswer = false;
-  int score = 0;
+  int userScore = 0;
   int opponentScore = 0;
-  bool won = false;
   int timeSpent = 0;
   List<int?> answers = [];
-  // doing this for only github submissions
   int timeRemaining = 15;
   late Timer timer;
-
-  final List<Question> questions = [
-    Question(
-      text: "What is the capital of France?",
-      options: ["London", "Berlin", "Paris", "Madrid"],
-      correctOptionIndex: 2,
-    ),
-    Question(
-      text: "Which planet is known as the Red Planet?",
-      options: ["Earth", "Mars", "Jupiter", "Venus"],
-      correctOptionIndex: 1,
-    ),
-    Question(
-      text: "What is the chemical symbol for Gold?",
-      options: ["Go", "Gl", "Au", "Ag"],
-      correctOptionIndex: 2,
-    ),
-    Question(
-      text: "What is the largest mammal on Earth?",
-      options: ["Elephant", "Blue Whale", "Giraffe", "Polar Bear"],
-      correctOptionIndex: 1,
-    ),
-    Question(
-      text: "What is the hardest natural substance on Earth?",
-      options: ["Gold", "Iron", "Diamond", "Titanium"],
-      correctOptionIndex: 2,
-    ),
-  ];
+  DateTime? questionStartTime;
 
   @override
   void initState() {
     super.initState();
+    questionStartTime = DateTime.now();
     startTimer();
   }
 
@@ -73,12 +52,12 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   }
 
   void startTimer() {
+    timeRemaining = widget.quizData.timePerQuestion;
     timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
           if (timeRemaining > 0) {
             timeRemaining--;
-            timeSpent = timeSpent + (15 - timeRemaining);
           } else {
             if (!isAnswerSubmitted) {
               submitAnswer(null);
@@ -91,39 +70,48 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
 
   void resetTimerForNextQuestion() {
     timer.cancel();
-    timeRemaining = 15;
+    questionStartTime = DateTime.now();
+    timeRemaining = widget.quizData.timePerQuestion;
     startTimer();
   }
 
   void submitAnswer(int? optionIndex) {
-    answers.add(optionIndex);
     if (isAnswerSubmitted) return;
 
     timer.cancel();
+
+    final questionTime =
+        questionStartTime != null
+            ? DateTime.now().difference(questionStartTime!).inSeconds
+            : 0;
+
+    answers.add(optionIndex);
 
     setState(() {
       selectedOptionIndex = optionIndex;
       isAnswerSubmitted = true;
 
-      final correctIndex = questions[currentQuestionIndex].correctOptionIndex;
+      final correctIndex =
+          widget.quizData.questions[currentQuestionIndex].correctOptionIndex;
       isCorrectAnswer = selectedOptionIndex == correctIndex;
 
       if (isCorrectAnswer) {
-        // int timeBonus = (timeRemaining / 15 * 50).round();
-        score += 20;
-      }
-
-      if (currentQuestionIndex < questions.length - 1) {
-        if (DateTime.now().millisecondsSinceEpoch % 2 == 0) {
-          int opponentTimeBonus =
-              ((10 + (DateTime.now().millisecondsSinceEpoch % 5)) / 15 * 50)
-                  .round();
-          opponentScore += 20;
-        }
+        userScore += 20;
       }
     });
 
-    if (currentQuestionIndex < questions.length - 1) {
+    // Submit answer to backend
+    context.read<BattleBloc>().add(
+      SubmitAnswerEvent(
+        roomId: widget.room.roomId,
+        questionIndex: currentQuestionIndex,
+        selectedOptionIndex: optionIndex,
+        timeSpent: questionTime,
+      ),
+    );
+
+    // Move to next question or finish
+    if (currentQuestionIndex < widget.quizData.questions.length - 1) {
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
           setState(() {
@@ -138,152 +126,13 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
     } else {
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
-          _showResultDialog();
+          context.read<BattleBloc>().add(
+            GetBattleResultEvent(roomId: widget.room.roomId),
+          );
         }
       });
     }
   }
-
-  void _showResultDialog() {
-    // Determine result type
-    ResultType resultType;
-    if (score > opponentScore) {
-      resultType = ResultType.win;
-    } else if (score == opponentScore) {
-      resultType = ResultType.tie;
-    } else {
-      resultType = ResultType.lose;
-    }
-
-    context.showDynamicResultDialog(
-      quizType: QuizType.battle,
-      title: "Battle Result",
-      resultType: resultType,
-      userScore: score,
-      opponentScore: opponentScore,
-      headerIcon: const Icon(Icons.emoji_events, color: Colors.white, size: 40),
-      onActionPressed: () {
-        Navigator.pop(context);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) => BBQuizReportCardScreen(
-                  quizType: QuizType.battle,
-                  score: score,
-                  opponentScore: opponentScore,
-                  won: score > opponentScore,
-                  questions: questions,
-                  userAnswers: answers,
-                  timeSpent: timeSpent,
-                ),
-          ),
-        );
-      },
-      onCrossPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) => BBQuizReportCardScreen(
-                  quizType: QuizType.battle,
-                  score: score,
-                  opponentScore: opponentScore,
-                  won: score > opponentScore,
-                  questions: questions,
-                  userAnswers: answers,
-                  timeSpent: timeSpent,
-                ),
-          ),
-        );
-      },
-      onPressedOutside: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) => BBQuizReportCardScreen(
-                  quizType: QuizType.battle,
-                  score: score,
-                  opponentScore: opponentScore,
-                  won: score > opponentScore,
-                  questions: questions,
-                  userAnswers: answers,
-                  timeSpent: timeSpent,
-                ),
-          ),
-        );
-      },
-      inAppQuestions: [],
-    );
-  }
-
-  // Widget _buildEnhancedScoreCard(String label, int scoreValue, Color color) {
-  //   return Column(
-  //     mainAxisSize: MainAxisSize.min,
-  //     children: [
-  //       BBText(
-  //         data: label,
-  //         style: TextStyle(
-  //           fontSize: 14,
-  //           fontWeight: FontWeight.w500,
-  //           color: Colors.grey.shade600,
-  //         ),
-  //       ),
-  //       const SizedBox(height: 8),
-  //       Container(
-  //         width: 60,
-  //         height: 60,
-  //         decoration: BoxDecoration(
-  //           shape: BoxShape.circle,
-  //           color: color.withValues(alpha: 0.1),
-  //           border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
-  //         ),
-  //         child: Center(
-  //           child: BBText(
-  //             data: scoreValue.toString(),
-  //             style: TextStyle(
-  //               fontSize: 24,
-  //               fontWeight: FontWeight.bold,
-  //               color: color,
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-
-  // Widget _buildScoreCard(String label, int scoreValue, Color color) {
-  //   return Container(
-  //     padding: const EdgeInsets.all(10),
-  //     decoration: BoxDecoration(
-  //       color: color.withValues(alpha: 0.2),
-  //       borderRadius: BorderRadius.circular(15),
-  //       border: Border.all(color: color, width: 2),
-  //     ),
-  //     child: Column(
-  //       children: [
-  //         BBText(
-  //           data: label,
-  //           style: context.textStyle.labelMedium?.copyWith(
-  //             fontSize: 16,
-  //             color: Colors.white70,
-  //           ),
-  //         ),
-  //         const SizedBox(height: 5),
-  //         BBText(
-  //           data: scoreValue.toString(),
-  //           style: context.textStyle.labelMedium?.copyWith(
-  //             fontSize: 24,
-  //             fontWeight: FontWeight.bold,
-  //             color: Colors.white,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -297,28 +146,60 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            showQuitDialog(context);
-          },
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => _showQuitDialog(),
         ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildProgressAndScores(),
-              const SizedBox(height: 16),
-              _buildTimerBar(),
-              const SizedBox(height: 24),
-              _buildQuestion(),
-              const SizedBox(height: 24),
-              _buildOptions(),
-            ],
+      body: BlocListener<BattleBloc, BattleState>(
+        listener: (context, state) {
+          if (state is BattleInProgress) {
+            // Update opponent score when received
+            setState(() {
+              opponentScore = state.opponentScore;
+            });
+          } else if (state is BattleCompleted) {
+            _navigateToResults(state.result);
+          } else if (state is BattleError) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
+          }
+        },
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildProgressAndScores(),
+                const SizedBox(height: 16),
+                _buildTimerBar(),
+                const SizedBox(height: 24),
+                _buildQuestion(),
+                const SizedBox(height: 24),
+                _buildOptions(),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _navigateToResults(BattleResult result) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => BBQuizReportCardScreen(
+              quizType: QuizType.battle,
+              score: userScore,
+              opponentScore: opponentScore,
+              won: userScore > opponentScore,
+              questions: widget.quizData.questions,
+              userAnswers: answers,
+              timeSpent: timeSpent,
+            ),
       ),
     );
   }
@@ -334,7 +215,8 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
             borderRadius: BorderRadius.circular(20),
           ),
           child: BBText(
-            data: "Question ${currentQuestionIndex + 1}/${questions.length}",
+            data:
+                "Question ${currentQuestionIndex + 1}/${widget.quizData.questions.length}",
             style: context.textStyle.labelMedium?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w600,
@@ -342,17 +224,15 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
             ),
           ),
         ),
-
         Row(
           children: [
-            _buildPlayerScore("You", score, Colors.blue),
+            _buildPlayerScore("You", userScore, Colors.blue),
             SizedBox(width: context.screenWidth * 0.08),
             Container(
               width: 28,
               height: 28,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-
                 color: BBColors.primaryColor,
               ),
               child: Center(
@@ -387,7 +267,6 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         ),
         BBText(
           data: scoreValue.toString(),
-
           style: context.textStyle.labelMedium?.copyWith(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -399,7 +278,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   }
 
   Widget _buildTimerBar() {
-    double progress = timeRemaining / 15;
+    double progress = timeRemaining / widget.quizData.timePerQuestion;
     Color timerColor =
         progress > 0.5
             ? Colors.green
@@ -459,7 +338,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         ],
       ),
       child: BBText(
-        data: questions[currentQuestionIndex].text,
+        data: widget.quizData.questions[currentQuestionIndex].text,
         style: context.textStyle.labelMedium?.copyWith(
           fontSize: 16,
           fontWeight: FontWeight.w600,
@@ -473,16 +352,25 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   Widget _buildOptions() {
     return Expanded(
       child: ListView.builder(
-        itemCount: questions[currentQuestionIndex].options!.length,
+        itemCount:
+            widget.quizData.questions[currentQuestionIndex].options!.length,
         itemBuilder: (context, index) {
           final isSelected = selectedOptionIndex == index;
           final isCorrect =
               isAnswerSubmitted &&
-              index == questions[currentQuestionIndex].correctOptionIndex;
+              index ==
+                  widget
+                      .quizData
+                      .questions[currentQuestionIndex]
+                      .correctOptionIndex;
           final isWrong =
               isAnswerSubmitted &&
               isSelected &&
-              index != questions[currentQuestionIndex].correctOptionIndex;
+              index !=
+                  widget
+                      .quizData
+                      .questions[currentQuestionIndex]
+                      .correctOptionIndex;
 
           Color backgroundColor =
               isSelected
@@ -554,15 +442,14 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
                   const SizedBox(width: 15),
                   Expanded(
                     child: BBText(
-                      data: questions[currentQuestionIndex].options![index],
+                      data:
+                          widget
+                              .quizData
+                              .questions[currentQuestionIndex]
+                              .options![index],
                       style: context.textStyle.labelMedium?.copyWith(
                         fontSize: 14,
-                        color:
-                            isAnswerSubmitted
-                                ? (isCorrect || (isSelected && isWrong)
-                                    ? Colors.black
-                                    : Colors.black87)
-                                : Colors.black87,
+                        color: Colors.black87,
                       ),
                     ),
                   ),
@@ -586,10 +473,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
     );
   }
 
-  // Usage Examples:
-
-  // Basic usage with extension method:
-  void showQuitDialog(BuildContext context) {
+  void _showQuitDialog() {
     context.showDynamicQuitDialog(
       quizType: QuizType.battle,
       title: "Quit Battle?",
@@ -597,144 +481,12 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
       confirmButtonText: "Quit",
       cancelButtonText: "Cancel",
       onConfirm: () {
-        // print(score);
-        // print(opponentScore);
-        // print(questions);
-        // print(answers);
-        // print(timeSpent);
-        // print(score > opponentScore);
-
-        Navigator.pop(context);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) => BBQuizReportCardScreen(
-                  quizType: QuizType.battle,
-                  score: score,
-                  opponentScore: opponentScore,
-                  won: score > opponentScore,
-                  questions: questions,
-                  userAnswers: answers,
-                  timeSpent: timeSpent,
-                ),
-          ),
+        context.read<BattleBloc>().add(
+          LeaveBattleEvent(roomId: widget.room.roomId),
         );
-
-        // Navigate back to previous screen
+        Navigator.pop(context); // Close dialog
+        Navigator.pop(context); // Return to previous screen
       },
     );
   }
-
-  //   void showQuitDialouge() {
-  //     showGeneralDialog(
-  //       context: context,
-  //       barrierDismissible: true,
-  //       barrierLabel: "quit_battle",
-  //       pageBuilder: (_, __, ___) => const SizedBox.shrink(),
-  //       transitionBuilder: (context, animation, secondaryAnimation, child) {
-  //         return SlideTransition(
-  //           position: Tween<Offset>(
-  //             begin: const Offset(0, 0.2),
-  //             end: const Offset(0, 0),
-  //           ).animate(
-  //             CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-  //           ),
-  //           child: Material(
-  //             type: MaterialType.transparency,
-  //             child: Stack(
-  //               children: [
-  //                 Center(
-  //                   child: Container(
-  //                     margin: const EdgeInsets.symmetric(horizontal: 20),
-  //                     padding: const EdgeInsets.symmetric(
-  //                       horizontal: 10,
-  //                       vertical: 10,
-  //                     ),
-  //                     decoration: BoxDecoration(
-  //                       color: BBColors.lightGrayBG,
-  //                       borderRadius: BorderRadius.circular(10),
-  //                     ),
-  //                     child: Column(
-  //                       mainAxisSize: MainAxisSize.min,
-  //                       crossAxisAlignment: CrossAxisAlignment.center,
-  //                       children: [
-  //                         Center(
-  //                           child: BBText(
-  //                             data: "Quit Battle?",
-  //                             style: Theme.of(context).textTheme.titleLarge
-  //                                 ?.copyWith(fontWeight: FontWeight.bold),
-  //                           ),
-  //                         ),
-  //                         const Divider(color: BBColors.borderGray),
-  //                         Text(
-  //                           "Are you sure you want to quit? You'll lose this battle.",
-  //                           style: Theme.of(context).textTheme.bodyMedium,
-  //                           textAlign: TextAlign.center,
-  //                         ),
-  //                         const SizedBox(height: 20),
-  //                         Row(
-  //                           children: [
-  //                             const Expanded(child: SizedBox.shrink()),
-  //                             buildStudyModeButton(
-  //                               context,
-  //                               label: "Cancel",
-  //                               onTap: () {
-  //                                 Navigator.pop(context);
-  //                               },
-  //                             ),
-  //                             const SizedBox(width: 20),
-  //                             buildStudyModeButton(
-  //                               context,
-  //                               label: "Quit",
-  //                               onTap: () {
-  //                                 Navigator.pop(context);
-  //                                 Navigator.pop(context);
-  //                               },
-  //                             ),
-  //                             const Expanded(child: SizedBox.shrink()),
-  //                           ],
-  //                         ),
-  //                       ],
-  //                     ),
-  //                   ),
-  //                 ),
-  //                 Align(
-  //                   alignment: const Alignment(0.95, -0.145),
-  //                   child: InkWell(
-  //                     onTap: () {
-  //                       Navigator.pop(context);
-  //                     },
-  //                     child: Container(
-  //                       padding: const EdgeInsets.symmetric(
-  //                         horizontal: 5,
-  //                         vertical: 5,
-  //                       ),
-  //                       decoration: BoxDecoration(
-  //                         color: BBColors.lightGrayBG,
-  //                         borderRadius: BorderRadius.circular(2),
-  //                         boxShadow: const [
-  //                           BoxShadow(
-  //                             color: BBColors.disabledText,
-  //                             spreadRadius: 0.5,
-  //                             blurRadius: 10,
-  //                           ),
-  //                         ],
-  //                       ),
-  //                       child: const Icon(
-  //                         Icons.close,
-  //                         size: 20,
-  //                         color: BBColors.primaryColor,
-  //                       ),
-  //                     ),
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         );
-  //       },
-  //     );
-  //   }
-  // }
 }

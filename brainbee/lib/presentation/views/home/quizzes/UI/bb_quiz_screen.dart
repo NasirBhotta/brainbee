@@ -5,7 +5,7 @@ import 'package:brainbee/core/utils/helper/bb_confirmation_dialog.dart';
 import 'package:brainbee/core/utils/helper/bb_result_extention.dart';
 import 'package:brainbee/presentation/views/home/quizzes/bloc/quiz_bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/models/quiz_data_model.dart';
-import 'package:brainbee/presentation/views/learn/battle/bb_battle_report_card.dart';
+import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle_report_card.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 

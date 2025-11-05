@@ -2,7 +2,7 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 
 import 'package:brainbee/presentation/views/learn/Books/bb_select_book.dart';
-import 'package:brainbee/presentation/views/learn/battle/bb_battle.dart';
+import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle.dart';
 import 'package:brainbee/presentation/views/extras/achievements/Certificates/bb_certificates.dart';
 import 'package:brainbee/presentation/views/extras/Rewards/bb_rewards.dart';
 import 'package:brainbee/presentation/views/extras/achievements/badges/bb_badges.dart';
