@@ -8,7 +8,15 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 
-class BBBookSelectionForBattle extends StatelessWidget {
+class BBBookSelectionForBattle extends StatefulWidget {
+  const BBBookSelectionForBattle({super.key});
+
+  @override
+  State<BBBookSelectionForBattle> createState() =>
+      _BBBookSelectionForBattleState();
+}
+
+class _BBBookSelectionForBattleState extends State<BBBookSelectionForBattle> {
   static final List<Subject> _allSubjects = [
     Subject(
       name: 'English',
@@ -33,7 +41,7 @@ class BBBookSelectionForBattle extends StatelessWidget {
     ),
   ];
 
-  const BBBookSelectionForBattle({super.key});
+  bool _hasNavigated = false;
 
   List<Subject> _getRegisteredSubjects(List<String> registeredSubjects) {
     return _allSubjects.where((subject) {
@@ -60,12 +68,22 @@ class BBBookSelectionForBattle extends StatelessWidget {
       ),
       body: BlocListener<BattleBloc, BattleState>(
         listener: (context, state) {
-          if (state is BattleSearching || state is BattleRoomCreated) {
+          print("BattleBloc State: $state");
+
+          // Only navigate once
+          if ((state is BattleSearching || state is BattleRoomCreated) &&
+              !_hasNavigated) {
+            _hasNavigated = true;
+
+            print("comming to the navigation part");
             _navigateToSearchScreen(context, state);
           } else if (state is BattleError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
         },
         child: BlocBuilder<StudentBloc, StudentState>(
@@ -179,6 +197,7 @@ class BBBookSelectionForBattle extends StatelessWidget {
     Subject subject,
     List<String>? chapters,
   ) {
+    _hasNavigated = false; // Reset before starting
     context.read<BattleBloc>().add(
       FindRandomOpponentEvent(subject: subject.name, chapters: chapters),
     );
@@ -189,6 +208,7 @@ class BBBookSelectionForBattle extends StatelessWidget {
     Subject subject,
     List<String>? chapters,
   ) {
+    _hasNavigated = false; // Reset before starting
     context.read<BattleBloc>().add(
       CreateBattleRoomEvent(
         subject: subject.name,
@@ -220,8 +240,10 @@ class BBBookSelectionForBattle extends StatelessWidget {
 
     if (studentState is StudentDataLoaded) {
       playerName = studentState.student.firstName ?? 'Player';
-      playerInitial = playerName.substring(0, 1).toUpperCase();
-      // You can get user's avatar color if available
+      playerInitial =
+          playerName.isNotEmpty
+              ? playerName.substring(0, 1).toUpperCase()
+              : 'P';
     }
 
     Navigator.push(
@@ -237,9 +259,13 @@ class BBBookSelectionForBattle extends StatelessWidget {
                   matchType == MatchType.invitation
                       ? room.invitationCode
                       : null,
+              roomId: room.roomId,
             ),
       ),
-    );
+    ).then((_) {
+      // Reset navigation flag when returning from search screen
+      _hasNavigated = false;
+    });
   }
 }
 
@@ -367,7 +393,7 @@ class _EmptySubjectsWidget extends StatelessWidget {
   }
 }
 
-// Import this for chapter selection
+// Chapter Selection Screen
 class BBChapterSelectionScreen extends StatefulWidget {
   final Subject subject;
 
@@ -381,6 +407,7 @@ class BBChapterSelectionScreen extends StatefulWidget {
 class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
   final Map<String, bool> _selectedChapters = {};
   late List<String> _chapters;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
@@ -457,6 +484,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
               TextButton(
                 onPressed: () {
                   Navigator.pop(dialogContext);
+                  _hasNavigated = false;
                   context.read<BattleBloc>().add(
                     FindRandomOpponentEvent(
                       subject: widget.subject.name,
@@ -469,6 +497,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
               TextButton(
                 onPressed: () {
                   Navigator.pop(dialogContext);
+                  _hasNavigated = false;
                   context.read<BattleBloc>().add(
                     CreateBattleRoomEvent(
                       subject: widget.subject.name,
@@ -503,13 +532,18 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
       ),
       body: BlocListener<BattleBloc, BattleState>(
         listener: (context, state) {
-          if (state is BattleSearching || state is BattleRoomCreated) {
-            // Navigate handled in parent
+          if ((state is BattleSearching || state is BattleRoomCreated) &&
+              !_hasNavigated) {
+            _hasNavigated = true;
+            // Pop this screen and let parent handle navigation
             Navigator.pop(context);
           } else if (state is BattleError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
         },
         child: Column(

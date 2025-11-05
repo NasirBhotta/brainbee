@@ -41,6 +41,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (result.success && result.user != null && result.token != null) {
         _user = result.user;
         emit(NavigateToDashboardActionState());
+
         emit(AuthAuthenticated(user: result.user!, token: result.token!));
       } else {
         emit(AuthFailureState(message: result.message ?? "Login failed"));

@@ -1,23 +1,20 @@
-import 'dart:async';
-import 'package:brainbee/core/constants/bb_colors.dart';
-import 'package:brainbee/core/utils/bb_screen_extension.dart';
-import 'package:brainbee/core/utils/bb_text.dart';
-import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
-import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle_quiz_screen.dart';
-import 'package:brainbee/presentation/views/learn/battle/bloc/battle_bloc.dart';
-import 'package:brainbee/presentation/views/learn/battle/models/battle_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:brainbee/presentation/views/learn/battle/bloc/battle_bloc.dart';
+import 'package:brainbee/presentation/views/learn/battle/models/battle_models.dart';
+import 'package:brainbee/core/constants/bb_colors.dart';
+import 'package:brainbee/core/utils/bb_text.dart';
 
 enum MatchType { random, invitation }
 
 class BbSearchingPlayers extends StatefulWidget {
   final MatchType matchType;
-  final String? invitationCode;
   final String currentPlayerName;
   final String currentPlayerInitial;
   final Color currentPlayerColor;
+  final String? invitationCode;
+  final String roomId;
 
   const BbSearchingPlayers({
     super.key,
@@ -25,6 +22,7 @@ class BbSearchingPlayers extends StatefulWidget {
     required this.currentPlayerName,
     required this.currentPlayerInitial,
     required this.currentPlayerColor,
+    required this.roomId,
     this.invitationCode,
   });
 
@@ -32,331 +30,429 @@ class BbSearchingPlayers extends StatefulWidget {
   State<BbSearchingPlayers> createState() => _BbSearchingPlayersState();
 }
 
-class _BbSearchingPlayersState extends State<BbSearchingPlayers> {
-  int countdown = 15;
-  Timer? _timer;
-  bool isMusic = false;
-  BattleRoom? currentRoom;
-  bool isOpponentFound = false;
-  String? roomId;
+class _BbSearchingPlayersState extends State<BbSearchingPlayers>
+    with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late AnimationController _rotationController;
+  bool _isConnecting = true;
+  bool _isConnected = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeFromBlocState();
-  }
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
 
-  void _initializeFromBlocState() {
-    final state = context.read<BattleBloc>().state;
-    if (state is BattleRoomCreated ||
-        state is BattleSearching ||
-        state is BattleOpponentFound) {
-      final room =
-          state is BattleRoomCreated
-              ? state.room
-              : state is BattleSearching
-              ? state.room
-              : (state as BattleOpponentFound).room;
+    _rotationController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
 
-      setState(() {
-        currentRoom = room;
-        roomId = room.roomId;
-        isOpponentFound = room.opponent != null;
-      });
-
-      if (isOpponentFound) {
-        _startCountdown();
-      }
-    }
-  }
-
-  void _startCountdown() {
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    // Simulate connection delay and update UI
+    Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         setState(() {
-          if (countdown > 0) {
-            countdown--;
-          } else {
-            _timer?.cancel();
-          }
+          _isConnecting = false;
+          _isConnected = true;
         });
       }
     });
   }
 
-  void _copyInvitationCode() async {
-    if (currentRoom?.invitationCode != null) {
-      await Clipboard.setData(ClipboardData(text: currentRoom!.invitationCode));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invitation code copied to clipboard!'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-  }
-
-  void _handleReady() {
-    if (roomId != null) {
-      context.read<BattleBloc>().add(MarkReadyEvent(roomId: roomId!));
-    }
-  }
-
-  void _handleCancel() {
-    if (roomId != null) {
-      context.read<BattleBloc>().add(CancelBattleSearchEvent(roomId: roomId!));
-    }
-    Navigator.pop(context);
-  }
-
-  String _getWaitingText() {
-    if (widget.matchType == MatchType.invitation) {
-      if (widget.invitationCode != null) {
-        return 'Joining match...';
-      } else if (!isOpponentFound) {
-        return 'Waiting for player to join';
-      } else {
-        return 'Player found! Starting match';
-      }
-    }
-    return isOpponentFound ? 'Opponent found!' : 'Searching for opponent...';
-  }
-
   @override
   void dispose() {
-    _timer?.cancel();
+    _pulseController.dispose();
+    _rotationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: BBText(
-          data:
-              widget.matchType == MatchType.invitation
-                  ? "Private Battle"
-                  : "Random Battle",
-          style: context.textStyle.titleMedium,
+    return BlocListener<BattleBloc, BattleState>(
+      listener: (context, state) {
+        if (state is BattleOpponentFound) {
+          // Navigate to opponent found screen
+          _navigateToOpponentFound(context, state.room);
+        } else if (state is BattleReady) {
+          // Navigate to ready screen
+          _navigateToReadyScreen(context, state.room);
+        } else if (state is BattleInProgress) {
+          // Navigate to battle screen
+          _navigateToBattleScreen(context, state);
+        } else if (state is BattleCancelled) {
+          // Go back to previous screen
+          Navigator.pop(context);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
+        } else if (state is BattleError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F8F8),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: BBText(
+            data:
+                widget.matchType == MatchType.random
+                    ? 'Finding Opponent'
+                    : 'Waiting for Opponent',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: Colors.black),
+            onPressed: () => _handleCancel(context),
+          ),
         ),
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: _handleCancel,
-          icon: const Icon(Icons.arrow_back),
-        ),
-        backgroundColor: BBColors.white,
-      ),
-      body: BlocListener<BattleBloc, BattleState>(
-        listener: (context, state) {
-          if (state is BattleOpponentFound) {
-            setState(() {
-              currentRoom = state.room;
-              isOpponentFound = true;
-            });
-            _startCountdown();
-          } else if (state is BattleReady) {
-            // Both players ready, waiting for battle to start
-            if (state.isHostReady && state.isOpponentReady) {
-              // Auto-start battle or wait for server confirmation
-              if (roomId != null) {
-                context.read<BattleBloc>().add(
-                  StartBattleEvent(roomId: roomId!),
-                );
-              }
+        body: BlocBuilder<BattleBloc, BattleState>(
+          builder: (context, state) {
+            String? roomId;
+            if (state is BattleSearching) {
+              roomId = state.room.roomId;
+            } else if (state is BattleRoomCreated) {
+              roomId = state.room.roomId;
             }
-          } else if (state is BattleInProgress) {
-            // Navigate to quiz screen
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) => BBBattleQuizScreen(
-                      room: state.room,
-                      quizData: state.quizData,
+
+            return SafeArea(
+              child: Column(
+                children: [
+                  // Connection Status Indicator
+                  if (_isConnecting)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      color: Colors.orange[100],
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.orange[700]!,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Connecting to server...',
+                            style: TextStyle(
+                              color: Colors.orange[700],
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                  if (_isConnected && !_isConnecting)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      color: Colors.green[100],
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: Colors.green[700],
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Connected',
+                            style: TextStyle(
+                              color: Colors.green[700],
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Searching Animation
+                          _buildSearchingAnimation(),
+                          const SizedBox(height: 40),
+
+                          // Current Player Card
+                          _buildPlayerCard(
+                            name: widget.currentPlayerName,
+                            initial: widget.currentPlayerInitial,
+                            color: widget.currentPlayerColor,
+                            isCurrentPlayer: true,
+                          ),
+                          const SizedBox(height: 24),
+
+                          // VS Text
+                          const BBText(
+                            data: 'VS',
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: BBColors.primaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Opponent Card (searching)
+                          _buildPlayerCard(
+                            name: 'Searching...',
+                            initial: '?',
+                            color: Colors.grey,
+                            isCurrentPlayer: false,
+                          ),
+                          const SizedBox(height: 40),
+
+                          // Status Message
+                          _buildStatusMessage(),
+
+                          // Invitation Code (if applicable)
+                          if (widget.matchType == MatchType.invitation &&
+                              widget.invitationCode != null)
+                            _buildInvitationCodeSection(),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Cancel Button
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed:
+                            _isConnected ? () => _handleCancel(context) : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red[400],
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          disabledBackgroundColor: Colors.grey[300],
+                        ),
+                        child: BBText(
+                          data: _isConnecting ? 'Connecting...' : 'Cancel',
+                          style: TextStyle(
+                            color:
+                                _isConnected ? Colors.white : Colors.grey[600],
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
-          } else if (state is BattleError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
-          } else if (state is BattleCancelled) {
-            Navigator.pop(context);
-          }
-        },
-        child: _buildBody(),
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    return Container(
-      margin: const EdgeInsets.all(12),
-      height: context.screenHeight * 0.7,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        gradient: const LinearGradient(
-          colors: [BBColors.primaryColor, BBColors.secondaryColor],
-          begin: Alignment(0, 1),
-          end: Alignment(0, -1),
+          },
         ),
       ),
-      child: Column(
-        children: [
-          _buildHeader(),
-          SizedBox(height: context.screenHeight * 0.03),
-          if (widget.matchType == MatchType.invitation &&
-              currentRoom?.invitationCode != null &&
-              !isOpponentFound)
-            _buildInvitationCodeSection(),
-          SizedBox(height: context.screenHeight * 0.03),
-          _buildWaitingSection(),
-          SizedBox(height: context.screenHeight * 0.03),
-          _buildPlayersSection(),
-          const SizedBox(height: 30),
-          _buildActionButtons(),
-        ],
-      ),
     );
   }
 
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Container(
-          padding: const EdgeInsets.only(
-            right: 20,
-            left: 10,
-            top: 10,
-            bottom: 15,
+  Widget _buildSearchingAnimation() {
+    return RotationTransition(
+      turns: _rotationController,
+      child: Container(
+        width: 120,
+        height: 120,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: BBColors.primaryColor.withOpacity(0.3),
+            width: 3,
           ),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.8),
-            borderRadius: const BorderRadius.only(
-              bottomRight: Radius.circular(12),
+        ),
+        child: Center(
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+              CurvedAnimation(
+                parent: _pulseController,
+                curve: Curves.easeInOut,
+              ),
+            ),
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: BBColors.primaryColor.withOpacity(0.1),
+              ),
+              child: Icon(Icons.search, size: 40, color: BBColors.primaryColor),
             ),
           ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.menu_book, color: Colors.blue[800], size: 24),
-              ),
-              const SizedBox(height: 8),
-              BBText(
-                data: currentRoom?.subject ?? 'Subject',
-                style: context.textStyle.titleSmall?.copyWith(
-                  color: BBColors.bodyText,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
         ),
-        Container(
-          margin: const EdgeInsets.only(right: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: IconButton(
-            icon:
-                isMusic
-                    ? const Icon(Icons.volume_up)
-                    : const Icon(Icons.volume_off_outlined),
-            color: Colors.grey,
-            onPressed: () {
-              setState(() {
-                isMusic = !isMusic;
-              });
-            },
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildInvitationCodeSection() {
+  Widget _buildPlayerCard({
+    required String name,
+    required String initial,
+    required Color color,
+    required bool isCurrentPlayer,
+  }) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isCurrentPlayer ? BBColors.primaryColor : Colors.grey[300]!,
+          width: 2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          BBText(
-            data: 'Invitation Code',
-            style: context.textStyle.titleMedium?.copyWith(
-              color: BBColors.bodyText,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          BBText(
-            data: 'Share this code with your friend',
-            style: context.textStyle.bodySmall?.copyWith(
-              color: BBColors.bodyText.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: BBColors.primaryColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: BBColors.primaryColor.withValues(alpha: 0.2),
-                width: 1,
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: color.withOpacity(0.2),
+            child: BBText(
+              data: initial,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
               ),
             ),
-            child: Row(
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: BBText(
-                    data: currentRoom!.invitationCode,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.5,
-                      color: BBColors.primaryColor,
-                    ),
-                    textAlign: TextAlign.center,
+                BBText(
+                  data: name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                BBText(
+                  data: isCurrentPlayer ? 'You' : 'Opponent',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+          if (!isCurrentPlayer)
+            FadeTransition(
+              opacity: _pulseController,
+              child: const Icon(Icons.more_horiz, color: Colors.grey, size: 32),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusMessage() {
+    String message;
+    if (_isConnecting) {
+      message = 'Establishing connection...';
+    } else if (widget.matchType == MatchType.random) {
+      message = 'Searching for an opponent...';
+    } else {
+      message = 'Share the code below with your friend';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: BBColors.primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!_isConnecting)
+            Icon(
+              widget.matchType == MatchType.random ? Icons.search : Icons.share,
+              size: 20,
+              color: BBColors.primaryColor,
+            ),
+          if (!_isConnecting) const SizedBox(width: 8),
+          Flexible(
+            child: BBText(
+              data: message,
+              style: const TextStyle(
+                fontSize: 14,
+                color: BBColors.primaryColor,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvitationCodeSection() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Column(
+        children: [
+          const BBText(
+            data: 'Invitation Code',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: BBColors.primaryColor, width: 2),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                BBText(
+                  data: widget.invitationCode!,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                    color: BBColors.primaryColor,
                   ),
                 ),
                 const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: _copyInvitationCode,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: BBColors.primaryColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.copy_rounded,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.copy, color: BBColors.primaryColor),
+                  onPressed: () => _copyInvitationCode(context),
+                  tooltip: 'Copy code',
                 ),
               ],
             ),
@@ -366,203 +462,75 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers> {
     );
   }
 
-  Widget _buildWaitingSection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        BBText(
-          data: _getWaitingText(),
-          style: context.textStyle.bodyLarge?.copyWith(
-            color: BBColors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        if (isOpponentFound) ...[
-          const SizedBox(width: 12),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            child: Center(
-              child: Text(
-                '$countdown',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ] else
-          const SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(
-              color: Colors.white,
-              strokeWidth: 2,
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildPlayersSection() {
-    final opponent = currentRoom?.opponent;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildPlayer(
-          widget.currentPlayerInitial,
-          widget.currentPlayerColor,
-          widget.currentPlayerName,
-        ),
-        Container(
-          width: 60,
-          height: 60,
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.5),
-            shape: BoxShape.circle,
-          ),
-          child: const Center(
-            child: BBText(
-              data: 'VS',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        _buildPlayer(
-          opponent?.avatarInitial ?? '?',
-          opponent != null
-              ? Color(int.parse(opponent.avatarColor.replaceFirst('#', '0xFF')))
-              : Colors.grey,
-          opponent?.username ?? 'Waiting...',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButtons() {
-    final state = context.watch<BattleBloc>().state;
-    final bool canStart =
-        state is BattleReady &&
-        state.isHostReady &&
-        state.isOpponentReady &&
-        countdown == 0;
-
-    return Padding(
-      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _handleCancel,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEF6A6A),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                elevation: 0,
-              ),
-              child: const BBText(
-                data: 'Cancel',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              onPressed:
-                  isOpponentFound && countdown == 0 ? _handleReady : null,
-              style: ButtonStyle(
-                backgroundColor: WidgetStateProperty.resolveWith<Color>((
-                  states,
-                ) {
-                  if (states.contains(WidgetState.disabled)) {
-                    return Colors.grey.withValues(alpha: 0.2);
-                  }
-                  return BBColors.primaryBlue;
-                }),
-                foregroundColor: WidgetStateProperty.all<Color>(Colors.white),
-                padding: WidgetStateProperty.all<EdgeInsets>(
-                  const EdgeInsets.symmetric(vertical: 16),
-                ),
-                shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                elevation: WidgetStateProperty.all(0),
-              ),
-              child: BBText(
-                data: _getReadyButtonText(state),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
+  void _copyInvitationCode(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: widget.invitationCode!));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Invitation code copied!'),
+        duration: Duration(seconds: 2),
       ),
     );
   }
 
-  String _getReadyButtonText(BattleState state) {
-    if (!isOpponentFound) {
-      return 'Waiting...';
+  void _handleCancel(BuildContext context) {
+    final state = context.read<BattleBloc>().state;
+    String? roomId;
+
+    if (state is BattleSearching) {
+      roomId = state.room.roomId;
+    } else if (state is BattleRoomCreated) {
+      roomId = state.room.roomId;
     }
-    if (countdown > 0) {
-      return 'Ready (00:${countdown.toString().padLeft(2, '0')})';
+
+    if (roomId != null) {
+      showDialog(
+        context: context,
+        builder:
+            (dialogContext) => AlertDialog(
+              title: const Text('Cancel Match?'),
+              content: const Text(
+                'Are you sure you want to cancel this match?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('No'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    context.read<BattleBloc>().add(
+                      CancelBattleSearchEvent(roomId: roomId!),
+                    );
+                  },
+                  child: const Text(
+                    'Yes, Cancel',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              ],
+            ),
+      );
+    } else {
+      Navigator.pop(context);
     }
-    if (state is BattleReady) {
-      if (state.isHostReady && state.isOpponentReady) {
-        return 'Starting...';
-      }
-      return state.isHostReady ? 'Waiting for opponent...' : 'Ready';
-    }
-    return 'Ready';
   }
 
-  Widget _buildPlayer(String firstLetter, Color color, String fullName) {
-    return Column(
-      children: [
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          child: Center(
-            child: BBText(
-              data: firstLetter,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        BBText(
-          data: '@$fullName',
-          style: const TextStyle(color: Colors.black54, fontSize: 14),
-        ),
-      ],
-    );
+  void _navigateToOpponentFound(BuildContext context, BattleRoom room) {
+    // Navigate to opponent found screen
+    // TODO: Implement navigation to opponent found screen
+    print('Opponent found: ${room.opponent}');
+  }
+
+  void _navigateToReadyScreen(BuildContext context, BattleRoom room) {
+    // Navigate to ready screen
+    // TODO: Implement navigation to ready screen
+    print('Both players ready');
+  }
+
+  void _navigateToBattleScreen(BuildContext context, BattleInProgress state) {
+    // Navigate to battle screen
+    // TODO: Implement navigation to battle screen
+    print('Battle started!');
   }
 }

@@ -40,8 +40,9 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
       );
 
       // Connect to WebSocket for real-time updates
-      _connectToRoom(room.roomId);
+      await _connectToRoom(room.roomId);
 
+      print("it is comming here");
       if (event.mode == BattleMode.random) {
         emit(BattleSearching(room: room));
       } else {
@@ -80,7 +81,7 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         chapters: event.chapters,
       );
 
-      _connectToRoom(room.roomId);
+      await _connectToRoom(room.roomId);
       emit(BattleSearching(room: room));
     } catch (e) {
       emit(BattleError(message: e.toString()));
@@ -293,7 +294,7 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
     }
   }
 
-  void _connectToRoom(String roomId) {
+  Future<void> _connectToRoom(String roomId) async {
     repository.connectToRoom(roomId);
     _roomUpdatesSubscription = repository.getRoomUpdates().listen(
       (update) {

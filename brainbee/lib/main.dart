@@ -1,4 +1,5 @@
 import 'package:brainbee/core/theme/bb_theme.dart';
+import 'package:brainbee/core/utils/helper/bb_token.dart';
 import 'package:brainbee/presentation/splashscreen/splash_screen.dart';
 import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
 import 'package:brainbee/presentation/views/bot/bloc/bot_bloc.dart';
@@ -13,6 +14,9 @@ import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/bloc/quiz_bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/repositories/quiz_repository_impl.dart';
 import 'package:brainbee/presentation/views/home/quizzes/services/quiz_api_service.dart';
+import 'package:brainbee/presentation/views/learn/battle/bloc/battle_bloc.dart';
+import 'package:brainbee/presentation/views/learn/battle/repository/battle_repository.dart';
+import 'package:brainbee/presentation/views/learn/battle/services/battle_api_service.dart';
 import 'package:brainbee/presentation/views/learn/bloc/learn_bloc.dart';
 import 'package:brainbee/presentation/views/learn/repository/flashcard_repository_impl.dart';
 import 'package:brainbee/presentation/views/learn/services/flashcard_api_service.dart';
@@ -88,6 +92,20 @@ void main(List<String> args) async {
                   apiService: FlashCardContentApiService(),
                 ),
               ),
+        ),
+
+        BlocProvider(
+          create:
+              (context) => BattleBloc(
+                repository: BattleRepositoryImpl(
+                  apiService: BattleApiService(
+                    baseUrl: "http://10.0.2.2:5000",
+                    wsUrl: "ws://10.0.2.2:5000",
+                    getToken: getTokenAndUser,
+                  ),
+                ),
+              ),
+          child: Container(),
         ),
       ],
       child: const BrainBeeApp(),

@@ -1,16 +1,17 @@
 // lib/presentation/views/learn/battle/services/battle_api_service.dart
 
 import 'dart:convert';
+import 'package:brainbee/core/models/token_user.dart';
 import 'package:http/http.dart' as http;
-import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:web_socket_channel/io.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class BattleApiService {
   final String baseUrl;
   final String wsUrl;
-  final String Function() getToken;
+  final Future<TokenUserData> Function() getToken;
 
-  WebSocketChannel? _channel;
+  IO.Socket? _socket;
+  String? _currentRoomId;
 
   BattleApiService({
     required this.baseUrl,
@@ -18,11 +19,18 @@ class BattleApiService {
     required this.getToken,
   });
 
+  Future<String> token() async {
+    final tokenUserData = await getToken();
+    return tokenUserData.token ?? '';
+  }
+
   // Get auth headers
-  Map<String, String> _getHeaders() {
+  Future<Map<String, String>> _getHeaders() async {
+    final tokenValue = await token();
+    print("in battle token is $tokenValue");
     return {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ${getToken()}',
+      'Authorization': 'Bearer $tokenValue',
     };
   }
 
@@ -34,8 +42,8 @@ class BattleApiService {
     final uri = Uri.parse(
       '$baseUrl$endpoint',
     ).replace(queryParameters: queryParams);
-
-    final response = await http.get(uri, headers: _getHeaders());
+    final headers = await _getHeaders();
+    final response = await http.get(uri, headers: headers);
 
     if (response.statusCode >= 400) {
       throw Exception('GET request failed: ${response.body}');
@@ -49,10 +57,11 @@ class BattleApiService {
     required Map<String, dynamic> data,
   }) async {
     final uri = Uri.parse('$baseUrl$endpoint');
+    final headers = await _getHeaders();
 
     final response = await http.post(
       uri,
-      headers: _getHeaders(),
+      headers: headers,
       body: jsonEncode(data),
     );
 
@@ -68,10 +77,11 @@ class BattleApiService {
     required Map<String, dynamic> data,
   }) async {
     final uri = Uri.parse('$baseUrl$endpoint');
+    final headers = await _getHeaders();
 
     final response = await http.put(
       uri,
-      headers: _getHeaders(),
+      headers: headers,
       body: jsonEncode(data),
     );
 
@@ -84,8 +94,9 @@ class BattleApiService {
 
   Future<http.Response> delete(String endpoint) async {
     final uri = Uri.parse('$baseUrl$endpoint');
+    final headers = await _getHeaders();
 
-    final response = await http.delete(uri, headers: _getHeaders());
+    final response = await http.delete(uri, headers: headers);
 
     if (response.statusCode >= 400) {
       throw Exception('DELETE request failed: ${response.body}');
@@ -94,36 +105,133 @@ class BattleApiService {
     return response;
   }
 
-  // WebSocket Methods
-  WebSocketChannel connectWebSocket(String roomId) {
-    final token = getToken();
-    _channel = IOWebSocketChannel.connect(
-      '$wsUrl/battle?token=$token&roomId=$roomId',
+  // WebSocket Methods using Socket.IO
+  Future<IO.Socket> connectWebSocket(String roomId) async {
+    final tokenValue = await token();
+
+    // Disconnect existing socket if any
+    if (_socket != null) {
+      _socket!.disconnect();
+      _socket!.dispose();
+    }
+
+    print('🔌 Connecting to WebSocket: $wsUrl/battle');
+    print('🔑 Token: ${tokenValue.substring(0, 20)}...');
+    print('🏠 Room ID: $roomId');
+
+    // Create Socket.IO connection
+    _socket = IO.io(
+      '$wsUrl/battle',
+      IO.OptionBuilder()
+          .setTransports(['websocket']) // Use websocket transport
+          .disableAutoConnect() // Manual connection control
+          .setAuth({'token': tokenValue})
+          .setExtraHeaders({'Authorization': 'Bearer $tokenValue'})
+          .enableForceNew() // Force new connection
+          .setReconnectionDelay(1000)
+          .setReconnectionDelayMax(5000)
+          .setReconnectionAttempts(5)
+          .build(),
     );
-    return _channel!;
+
+    _currentRoomId = roomId;
+
+    // Setup connection handlers
+    _socket!.onConnect((_) {
+      print('✅ Socket.IO connected successfully');
+      print('📍 Socket ID: ${_socket!.id}');
+
+      // Join the room after connection
+      if (_currentRoomId != null) {
+        _socket!.emit('join_room', {'roomId': _currentRoomId});
+        print('🚪 Emitted join_room for: $_currentRoomId');
+      }
+    });
+
+    _socket!.onConnectError((data) {
+      print('❌ Connection Error: $data');
+    });
+
+    _socket!.onError((data) {
+      print('❌ Socket Error: $data');
+    });
+
+    _socket!.onDisconnect((reason) {
+      print('🔌 Socket disconnected: $reason');
+    });
+
+    // Listen for room join confirmation
+    _socket!.on('joined_room', (data) {
+      print('✅ Successfully joined room: ${data['roomId']}');
+    });
+
+    // Listen for errors
+    _socket!.on('error', (data) {
+      print('❌ Room error: ${data['message']}');
+    });
+
+    // Connect the socket
+    _socket!.connect();
+
+    return _socket!;
   }
 
   void sendWebSocketMessage(Map<String, dynamic> message) {
-    if (_channel != null) {
-      _channel!.sink.add(jsonEncode(message));
+    if (_socket != null && _socket!.connected) {
+      _socket!.emit('send_message', message);
     } else {
       throw Exception('WebSocket not connected');
     }
   }
 
   Stream<dynamic> get webSocketStream {
-    if (_channel == null) {
+    if (_socket == null) {
       throw Exception('WebSocket not connected');
     }
-    return _channel!.stream;
+
+    // Create a stream controller to handle Socket.IO events
+    return Stream.empty(); // This will be handled differently - see below
+  }
+
+  // Better approach: Subscribe to specific events
+  void onRoomUpdate(Function(dynamic) callback) {
+    _socket?.on('room_update', callback);
+  }
+
+  void onMessage(Function(dynamic) callback) {
+    _socket?.on('message', callback);
+  }
+
+  void onUserMessage(Function(dynamic) callback) {
+    _socket?.on('user_message', callback);
+  }
+
+  // Remove event listeners
+  void offRoomUpdate() {
+    _socket?.off('room_update');
+  }
+
+  void offMessage() {
+    _socket?.off('message');
+  }
+
+  void offUserMessage() {
+    _socket?.off('user_message');
   }
 
   void closeWebSocket() {
-    _channel?.sink.close();
-    _channel = null;
+    if (_currentRoomId != null) {
+      _socket?.emit('leave_room', {'roomId': _currentRoomId});
+    }
+    _socket?.disconnect();
+    _socket?.dispose();
+    _socket = null;
+    _currentRoomId = null;
   }
 
-  bool get isWebSocketConnected => _channel != null;
+  bool get isWebSocketConnected => _socket?.connected ?? false;
+
+  IO.Socket? get socket => _socket;
 
   // Battle-specific endpoints
 

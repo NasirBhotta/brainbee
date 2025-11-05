@@ -1,9 +1,9 @@
 // lib/presentation/views/learn/battle/repositories/battle_repository.dart
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:brainbee/presentation/views/learn/battle/models/battle_models.dart';
 import 'package:brainbee/presentation/views/learn/battle/services/battle_api_service.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 abstract class BattleRepository {
   // Room Management
@@ -44,7 +44,7 @@ abstract class BattleRepository {
   Future<Map<String, dynamic>> getBattleStatistics();
 
   // WebSocket
-  WebSocketChannel connectToRoom(String roomId);
+  Future<void> connectToRoom(String roomId);
   Stream<dynamic> getRoomUpdates();
   void sendRoomMessage(Map<String, dynamic> message);
   void disconnectFromRoom();
@@ -53,6 +53,8 @@ abstract class BattleRepository {
 
 class BattleRepositoryImpl implements BattleRepository {
   final BattleApiService apiService;
+  final StreamController<dynamic> _roomUpdatesController =
+      StreamController<dynamic>.broadcast();
 
   BattleRepositoryImpl({required this.apiService});
 
@@ -208,15 +210,22 @@ class BattleRepositoryImpl implements BattleRepository {
   }
 
   @override
-  WebSocketChannel connectToRoom(String roomId) {
-    return apiService.connectWebSocket(roomId);
+  Future<void> connectToRoom(String roomId) async {
+    try {
+      final socket = apiService.connectWebSocket(roomId);
+
+      // Listen to room_update events
+
+      print('✅ Connected to room: $roomId');
+    } catch (e) {
+      print('❌ Failed to connect to room: $e');
+      throw Exception('Failed to connect to room: $e');
+    }
   }
 
   @override
   Stream<dynamic> getRoomUpdates() {
-    return apiService.webSocketStream.map((message) {
-      return jsonDecode(message);
-    });
+    return _roomUpdatesController.stream;
   }
 
   @override
@@ -244,5 +253,11 @@ class BattleRepositoryImpl implements BattleRepository {
       case BattleMode.byChapter:
         return 'byChapter';
     }
+  }
+
+  // Dispose method to clean up resources
+  void dispose() {
+    disconnectFromRoom();
+    _roomUpdatesController.close();
   }
 }

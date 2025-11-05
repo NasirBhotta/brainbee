@@ -505,6 +505,7 @@ void _handleShareInvitation(
             currentPlayerName: 'nasirbhotta', // Get from user profile
             currentPlayerInitial: 'N',
             currentPlayerColor: Color(0xFF8CAA56),
+            roomId: '',
             // invitationCode is null, so it will generate a new code
           ),
     ),
@@ -547,6 +548,7 @@ void _handleRandomMatch(
             currentPlayerName: 'nasirbhotta', // Get from user profile
             currentPlayerInitial: 'N',
             currentPlayerColor: Color(0xFF8CAA56),
+            roomId: '',
           ),
     ),
   );
