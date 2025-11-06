@@ -113,3 +113,22 @@ class BattleError extends BattleState {
   @override
   List<Object?> get props => [message];
 }
+
+// New States for Battle Statistics
+class BattleStatsLoaded extends BattleState {
+  final BattleStats stats;
+
+  const BattleStatsLoaded({required this.stats});
+
+  @override
+  List<Object?> get props => [stats];
+}
+
+class BattleHistoryItemsLoaded extends BattleState {
+  final List<BattleHistoryItem> history;
+
+  const BattleHistoryItemsLoaded({required this.history});
+
+  @override
+  List<Object?> get props => [history];
+}

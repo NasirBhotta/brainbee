@@ -17,7 +17,7 @@ class StudentModel extends UserModel {
   final List<String> friends;
   final Achievements achievements;
   final LeaderboardStats leaderboardStats;
-  final BattleStats battleStats;
+  final BattleStatics battleStatics;
   final List<String> enrolledClasses;
   final int score;
   final Map<String, String> chapterLevels;
@@ -44,7 +44,7 @@ class StudentModel extends UserModel {
     required this.friends,
     required this.achievements,
     required this.leaderboardStats,
-    required this.battleStats,
+    required this.battleStatics,
     required this.enrolledClasses,
     required this.score,
     required this.chapterLevels,
@@ -82,7 +82,7 @@ class StudentModel extends UserModel {
       leaderboardStats: LeaderboardStats.fromJson(
         user['leaderboardStats'] ?? {},
       ),
-      battleStats: BattleStats.fromJson(user['battleStats'] ?? {}),
+      battleStatics: BattleStatics.fromJson(user['battleStats'] ?? {}),
       enrolledClasses: List<String>.from(user['enrolledClasses'] ?? []),
       score: user['score'] ?? 0,
 
@@ -115,7 +115,7 @@ class StudentModel extends UserModel {
         'friends': friends,
         'achievements': achievements.toJson(),
         'leaderboardStats': leaderboardStats.toJson(),
-        'battleStats': battleStats.toJson(),
+        'battleStatics': battleStatics.toJson(),
         'enrolledClasses': enrolledClasses,
         'chapter_levels': chapterLevels,
         'score': score,
@@ -196,19 +196,19 @@ class Goal {
   }
 }
 
-class BattleStats {
+class BattleStatics {
   final int wins;
   final int losses;
   final int totalBattles;
 
-  BattleStats({
+  BattleStatics({
     required this.wins,
     required this.losses,
     required this.totalBattles,
   });
 
-  factory BattleStats.fromJson(Map<String, dynamic> json) {
-    return BattleStats(
+  factory BattleStatics.fromJson(Map<String, dynamic> json) {
+    return BattleStatics(
       wins: json['wins'] ?? 0,
       losses: json['losses'] ?? 0,
       totalBattles: json['totalBattles'] ?? 0,

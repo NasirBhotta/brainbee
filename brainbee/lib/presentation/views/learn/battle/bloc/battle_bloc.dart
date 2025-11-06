@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:brainbee/presentation/views/learn/battle/models/battle_models.dart';
+import 'package:brainbee/presentation/views/learn/battle/models/battle_stat_model.dart';
 import 'package:brainbee/presentation/views/learn/battle/repository/battle_repository.dart';
 import 'package:equatable/equatable.dart';
 
@@ -11,6 +12,7 @@ part 'battle_state.dart';
 class BattleBloc extends Bloc<BattleEvent, BattleState> {
   final BattleRepository repository;
   StreamSubscription? _roomUpdatesSubscription;
+  String? _currentUserId; // Store current user ID for comparison
 
   BattleBloc({required this.repository}) : super(BattleInitial()) {
     on<CreateBattleRoomEvent>(_onCreateBattleRoom);
@@ -25,6 +27,9 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
     on<OpponentAnsweredEvent>(_onOpponentAnswered);
     on<GetBattleResultEvent>(_onGetBattleResult);
     on<LoadBattleHistoryEvent>(_onLoadBattleHistory);
+    // New handlers for stats
+    on<FetchBattleStatsEvent>(_onFetchBattleStats);
+    on<FetchBattleHistoryEvent>(_onFetchBattleHistory);
   }
 
   Future<void> _onCreateBattleRoom(
@@ -38,6 +43,9 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         mode: event.mode,
         chapters: event.chapters,
       );
+
+      // Store current user ID (host)
+      _currentUserId = room.host.id;
 
       // Connect to WebSocket for real-time updates
       await _connectToRoom(room.roomId);
@@ -63,6 +71,9 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         invitationCode: event.invitationCode,
       );
 
+      // Store current user ID (opponent)
+      _currentUserId = room.opponent?.id;
+
       _connectToRoom(room.roomId);
       emit(BattleOpponentFound(room: room));
     } catch (e) {
@@ -80,6 +91,9 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         subject: event.subject,
         chapters: event.chapters,
       );
+
+      // Store current user ID (host)
+      _currentUserId = room.host.id;
 
       await _connectToRoom(room.roomId);
       emit(BattleSearching(room: room));
@@ -291,6 +305,98 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
       emit(BattleHistoryLoaded(history: history));
     } catch (e) {
       emit(BattleError(message: e.toString()));
+    }
+  }
+
+  // New handler for fetching battle stats
+  Future<void> _onFetchBattleStats(
+    FetchBattleStatsEvent event,
+    Emitter<BattleState> emit,
+  ) async {
+    try {
+      emit(BattleLoading());
+
+      final statsData = await repository.getBattleStatistics();
+      final stats = BattleStats.fromJson(statsData);
+
+      emit(BattleStatsLoaded(stats: stats));
+    } catch (e) {
+      emit(BattleError(message: 'Error loading battle stats: $e'));
+    }
+  }
+
+  // New handler for fetching battle history (stats-specific)
+  Future<void> _onFetchBattleHistory(
+    FetchBattleHistoryEvent event,
+    Emitter<BattleState> emit,
+  ) async {
+    try {
+      emit(BattleLoading());
+
+      // Fetch battle history with limit
+      final rooms = await repository.getBattleHistory(limit: 20);
+
+      // Convert BattleRoom to BattleHistoryItem
+      final history =
+          rooms
+              .where((room) => room.status == BattleStatus.completed)
+              .map((room) => _convertRoomToHistoryItem(room))
+              .toList();
+
+      emit(BattleHistoryItemsLoaded(history: history));
+    } catch (e) {
+      emit(BattleError(message: 'Error loading battle history: $e'));
+    }
+  }
+
+  /// Convert BattleRoom to BattleHistoryItem
+  BattleHistoryItem _convertRoomToHistoryItem(BattleRoom room) {
+    // Determine if current user is host or opponent
+    final bool isHost = _currentUserId == room.host.id;
+
+    // Get current user and opponent
+    final currentUser = isHost ? room.host : room.opponent!;
+    final opponent = isHost ? room.opponent : room.host;
+
+    // Get scores from BattlePlayer's currentScore
+    final yourScore = currentUser.currentScore;
+    final opponentScore = opponent?.currentScore ?? 0;
+
+    // Determine result based on scores
+    String result;
+    if (yourScore > opponentScore) {
+      result = 'win';
+    } else if (yourScore < opponentScore) {
+      result = 'loss';
+    } else {
+      result = 'draw';
+    }
+
+    return BattleHistoryItem(
+      id: room.roomId,
+      opponentUsername: opponent?.username ?? '@User',
+      opponentInitial: opponent?.avatarInitial ?? 'U',
+      result: result,
+      date: _formatDate(room.startedAt ?? room.createdAt),
+      yourScore: yourScore,
+      opponentScore: opponentScore,
+    );
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Today';
+
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
     }
   }
 

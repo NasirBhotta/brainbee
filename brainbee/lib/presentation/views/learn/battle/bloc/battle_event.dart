@@ -139,3 +139,17 @@ class LoadBattleHistoryEvent extends BattleEvent {
   @override
   List<Object?> get props => [limit, offset];
 }
+
+class FetchBattleStatsEvent extends BattleEvent {
+  const FetchBattleStatsEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class FetchBattleHistoryEvent extends BattleEvent {
+  const FetchBattleHistoryEvent();
+
+  @override
+  List<Object?> get props => [];
+}
