@@ -121,145 +121,157 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
             }
 
             return SafeArea(
-              child: Column(
-                children: [
-                  // Connection Status Indicator
-                  if (_isConnecting)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      color: Colors.orange[100],
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.orange[700]!,
+              child: SingleChildScrollView(
+                child: SizedBox(
+                  height:
+                      MediaQuery.of(context).size.height -
+                      kToolbarHeight -
+                      MediaQuery.of(context).padding.top,
+                  child: Column(
+                    children: [
+                      // Connection Status Indicator
+                      if (_isConnecting)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          color: Colors.orange[100],
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.orange[700]!,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Connecting to server...',
+                                style: TextStyle(
+                                  color: Colors.orange[700],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (_isConnected && !_isConnecting)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          color: Colors.green[100],
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                size: 16,
+                                color: Colors.green[700],
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Connected',
+                                style: TextStyle(
+                                  color: Colors.green[700],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // Searching Animation
+                              _buildSearchingAnimation(),
+                              const SizedBox(height: 40),
+
+                              // Current Player Card
+                              _buildPlayerCard(
+                                name: widget.currentPlayerName,
+                                initial: widget.currentPlayerInitial,
+                                color: widget.currentPlayerColor,
+                                isCurrentPlayer: true,
+                              ),
+                              const SizedBox(height: 24),
+
+                              // VS Text
+                              const BBText(
+                                data: 'VS',
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: BBColors.primaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Opponent Card (searching)
+                              _buildPlayerCard(
+                                name: 'Searching...',
+                                initial: '?',
+                                color: Colors.grey,
+                                isCurrentPlayer: false,
+                              ),
+                              const SizedBox(height: 40),
+
+                              // Status Message
+                              _buildStatusMessage(),
+
+                              // Invitation Code (if applicable)
+                              if (widget.matchType == MatchType.invitation &&
+                                  widget.invitationCode != null)
+                                _buildInvitationCodeSection(),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Cancel Button
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed:
+                                _isConnected
+                                    ? () => _handleCancel(context)
+                                    : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red[400],
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              disabledBackgroundColor: Colors.grey[300],
+                            ),
+                            child: BBText(
+                              data: _isConnecting ? 'Connecting...' : 'Cancel',
+                              style: TextStyle(
+                                color:
+                                    _isConnected
+                                        ? Colors.white
+                                        : Colors.grey[600],
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Connecting to server...',
-                            style: TextStyle(
-                              color: Colors.orange[700],
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (_isConnected && !_isConnecting)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      color: Colors.green[100],
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            size: 16,
-                            color: Colors.green[700],
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Connected',
-                            style: TextStyle(
-                              color: Colors.green[700],
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Searching Animation
-                          _buildSearchingAnimation(),
-                          const SizedBox(height: 40),
-
-                          // Current Player Card
-                          _buildPlayerCard(
-                            name: widget.currentPlayerName,
-                            initial: widget.currentPlayerInitial,
-                            color: widget.currentPlayerColor,
-                            isCurrentPlayer: true,
-                          ),
-                          const SizedBox(height: 24),
-
-                          // VS Text
-                          const BBText(
-                            data: 'VS',
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: BBColors.primaryColor,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Opponent Card (searching)
-                          _buildPlayerCard(
-                            name: 'Searching...',
-                            initial: '?',
-                            color: Colors.grey,
-                            isCurrentPlayer: false,
-                          ),
-                          const SizedBox(height: 40),
-
-                          // Status Message
-                          _buildStatusMessage(),
-
-                          // Invitation Code (if applicable)
-                          if (widget.matchType == MatchType.invitation &&
-                              widget.invitationCode != null)
-                            _buildInvitationCodeSection(),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Cancel Button
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed:
-                            _isConnected ? () => _handleCancel(context) : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red[400],
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          disabledBackgroundColor: Colors.grey[300],
-                        ),
-                        child: BBText(
-                          data: _isConnecting ? 'Connecting...' : 'Cancel',
-                          style: TextStyle(
-                            color:
-                                _isConnected ? Colors.white : Colors.grey[600],
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             );
           },
@@ -430,7 +442,7 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
           ),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -442,7 +454,7 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
                 BBText(
                   data: widget.invitationCode!,
                   style: const TextStyle(
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 2,
                     color: BBColors.primaryColor,

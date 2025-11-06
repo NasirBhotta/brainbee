@@ -2,6 +2,7 @@ import 'package:brainbee/core/models/subject_model.dart';
 import 'package:brainbee/presentation/views/learn/battle/bloc/battle_bloc.dart';
 import 'package:brainbee/presentation/views/learn/battle/models/battle_models.dart';
 import 'package:brainbee/presentation/views/learn/battle/UI/bb_searching_players.dart';
+import 'package:brainbee/core/widgets/popups/bb_invite_popUp.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
@@ -42,6 +43,7 @@ class _BBBookSelectionForBattleState extends State<BBBookSelectionForBattle> {
   ];
 
   bool _hasNavigated = false;
+  bool _isLoading = false;
 
   List<Subject> _getRegisteredSubjects(List<String> registeredSubjects) {
     return _allSubjects.where((subject) {
@@ -63,21 +65,31 @@ class _BBBookSelectionForBattleState extends State<BBBookSelectionForBattle> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
         ),
       ),
       body: BlocListener<BattleBloc, BattleState>(
         listener: (context, state) {
-          print("BattleBloc State: $state");
+          print("=== BBBookSelectionForBattle BlocListener ===");
+          print("BattleBloc State: ${state.runtimeType}");
+          print("_hasNavigated: $_hasNavigated");
+
+          if (state is BattleLoading) {
+            print("State is BattleLoading");
+            setState(() => _isLoading = true);
+          }
 
           // Only navigate once
           if ((state is BattleSearching || state is BattleRoomCreated) &&
               !_hasNavigated) {
+            print("Navigating to search screen...");
             _hasNavigated = true;
+            setState(() => _isLoading = false);
 
-            print("comming to the navigation part");
             _navigateToSearchScreen(context, state);
           } else if (state is BattleError) {
+            print("Error: ${state.message}");
+            setState(() => _isLoading = false);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -108,7 +120,10 @@ class _BBBookSelectionForBattleState extends State<BBBookSelectionForBattle> {
                   final subject = registeredSubjects[index];
                   return _SubjectCard(
                     subject: subject,
-                    onTap: () => _showStudyModeDialog(context, subject),
+                    onTap:
+                        _isLoading
+                            ? () {}
+                            : () => _showStudyModeDialog(context, subject),
                   );
                 },
               );
@@ -126,29 +141,20 @@ class _BBBookSelectionForBattleState extends State<BBBookSelectionForBattle> {
   }
 
   void _showStudyModeDialog(BuildContext context, Subject subject) {
-    showDialog(
+    showInvitationPopUp(
       context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: Text('Battle Mode - ${subject.name}'),
-            content: const Text('How would you like to compete?'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  _navigateToChapterSelection(context, subject);
-                },
-                child: const Text('By Chapter'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  _showMatchTypeDialog(context, subject, null);
-                },
-                child: const Text('Whole Book'),
-              ),
-            ],
-          ),
+      title: "Battle Mode",
+      desc: "How would you like to compete?",
+      button1Label: "By Chapter",
+      button2Label: "Whole Book",
+      subject: subject,
+      onButton1Pressed: () {
+        _navigateToChapterSelection(context, subject);
+      },
+      onButton2Pressed: () {
+        // Show quiz settings popup for whole book
+        showQuizSettingsPopup(context, subject, chapters: null);
+      },
     );
   }
 
@@ -157,63 +163,6 @@ class _BBBookSelectionForBattleState extends State<BBBookSelectionForBattle> {
       context,
       MaterialPageRoute(
         builder: (context) => BBChapterSelectionScreen(subject: subject),
-      ),
-    );
-  }
-
-  void _showMatchTypeDialog(
-    BuildContext context,
-    Subject subject,
-    List<String>? chapters,
-  ) {
-    showDialog(
-      context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: const Text('Match Type'),
-            content: const Text('Choose how you want to find an opponent'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  _startRandomMatch(context, subject, chapters);
-                },
-                child: const Text('Random Match'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  _createInvitationMatch(context, subject, chapters);
-                },
-                child: const Text('Create Invitation'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  void _startRandomMatch(
-    BuildContext context,
-    Subject subject,
-    List<String>? chapters,
-  ) {
-    _hasNavigated = false; // Reset before starting
-    context.read<BattleBloc>().add(
-      FindRandomOpponentEvent(subject: subject.name, chapters: chapters),
-    );
-  }
-
-  void _createInvitationMatch(
-    BuildContext context,
-    Subject subject,
-    List<String>? chapters,
-  ) {
-    _hasNavigated = false; // Reset before starting
-    context.read<BattleBloc>().add(
-      CreateBattleRoomEvent(
-        subject: subject.name,
-        mode: chapters == null ? BattleMode.wholeBook : BattleMode.byChapter,
-        chapters: chapters,
       ),
     );
   }
@@ -265,6 +214,7 @@ class _BBBookSelectionForBattleState extends State<BBBookSelectionForBattle> {
     ).then((_) {
       // Reset navigation flag when returning from search screen
       _hasNavigated = false;
+      setState(() => _isLoading = false);
     });
   }
 }
@@ -408,6 +358,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
   final Map<String, bool> _selectedChapters = {};
   late List<String> _chapters;
   bool _hasNavigated = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -474,42 +425,36 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
 
     if (selectedChapters.isEmpty) return;
 
-    showDialog(
+    // Show quiz settings popup with selected chapters
+    showInvitationPopUp(
       context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: const Text('Match Type'),
-            content: const Text('Choose how you want to find an opponent'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  _hasNavigated = false;
-                  context.read<BattleBloc>().add(
-                    FindRandomOpponentEvent(
-                      subject: widget.subject.name,
-                      chapters: selectedChapters,
-                    ),
-                  );
-                },
-                child: const Text('Random Match'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  _hasNavigated = false;
-                  context.read<BattleBloc>().add(
-                    CreateBattleRoomEvent(
-                      subject: widget.subject.name,
-                      mode: BattleMode.byChapter,
-                      chapters: selectedChapters,
-                    ),
-                  );
-                },
-                child: const Text('Create Invitation'),
-              ),
-            ],
+      title: "Invite Friends",
+      desc: "Are you ready?",
+      button1Label: "Share invitation code",
+      button2Label: "Random Match",
+      subject: widget.subject,
+      chapters: selectedChapters,
+      onButton1Pressed: () {
+        // Create invitation room with selected chapters
+        print('Creating invitation room with chapters: $selectedChapters');
+        context.read<BattleBloc>().add(
+          CreateBattleRoomEvent(
+            subject: widget.subject.name,
+            mode: BattleMode.byChapter,
+            chapters: selectedChapters,
           ),
+        );
+      },
+      onButton2Pressed: () {
+        // Find random opponent with selected chapters
+        print('Finding random opponent with chapters: $selectedChapters');
+        context.read<BattleBloc>().add(
+          FindRandomOpponentEvent(
+            subject: widget.subject.name,
+            chapters: selectedChapters,
+          ),
+        );
+      },
     );
   }
 
@@ -527,17 +472,71 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
         ),
       ),
       body: BlocListener<BattleBloc, BattleState>(
         listener: (context, state) {
+          print("=== BBChapterSelectionScreen BlocListener ===");
+          print("State: ${state.runtimeType}");
+          print("_hasNavigated: $_hasNavigated");
+
+          if (state is BattleLoading) {
+            print("State is BattleLoading");
+            setState(() => _isLoading = true);
+          }
+
           if ((state is BattleSearching || state is BattleRoomCreated) &&
               !_hasNavigated) {
+            print("Navigating to search screen from chapter selection...");
             _hasNavigated = true;
-            // Pop this screen and let parent handle navigation
-            Navigator.pop(context);
+            setState(() => _isLoading = false);
+
+            // Get player info
+            final studentState = context.read<StudentBloc>().state;
+            String playerName = 'Player';
+            String playerInitial = 'P';
+            Color playerColor = const Color(0xFF8CAA56);
+
+            if (studentState is StudentDataLoaded) {
+              playerName = studentState.student.firstName ?? 'Player';
+              playerInitial =
+                  playerName.isNotEmpty
+                      ? playerName.substring(0, 1).toUpperCase()
+                      : 'P';
+            }
+
+            // Navigate to search screen
+            final BattleRoom room;
+            final MatchType matchType;
+
+            if (state is BattleSearching) {
+              room = state.room;
+              matchType = MatchType.random;
+            } else {
+              room = (state as BattleRoomCreated).room;
+              matchType = MatchType.invitation;
+            }
+
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (context) => BbSearchingPlayers(
+                      matchType: matchType,
+                      currentPlayerName: playerName,
+                      currentPlayerInitial: playerInitial,
+                      currentPlayerColor: playerColor,
+                      invitationCode:
+                          matchType == MatchType.invitation
+                              ? room.invitationCode
+                              : null,
+                      roomId: room.roomId,
+                    ),
+              ),
+            );
           } else if (state is BattleError) {
+            setState(() => _isLoading = false);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -580,11 +579,14 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                           ),
                         ),
                         value: _selectedChapters[chapter] ?? false,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _selectedChapters[chapter] = value ?? false;
-                          });
-                        },
+                        onChanged:
+                            _isLoading
+                                ? null
+                                : (bool? value) {
+                                  setState(() {
+                                    _selectedChapters[chapter] = value ?? false;
+                                  });
+                                },
                         checkColor: BBColors.white,
                         activeColor: BBColors.primaryColor,
                       ),
@@ -613,7 +615,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                   ),
                   ElevatedButton(
                     onPressed:
-                        _selectedChapters.values.contains(true)
+                        _selectedChapters.values.contains(true) && !_isLoading
                             ? () => _startMatch(context)
                             : null,
                     style: ElevatedButton.styleFrom(
@@ -626,13 +628,25 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const BBText(
-                      data: 'Start Match',
-                      style: TextStyle(
-                        color: BBColors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child:
+                        _isLoading
+                            ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  BBColors.white,
+                                ),
+                              ),
+                            )
+                            : const BBText(
+                              data: 'Start Match',
+                              style: TextStyle(
+                                color: BBColors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                   ),
                 ],
               ),
