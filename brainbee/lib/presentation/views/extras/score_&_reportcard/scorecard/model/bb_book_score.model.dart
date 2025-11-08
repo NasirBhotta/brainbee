@@ -21,6 +21,7 @@ class OverallScoreData {
   final double totalStudyHours;
   final List<SubjectScore> subjectScores;
   final List<WeakPoint> weakPoints;
+  final int averageScore;
 
   OverallScoreData({
     required this.overallScore,
@@ -29,6 +30,7 @@ class OverallScoreData {
     required this.totalStudyHours,
     required this.subjectScores,
     required this.weakPoints,
+    required this.averageScore,
   });
 
   factory OverallScoreData.fromJson(Map<String, dynamic> json) {
@@ -45,6 +47,8 @@ class OverallScoreData {
           (json['weakPoints'] as List)
               .map((e) => WeakPoint.fromJson(e as Map<String, dynamic>))
               .toList(),
+
+      averageScore: json['averageScore'] as int,
     );
   }
 }
@@ -55,6 +59,7 @@ class SubjectScore {
   final int score;
   final int completed;
   final int total;
+  final int averageScore;
 
   SubjectScore({
     required this.id,
@@ -62,6 +67,7 @@ class SubjectScore {
     required this.score,
     required this.completed,
     required this.total,
+    required this.averageScore,
   });
 
   factory SubjectScore.fromJson(Map<String, dynamic> json) {
@@ -71,6 +77,7 @@ class SubjectScore {
       score: json['score'] as int,
       completed: json['completed'] as int,
       total: json['total'] as int,
+      averageScore: json['averageScore'] as int,
     );
   }
 }

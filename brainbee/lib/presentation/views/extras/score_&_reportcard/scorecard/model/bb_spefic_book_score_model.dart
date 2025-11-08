@@ -28,6 +28,7 @@ class BookScoreData {
   final int totalActivities;
   final List<ChapterScoreData> chapterScores;
   final List<String> recommendations;
+  final int averageScore;
 
   BookScoreData({
     required this.id,
@@ -43,6 +44,7 @@ class BookScoreData {
     required this.totalActivities,
     required this.chapterScores,
     required this.recommendations,
+    required this.averageScore,
   });
 
   // Convert seconds to hours for display
@@ -67,6 +69,7 @@ class BookScoreData {
               .toList(),
       recommendations:
           (json['recommendations'] as List).map((e) => e as String).toList(),
+      averageScore: json['averageScore'] as int,
     );
   }
 }
@@ -123,7 +126,6 @@ class QuizScoreData {
   }
 }
 
-// Mock category scores (since backend doesn't provide this yet)
 class CategoryScore {
   final String category;
   final int score;

@@ -182,104 +182,45 @@ class _BBFlashCardsScreenState extends State<BBFlashCardsScreen>
                 child: AnimatedBuilder(
                   animation: _flipAnimation,
                   builder: (context, child) {
-                    final isShowingFront = _flipAnimation.value < 0.5;
+                    final isFront = _flipAnimation.value < 0.5;
+
+                    // Calculate rotation angle
+                    final angle = _flipAnimation.value * 3.14159;
+
                     return Transform(
                       alignment: Alignment.center,
                       transform:
                           Matrix4.identity()
                             ..setEntry(3, 2, 0.001)
-                            ..rotateY(_flipAnimation.value * 3.14159),
-                      child: Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient:
-                              isShowingFront
-                                  ? LinearGradient(
-                                    colors: [
-                                      BBColors.primaryColor,
-                                      BBColors.primaryColor.withOpacity(0.8),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  )
-                                  : LinearGradient(
-                                    colors: [
-                                      Colors.teal,
-                                      Colors.teal.withOpacity(0.8),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: (isShowingFront
-                                      ? BBColors.primaryColor
-                                      : Colors.teal)
-                                  .withOpacity(0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                isShowingFront
-                                    ? Icons.help_outline
-                                    : Icons.lightbulb_outline,
-                                color: Colors.white,
-                                size: 40,
-                              ),
-                              const SizedBox(height: 20),
-                              Text(
-                                isShowingFront ? 'Question' : 'Answer',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white70,
+                            ..rotateY(angle),
+                      child:
+                          isFront
+                              // FRONT SIDE
+                              ? _buildCardSide(
+                                title: 'Question',
+                                icon: Icons.help_outline,
+                                text: flashCards[currentCardIndex]['question']!,
+                                hint: 'Tap to reveal answer',
+                                gradientColors: [
+                                  BBColors.primaryColor,
+                                  BBColors.primaryColor.withOpacity(0.8),
+                                ],
+                              )
+                              // BACK SIDE (rotated back so text isn't mirrored)
+                              : Transform(
+                                alignment: Alignment.center,
+                                transform: Matrix4.identity()..rotateY(3.14159),
+                                child: _buildCardSide(
+                                  title: 'Answer',
+                                  icon: Icons.lightbulb_outline,
+                                  text: flashCards[currentCardIndex]['answer']!,
+                                  hint: 'Tap to see question',
+                                  gradientColors: [
+                                    Colors.teal,
+                                    Colors.teal.withOpacity(0.8),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 16),
-                              Text(
-                                isShowingFront
-                                    ? flashCards[currentCardIndex]['question']!
-                                    : flashCards[currentCardIndex]['answer']!,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                  height: 1.5,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 30),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  isShowingFront
-                                      ? 'Tap to reveal answer'
-                                      : 'Tap to see question',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                     );
                   },
                 ),
@@ -418,6 +359,74 @@ class _BBFlashCardsScreenState extends State<BBFlashCardsScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCardSide({
+    required String title,
+    required IconData icon,
+    required String text,
+    required String hint,
+    required List<Color> gradientColors,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: gradientColors.first.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 40),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white70,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              text,
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 30),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                hint,
+                style: GoogleFonts.poppins(fontSize: 12, color: Colors.white70),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

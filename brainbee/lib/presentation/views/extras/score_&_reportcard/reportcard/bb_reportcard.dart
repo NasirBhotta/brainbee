@@ -103,8 +103,8 @@ class _ReportCardScreenContent extends StatelessWidget {
           return SubjectGrade(
             number: entry.key + 1,
             subject: entry.value.subject,
-            score: entry.value.score,
-            grade: _getGradeFromScore(entry.value.score),
+            score: entry.value.averageScore,
+            grade: _getGradeFromScore(entry.value.averageScore),
             bookId: entry.value.id,
           );
         }).toList();

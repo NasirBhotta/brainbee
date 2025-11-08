@@ -17,6 +17,7 @@ class ScoreRepositoryImpl implements ScoreRepository {
     try {
       final response = await apiService.getOverallScore();
       final Map<String, dynamic> jsonData = jsonDecode(response.body);
+      print("The data of overall score is ${jsonData['data']}");
       final scoreResponse = OverallScoreResponse.fromJson(jsonData);
       return scoreResponse.data;
     } on ScoreApiException catch (e) {

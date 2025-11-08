@@ -122,14 +122,14 @@ class _BBBookAnalyticsContent extends StatelessWidget {
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: _getGradeFromScore(data.overallScore),
+                    text: _getGradeFromScore(data.averageScore),
                     style: context.textStyle.displayLarge,
                   ),
                   WidgetSpan(
                     child: SizedBox(width: context.screenWidth * 0.02),
                   ),
                   TextSpan(
-                    text: "${data.overallScore}%",
+                    text: "${data.averageScore}%",
                     style: context.textStyle.headlineLarge?.copyWith(
                       fontSize: 22,
                       fontWeight: FontWeight.w500,

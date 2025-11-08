@@ -229,8 +229,8 @@ class _BBOverallScoreScreenContentState
   }
 
   Widget _buildOverallScoreCard(OverallScoreData data) {
-    final String grade = _getGradeFromScore(data.overallScore);
-
+    final String grade = _getGradeFromScore(data.averageScore);
+    print("The data of overall score is ${data.subjectScores}");
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -238,14 +238,14 @@ class _BBOverallScoreScreenContentState
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            _getScoreColor(data.overallScore).withOpacity(0.8),
-            _getScoreColor(data.overallScore),
+            _getScoreColor(data.averageScore).withOpacity(0.8),
+            _getScoreColor(data.averageScore),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: _getScoreColor(data.overallScore).withOpacity(0.3),
+            color: _getScoreColor(data.averageScore).withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -310,7 +310,7 @@ class _BBOverallScoreScreenContentState
                               ),
                               const SizedBox(width: 12),
                               BBText(
-                                data: "${data.overallScore}%",
+                                data: "${data.averageScore}%",
                                 style: context.textStyle.headlineLarge
                                     ?.copyWith(
                                       color: Colors.white.withOpacity(0.9),
@@ -334,7 +334,7 @@ class _BBOverallScoreScreenContentState
                         alignment: Alignment.center,
                         children: [
                           CircularProgressIndicator(
-                            value: data.overallScore / 100,
+                            value: data.averageScore / 100,
                             strokeWidth: 8,
                             backgroundColor: Colors.white.withOpacity(0.1),
                             valueColor: const AlwaysStoppedAnimation<Color>(
@@ -342,7 +342,7 @@ class _BBOverallScoreScreenContentState
                             ),
                           ),
                           BBText(
-                            data: "${data.overallScore}",
+                            data: "${data.averageScore}",
                             style: context.textStyle.titleLarge?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -485,9 +485,9 @@ class _BBOverallScoreScreenContentState
               ColumnSeries<SubjectScore, String>(
                 dataSource: subjectScores,
                 xValueMapper: (SubjectScore data, _) => data.subject,
-                yValueMapper: (SubjectScore data, _) => data.score,
+                yValueMapper: (SubjectScore data, _) => data.averageScore,
                 pointColorMapper:
-                    (SubjectScore data, _) => _getScoreColor(data.score),
+                    (SubjectScore data, _) => _getScoreColor(data.averageScore),
                 borderRadius: BorderRadius.circular(4),
                 dataLabelSettings: const DataLabelSettings(
                   isVisible: true,
@@ -547,13 +547,13 @@ class _BBOverallScoreScreenContentState
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: _getScoreColor(subject.score).withOpacity(0.1),
+                color: _getScoreColor(subject.averageScore).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
                 child: Icon(
                   _getSubjectIcon(subject.subject),
-                  color: _getScoreColor(subject.score),
+                  color: _getScoreColor(subject.averageScore),
                   size: 20,
                 ),
               ),
@@ -590,23 +590,25 @@ class _BBOverallScoreScreenContentState
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: _getScoreColor(subject.score).withOpacity(0.1),
+                    color: _getScoreColor(
+                      subject.averageScore,
+                    ).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: BBText(
-                    data: "${subject.score}%",
+                    data: "${subject.averageScore}%",
                     style: context.textStyle.labelMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: _getScoreColor(subject.score),
+                      color: _getScoreColor(subject.averageScore),
                     ),
                   ),
                 ),
                 const SizedBox(height: 4),
                 BBText(
-                  data: _getGradeFromScore(subject.score),
+                  data: _getGradeFromScore(subject.averageScore),
                   style: context.textStyle.bodySmall?.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: _getScoreColor(subject.score),
+                    color: _getScoreColor(subject.averageScore),
                   ),
                 ),
               ],

@@ -29,15 +29,19 @@ class BBBookScoreScreen extends StatelessWidget {
           (context) => BookScoreBloc(
             repository: ScoreRepositoryImpl(apiService: ScoreApiService()),
           )..add(LoadBookScore(bookId)),
-      child: _BBBookScoreScreenContent(bookTitle: bookTitle),
+      child: _BBBookScoreScreenContent(bookTitle: bookTitle, bookId: bookId),
     );
   }
 }
 
 class _BBBookScoreScreenContent extends StatelessWidget {
   final String bookTitle;
+  final String bookId;
 
-  const _BBBookScoreScreenContent({required this.bookTitle});
+  const _BBBookScoreScreenContent({
+    required this.bookTitle,
+    required this.bookId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -113,13 +117,6 @@ class _BBBookScoreScreenContent extends StatelessWidget {
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
-              final bookId =
-                  (context.read<BookScoreBloc>().state as BookScoreError)
-                          .message
-                          .contains('bookId')
-                      ? ''
-                      : context.read<BookScoreBloc>().state.toString();
-              // You'll need to pass bookId properly - this is a simplified version
               context.read<BookScoreBloc>().add(LoadBookScore(bookId));
             },
             style: ElevatedButton.styleFrom(
@@ -140,12 +137,10 @@ class _BBBookScoreScreenContent extends StatelessWidget {
   Widget _buildBody(BuildContext context, BookScoreData data) {
     return RefreshIndicator(
       onRefresh: () async {
-        final bloc = context.read<BookScoreBloc>();
-        if (bloc.state is BookScoreLoaded) {
-          final bookId = (bloc.state as BookScoreLoaded).data.id;
-          bloc.add(RefreshBookScore(bookId));
-          await bloc.stream.firstWhere((state) => state is! BookScoreLoading);
-        }
+        context.read<BookScoreBloc>().add(RefreshBookScore(bookId));
+        await context.read<BookScoreBloc>().stream.firstWhere(
+          (state) => state is! BookScoreLoading,
+        );
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -174,6 +169,9 @@ class _BBBookScoreScreenContent extends StatelessWidget {
   }
 
   Widget _buildBookScoreHeader(BuildContext context, BookScoreData data) {
+    // ✅ Use averageScore instead of overallScore for display
+    final String grade = _getGradeFromScore(data.averageScore);
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -181,127 +179,142 @@ class _BBBookScoreScreenContent extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            _getScoreColor(data.overallScore).withOpacity(0.8),
-            _getScoreColor(data.overallScore),
+            _getScoreColor(data.averageScore).withOpacity(0.8),
+            _getScoreColor(data.averageScore),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: _getScoreColor(data.overallScore).withOpacity(0.3),
+            color: _getScoreColor(data.averageScore).withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 80,
-              height: 120,
+      child: Stack(
+        children: [
+          // Decorative circles
+          Positioned(
+            top: -30,
+            right: -20,
+            child: Container(
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.1),
               ),
-              child:
-                  data.coverImage != null
-                      ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          data.coverImage!,
-                          fit: BoxFit.cover,
-                          errorBuilder:
-                              (_, __, ___) => const Center(
-                                child: Icon(
-                                  Icons.book,
-                                  color: Colors.grey,
-                                  size: 40,
-                                ),
-                              ),
-                        ),
-                      )
-                      : const Center(
-                        child: Icon(Icons.book, color: Colors.grey, size: 40),
-                      ),
             ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    data.title,
-                    style: context.textStyle.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  if (data.author.isNotEmpty)
-                    BBText(
-                      data: data.author,
-                      style: context.textStyle.bodyMedium?.copyWith(
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            BBText(
-                              data: _getGradeFromScore(data.overallScore),
-                              style: context.textStyle.labelLarge?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      BBText(
-                        data: "${data.overallScore}%",
-                        style: context.textStyle.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+          ),
+          Positioned(
+            bottom: -15,
+            left: -15,
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.1),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Book Cover
+                Container(
+                  width: 80,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                ],
-              ),
+                  child:
+                      data.coverImage != null
+                          ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              data.coverImage!,
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (_, __, ___) => const Center(
+                                    child: Icon(
+                                      Icons.book,
+                                      color: Colors.grey,
+                                      size: 40,
+                                    ),
+                                  ),
+                            ),
+                          )
+                          : const Center(
+                            child: Icon(
+                              Icons.book,
+                              color: Colors.grey,
+                              size: 40,
+                            ),
+                          ),
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      BBText(
+                        data: "Your Score",
+                        style: context.textStyle.labelMedium?.copyWith(
+                          color: Colors.white.withOpacity(0.9),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          BBText(
+                            data: grade,
+                            style: context.textStyle.displayLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 48,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          BBText(
+                            data: "${data.averageScore}%",
+                            style: context.textStyle.headlineLarge?.copyWith(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 24,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (data.author.isNotEmpty)
+                        BBText(
+                          data: "by ${data.author}",
+                          style: context.textStyle.bodySmall?.copyWith(
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -347,7 +360,7 @@ class _BBBookScoreScreenContent extends StatelessWidget {
                   context: context,
                   icon: Icons.timer_outlined,
                   label: "Study Time",
-                  value: "${data.studyHours} hrs",
+                  value: "${data.studyHours.toStringAsFixed(1)} hrs",
                   progress:
                       data.studyHours > 0
                           ? (data.studyHours / 20).clamp(0.0, 1.0)
@@ -381,7 +394,6 @@ class _BBBookScoreScreenContent extends StatelessWidget {
     required String value,
     required double progress,
   }) {
-    print("study hours are $value");
     return Column(
       children: [
         Container(
@@ -412,27 +424,32 @@ class _BBBookScoreScreenContent extends StatelessWidget {
           style: context.textStyle.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
           ),
+          textAlign: TextAlign.center,
         ),
         BBText(
           data: label,
           style: context.textStyle.bodySmall?.copyWith(
             color: BBColors.disabledText,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
   Widget _buildScoreBreakdownSection(BuildContext context, BookScoreData data) {
-    // Generate mock category scores based on overall score
-    // You can enhance this later when backend provides real category data
-    final categories = _generateMockCategoryScores(data.overallScore);
+    // Generate category scores from chapter data
+    final categories = _generateCategoryScoresFromChapters(data.chapterScores);
+
+    if (categories.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         BBText(
-          data: "Score Breakdown",
+          data: "Chapter Score Distribution",
           style: context.textStyle.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -444,6 +461,7 @@ class _BBBookScoreScreenContent extends StatelessWidget {
             primaryXAxis: const CategoryAxis(
               majorGridLines: MajorGridLines(width: 0),
               axisLine: AxisLine(width: 0),
+              labelRotation: -45,
             ),
             primaryYAxis: const NumericAxis(
               minimum: 0,
@@ -488,11 +506,29 @@ class _BBBookScoreScreenContent extends StatelessWidget {
           Center(
             child: Padding(
               padding: const EdgeInsets.all(32),
-              child: BBText(
-                data: "No chapter data available yet",
-                style: context.textStyle.bodyMedium?.copyWith(
-                  color: BBColors.disabledText,
-                ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.book_outlined,
+                    size: 48,
+                    color: BBColors.disabledText.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  BBText(
+                    data: "No chapter data available yet",
+                    style: context.textStyle.bodyMedium?.copyWith(
+                      color: BBColors.disabledText,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  BBText(
+                    data: "Complete some quizzes to see your chapter progress",
+                    style: context.textStyle.bodySmall?.copyWith(
+                      color: BBColors.disabledText,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
           )
@@ -519,6 +555,10 @@ class _BBBookScoreScreenContent extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _getScoreColor(chapter.score).withOpacity(0.2),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -530,6 +570,23 @@ class _BBBookScoreScreenContent extends StatelessWidget {
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: _getScoreColor(chapter.score).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: BBText(
+              data: "${chapter.chapterNumber}",
+              style: context.textStyle.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: _getScoreColor(chapter.score),
+              ),
+            ),
+          ),
+        ),
         title: Row(
           children: [
             Expanded(
@@ -537,25 +594,34 @@ class _BBBookScoreScreenContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   BBText(
-                    data: "Chapter ${chapter.chapterNumber}: ${chapter.title}",
+                    data: chapter.title,
                     style: context.textStyle.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  if (chapter.completed)
-                    BBText(
-                      data: "Completed",
-                      style: context.textStyle.bodySmall?.copyWith(
-                        color: BBColors.successGreen,
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        chapter.completed ? Icons.check_circle : Icons.schedule,
+                        size: 14,
+                        color:
+                            chapter.completed
+                                ? BBColors.successGreen
+                                : BBColors.orangeAccent,
                       ),
-                    )
-                  else
-                    BBText(
-                      data: "In Progress",
-                      style: context.textStyle.bodySmall?.copyWith(
-                        color: BBColors.orangeAccent,
+                      const SizedBox(width: 4),
+                      BBText(
+                        data: chapter.completed ? "Completed" : "In Progress",
+                        style: context.textStyle.bodySmall?.copyWith(
+                          color:
+                              chapter.completed
+                                  ? BBColors.successGreen
+                                  : BBColors.orangeAccent,
+                        ),
                       ),
-                    ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -587,57 +653,75 @@ class _BBBookScoreScreenContent extends StatelessWidget {
               ),
             )
           else
-            ...chapter.quizScores.map(
-              (quiz) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      color: _getScoreColor(quiz.score),
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: BBText(
-                        data: quiz.title,
-                        style: context.textStyle.bodyMedium,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _getScoreColor(quiz.score).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: BBText(
-                        data: "${quiz.score}%",
-                        style: context.textStyle.bodySmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                BBText(
+                  data: "Quiz Attempts (${chapter.quizScores.length})",
+                  style: context.textStyle.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: BBColors.disabledText,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...chapter.quizScores.map(
+                  (quiz) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.quiz_outlined,
                           color: _getScoreColor(quiz.score),
+                          size: 16,
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: BBText(
+                            data: quiz.title,
+                            style: context.textStyle.bodyMedium,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _getScoreColor(quiz.score).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: BBText(
+                            data: "${quiz.score}%",
+                            style: context.textStyle.bodySmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: _getScoreColor(quiz.score),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                ),
+              ],
+            ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                // Navigate to chapter practice
+              },
+              icon: const Icon(Icons.play_arrow, size: 18),
+              label: const Text("Practice This Chapter"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: BBColors.primaryBlue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),
-          const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: () {
-              // Navigate to chapter practice
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: BBColors.primaryBlue,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text("Practice This Chapter"),
           ),
         ],
       ),
@@ -737,26 +821,26 @@ class _BBBookScoreScreenContent extends StatelessWidget {
     return BBColors.alertRed;
   }
 
-  // Generate mock category scores based on overall score
-  // This is a placeholder until backend provides real category data
-  List<CategoryScore> _generateMockCategoryScores(int overallScore) {
-    return [
-      CategoryScore(
-        category: "Comprehension",
-        score: (overallScore + 5).clamp(0, 100),
-      ),
-      CategoryScore(
-        category: "Application",
-        score: (overallScore - 5).clamp(0, 100),
-      ),
-      CategoryScore(
-        category: "Problem Solving",
-        score: (overallScore - 10).clamp(0, 100),
-      ),
-      CategoryScore(
-        category: "Theory",
-        score: (overallScore + 10).clamp(0, 100),
-      ),
-    ];
+  // ✅ Generate category scores from actual chapter data
+  List<CategoryScore> _generateCategoryScoresFromChapters(
+    List<ChapterScoreData> chapters,
+  ) {
+    if (chapters.isEmpty) return [];
+
+    // Take first 5 chapters for the chart
+    return chapters.take(5).map((chapter) {
+      return CategoryScore(
+        category: "Ch ${chapter.chapterNumber}",
+        score: chapter.score,
+      );
+    }).toList();
   }
+}
+
+// ✅ CategoryScore class definition
+class CategoryScore {
+  final String category;
+  final int score;
+
+  CategoryScore({required this.category, required this.score});
 }
