@@ -1,6 +1,7 @@
 import 'package:brainbee/presentation/views/extras/Rewards/models/reward.dart';
 import 'package:flutter/material.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
+import 'package:brainbee/core/utils/bb_text.dart';
 
 class RewardCard extends StatelessWidget {
   final RewardModel reward;
@@ -10,195 +11,136 @@ class RewardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRedeemed = reward.status == RewardStatus.redeemed;
+    final isInsufficient = reward.status == RewardStatus.insufficientCoins;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: BBColors.white,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color:
+                isRedeemed
+                    ? BBColors.successGreen
+                    : isInsufficient
+                    ? BBColors.alertRed.withOpacity(0.3)
+                    : BBColors.borderGray,
+            width: isRedeemed ? 2 : 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            // Image and status badge
-            Stack(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Image placeholder
                 Container(
                   height: 120,
-                  width: double.infinity,
                   decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                    ),
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        BBColors.primaryColor.withOpacity(0.1),
-                        BBColors.secondaryColor.withOpacity(0.1),
+                        BBColors.primaryColor.withOpacity(0.3),
+                        BBColors.secondaryColor.withOpacity(0.3),
                       ],
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
                     ),
                   ),
                   child: Center(
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            BBColors.primaryColor,
-                            BBColors.secondaryColor,
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        _getRewardIcon(),
-                        color: BBColors.white,
-                        size: 32,
-                      ),
+                    child: Icon(
+                      _getRewardIcon(),
+                      size: 48,
+                      color: BBColors.primaryColor,
                     ),
                   ),
                 ),
-                // Status badge
-                if (reward.status == RewardStatus.redeemed)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: BBColors.successGreen,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Redeemed',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: BBColors.white,
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        reward.title,
+                        style: const TextStyle(
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          color: BBColors.darkHeading,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.monetization_on,
+                            size: 16,
+                            color: BBColors.primaryColor,
+                          ),
+                          const SizedBox(width: 4),
+                          BBText(
+                            data: '${reward.coinPrice}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: BBColors.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                if (reward.status == RewardStatus.insufficientCoins)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: BBColors.alertRed,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Insufficient',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: BBColors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
+                ),
               ],
             ),
-            // Content
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title
-                    Text(
-                      reward.title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: BBColors.darkHeading,
-                        fontWeight: FontWeight.w600,
+            // Status badge
+            if (isRedeemed || isInsufficient)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        isRedeemed ? BBColors.successGreen : BBColors.alertRed,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isRedeemed ? Icons.check : Icons.lock,
+                        size: 12,
+                        color: BBColors.white,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    // Description
-                    Text(
-                      reward.description,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: BBColors.bodyText,
-                        height: 1.2,
+                      const SizedBox(width: 4),
+                      Text(
+                        isRedeemed ? 'Redeemed' : 'Locked',
+                        style: const TextStyle(
+                          color: BBColors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Spacer(),
-                    // Price and button
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: BBColors.primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.monetization_on,
-                                color: BBColors.primaryColor,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                '${reward.coinPrice}',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.labelSmall?.copyWith(
-                                  color: BBColors.primaryColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: _getButtonColor(),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            _getButtonIcon(),
-                            color: BBColors.white,
-                            size: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -221,28 +163,6 @@ class RewardCard extends StatelessWidget {
         return Icons.chat;
       default:
         return Icons.redeem;
-    }
-  }
-
-  Color _getButtonColor() {
-    switch (reward.status) {
-      case RewardStatus.available:
-        return BBColors.primaryColor;
-      case RewardStatus.redeemed:
-        return BBColors.successGreen;
-      case RewardStatus.insufficientCoins:
-        return BBColors.disabledText;
-    }
-  }
-
-  IconData _getButtonIcon() {
-    switch (reward.status) {
-      case RewardStatus.available:
-        return Icons.arrow_forward;
-      case RewardStatus.redeemed:
-        return Icons.check;
-      case RewardStatus.insufficientCoins:
-        return Icons.lock;
     }
   }
 }

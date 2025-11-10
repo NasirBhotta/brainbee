@@ -1,19 +1,18 @@
-import 'package:brainbee/core/widgets/reward/redemption_bottom_sheet.dart';
+import 'package:brainbee/presentation/views/extras/Rewards/UI/redemption_bottom_screen.dart';
 import 'package:brainbee/presentation/views/extras/Rewards/models/reward.dart';
+import 'package:brainbee/presentation/views/extras/Rewards/bloc/reward_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 
 class RewardDetailScreen extends StatefulWidget {
   final RewardModel reward;
   final int currentCoins;
-  final Function(RewardModel redeemedReward, int coinsDeducted)
-  onRedemptionSuccess;
 
   const RewardDetailScreen({
     super.key,
     required this.reward,
     required this.currentCoins,
-    required this.onRedemptionSuccess,
   });
 
   @override
@@ -23,76 +22,171 @@ class RewardDetailScreen extends StatefulWidget {
 class _RewardDetailScreenState extends State<RewardDetailScreen> {
   @override
   Widget build(BuildContext context) {
+    return BlocListener<RewardBloc, RewardState>(
+      listener: (context, state) {
+        if (state is RewardRedemptionSuccess) {
+          // Close detail screen after successful redemption
+          Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: BBColors.lightGrayBG,
+        body: CustomScrollView(slivers: [_buildAppBar(), _buildContent()]),
+        floatingActionButton: _buildRedeemButton(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      ),
+    );
+  }
+
+  Widget _buildAppBar() {
+    return SliverAppBar(
+      expandedHeight: 250,
+      pinned: true,
+      backgroundColor: BBColors.secondaryColor,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [BBColors.primaryColor, BBColors.secondaryColor],
+            ),
+          ),
+          child: Center(
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: BBColors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Icon(
+                _getRewardIcon(),
+                color: BBColors.secondaryColor,
+                size: 64,
+              ),
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        Container(
+          margin: const EdgeInsets.only(right: 16, top: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: BBColors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.monetization_on,
+                color: BBColors.secondaryColor,
+                size: 18,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${widget.currentCoins}',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: BBColors.secondaryColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContent() {
     final canAfford = widget.currentCoins >= widget.reward.coinPrice;
     final isRedeemed = widget.reward.status == RewardStatus.redeemed;
     final isAvailable = widget.reward.status == RewardStatus.available;
 
-    return Scaffold(
-      backgroundColor: BBColors.lightGrayBG,
-      body: CustomScrollView(
-        slivers: [
-          // App Bar
-          SliverAppBar(
-            expandedHeight: 250,
-            pinned: true,
-            backgroundColor: BBColors.secondaryColor,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [BBColors.primaryColor, BBColors.secondaryColor],
-                  ),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: BBColors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      _getRewardIcon(),
-                      color: BBColors.secondaryColor,
-                      size: 64,
-                    ),
-                  ),
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTitleSection(isRedeemed),
+            const SizedBox(height: 24),
+            _buildSection('Description', widget.reward.description),
+            const SizedBox(height: 20),
+            _buildSection(
+              'How to Redeem',
+              widget.reward.redemptionInstructions,
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              'Terms & Conditions',
+              widget.reward.termsAndConditions,
+            ),
+            const SizedBox(height: 20),
+            if (isRedeemed && widget.reward.redeemedAt != null) ...[
+              _buildSection(
+                'Redemption Details',
+                'Redeemed on ${_formatDate(widget.reward.redeemedAt!)}',
+              ),
+              const SizedBox(height: 20),
+            ],
+            if (!canAfford && isAvailable) _buildInsufficientCoinsWarning(),
+            const SizedBox(height: 100),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTitleSection(bool isRedeemed) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.reward.title,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: BBColors.darkHeading,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            actions: [
+              const SizedBox(height: 8),
               Container(
-                margin: const EdgeInsets.only(right: 16, top: 8),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 16,
+                  vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: BBColors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(20),
+                  gradient: const LinearGradient(
+                    colors: [BBColors.primaryColor, BBColors.secondaryColor],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(
                       Icons.monetization_on,
-                      color: BBColors.secondaryColor,
-                      size: 18,
+                      color: BBColors.white,
+                      size: 20,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Text(
-                      '${widget.currentCoins}',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: BBColors.secondaryColor,
+                      '${widget.reward.coinPrice} Coins',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: BBColors.white,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -101,185 +195,30 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
               ),
             ],
           ),
-          // Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title and Price
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.reward.title,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.headlineSmall?.copyWith(
-                                color: BBColors.darkHeading,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    BBColors.primaryColor,
-                                    BBColors.secondaryColor,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.monetization_on,
-                                    color: BBColors.white,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '${widget.reward.coinPrice} Coins',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.labelLarge?.copyWith(
-                                      color: BBColors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (isRedeemed)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: BBColors.successGreen,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.check_circle,
-                                color: BBColors.white,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Redeemed',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.labelMedium?.copyWith(
-                                  color: BBColors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
+        ),
+        if (isRedeemed)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: BBColors.successGreen,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check_circle, color: BBColors.white, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  'Redeemed',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: BBColors.white,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: 24),
-                  // Description
-                  _buildSection('Description', widget.reward.description),
-                  const SizedBox(height: 20),
-                  // Redemption Instructions
-                  _buildSection(
-                    'How to Redeem',
-                    widget.reward.redemptionInstructions,
-                  ),
-                  const SizedBox(height: 20),
-                  // Terms & Conditions
-                  _buildSection(
-                    'Terms & Conditions',
-                    widget.reward.termsAndConditions,
-                  ),
-                  const SizedBox(height: 20),
-                  // Redeemed Info (if applicable)
-                  if (isRedeemed && widget.reward.redeemedAt != null) ...[
-                    _buildSection(
-                      'Redemption Details',
-                      'Redeemed on ${_formatDate(widget.reward.redeemedAt!)}',
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                  // Insufficient Coins Warning
-                  if (!canAfford && isAvailable)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: BBColors.alertRed.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: BBColors.alertRed.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            color: BBColors.alertRed,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Insufficient Coins',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleSmall?.copyWith(
-                                    color: BBColors.alertRed,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'You need ${widget.reward.coinPrice - widget.currentCoins} more coins to redeem this reward.',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(color: BBColors.alertRed),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 100), // Space for bottom button
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-      // Floating Action Button / Redeem Button
-      floatingActionButton: _buildRedeemButton(
-        context,
-        canAfford,
-        isRedeemed,
-        isAvailable,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      ],
     );
   }
 
@@ -320,12 +259,48 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
     );
   }
 
-  Widget _buildRedeemButton(
-    BuildContext context,
-    bool canAfford,
-    bool isRedeemed,
-    bool isAvailable,
-  ) {
+  Widget _buildInsufficientCoinsWarning() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: BBColors.alertRed.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: BBColors.alertRed.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: BBColors.alertRed, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Insufficient Coins',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: BBColors.alertRed,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'You need ${widget.reward.coinPrice - widget.currentCoins} more coins.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: BBColors.alertRed),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRedeemButton() {
+    final canAfford = widget.currentCoins >= widget.reward.coinPrice;
+    final isRedeemed = widget.reward.status == RewardStatus.redeemed;
+
     Color buttonColor;
     String buttonText;
     IconData buttonIcon;
@@ -352,7 +327,7 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 20),
       child: ElevatedButton(
-        onPressed: isEnabled ? () => _showRedemptionBottomSheet(context) : null,
+        onPressed: isEnabled ? () => _showRedemptionBottomSheet() : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: buttonColor,
           foregroundColor: BBColors.white,
@@ -380,7 +355,7 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
     );
   }
 
-  void _showRedemptionBottomSheet(BuildContext context) {
+  void _showRedemptionBottomSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -389,7 +364,6 @@ class _RewardDetailScreenState extends State<RewardDetailScreen> {
           (context) => RedemptionBottomSheet(
             reward: widget.reward,
             currentCoins: widget.currentCoins,
-            onRedemptionSuccess: widget.onRedemptionSuccess,
           ),
     );
   }

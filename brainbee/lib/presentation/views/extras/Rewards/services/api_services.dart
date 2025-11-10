@@ -1,361 +1,280 @@
-import 'package:brainbee/presentation/views/extras/Rewards/UI/reward_catalog.dart';
-import 'package:flutter/material.dart';
-import 'package:brainbee/core/constants/bb_colors.dart';
+// ============================================
+// FILE 1: bb_api_service.dart
+// ============================================
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Example integration showing how to add reward system to existing app navigation
-/// This demonstrates how to integrate the reward catalog into your existing screens
+class RewardApiService {
+  // Base URL - Change this to your backend URL
+  static const String _baseUrl = 'http://10.0.2.2:5000/api/student';
 
-class IntegrationExample extends StatelessWidget {
-  const IntegrationExample({super.key});
+  // For local testing:
+  // static const String _baseUrl = 'http://localhost:3000/api/v1';
+  // For Android emulator:
+  // static const String _baseUrl = 'http://10.0.2.2:3000/api/v1';
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Your Existing Screen'),
-        actions: [
-          // Add reward store button to any existing screen
-          IconButton(
-            onPressed: () => _navigateToRewards(context),
-            icon: const Icon(Icons.redeem),
-            tooltip: 'Reward Store',
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Your existing content here
-          const Expanded(
-            child: Center(child: Text('Your existing screen content')),
-          ),
+  // Timeout duration
+  static const Duration _timeout = Duration(seconds: 30);
 
-          // Add reward store button anywhere in your UI
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: _buildRewardStoreButton(context),
-          ),
-        ],
-      ),
-
-      // Or add it to bottom navigation
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Learn'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.redeem), // Reward store tab
-            label: 'Rewards',
-          ),
-        ],
-        onTap: (index) {
-          if (index == 2) {
-            _navigateToRewards(context);
-          }
-          // Handle other navigation
-        },
-      ),
-    );
+  /// Get auth token from SharedPreferences
+  Future<String?> _getToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('auth_token');
+    } catch (e) {
+      print('Error getting token: $e');
+      return null;
+    }
   }
 
-  Widget _buildRewardStoreButton(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [BBColors.primaryColor, BBColors.secondaryColor],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: BBColors.primaryColor.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _navigateToRewards(context),
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.redeem, color: BBColors.white, size: 24),
-                const SizedBox(width: 12),
-                Text(
-                  'Open Reward Store',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: BBColors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: BBColors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.monetization_on,
-                        color: BBColors.white,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '750', // Current user coins - connect to your user system
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: BBColors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  /// Get request
+  Future<Map<String, dynamic>> getRequest({
+    required String endpoint,
+    Map<String, String>? queryParameters,
+  }) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Authentication token not found. Please login again.');
+      }
 
-  void _navigateToRewards(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const RewardCatalogScreen()),
-    );
-  }
-}
+      final uri = Uri.parse(
+        '$_baseUrl$endpoint',
+      ).replace(queryParameters: queryParameters);
 
-/// For Drawer Integration
-class DrawerWithRewards extends StatelessWidget {
-  const DrawerWithRewards({super.key});
+      print('GET Request: $uri');
 
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [BBColors.primaryColor, BBColors.secondaryColor],
-              ),
-            ),
-            child: Text(
-              'BrainBee',
-              style: TextStyle(
-                color: BBColors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Home'),
-            onTap: () => Navigator.pop(context),
-          ),
-          ListTile(
-            leading: const Icon(Icons.book),
-            title: const Text('Learn'),
-            onTap: () => Navigator.pop(context),
-          ),
-          ListTile(
-            leading: const Icon(Icons.quiz),
-            title: const Text('Practice'),
-            onTap: () => Navigator.pop(context),
-          ),
-          const Divider(),
-          // Add reward store to drawer
-          ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [BBColors.primaryColor, BBColors.secondaryColor],
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.redeem, color: BBColors.white, size: 18),
-            ),
-            title: const Text(
-              'Reward Store',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: const Text('Redeem your coins'),
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: BBColors.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.monetization_on,
-                    color: BBColors.primaryColor,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '750',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: BBColors.primaryColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const RewardCatalogScreen(),
-                ),
-              );
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
             },
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Settings'),
-            onTap: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
+          )
+          .timeout(_timeout);
+
+      return _handleResponse(response);
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } on http.ClientException {
+      throw Exception('Failed to connect to server. Please try again.');
+    } on TimeoutException {
+      throw Exception('Request timeout. Please try again.');
+    } catch (e) {
+      throw Exception('Failed to fetch data: $e');
+    }
+  }
+
+  /// Post request
+  Future<Map<String, dynamic>> postRequest({
+    required String endpoint,
+    Map<String, dynamic>? body,
+  }) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Authentication token not found. Please login again.');
+      }
+
+      final uri = Uri.parse('$_baseUrl$endpoint');
+
+      print('POST Request: $uri');
+      print('Body: ${jsonEncode(body)}');
+
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: body != null ? jsonEncode(body) : null,
+          )
+          .timeout(_timeout);
+
+      return _handleResponse(response);
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } on http.ClientException {
+      throw Exception('Failed to connect to server. Please try again.');
+    } on TimeoutException {
+      throw Exception('Request timeout. Please try again.');
+    } catch (e) {
+      throw Exception('Failed to submit data: $e');
+    }
+  }
+
+  /// Put request
+  Future<Map<String, dynamic>> putRequest({
+    required String endpoint,
+    Map<String, dynamic>? body,
+  }) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Authentication token not found. Please login again.');
+      }
+
+      final uri = Uri.parse('$_baseUrl$endpoint');
+
+      print('PUT Request: $uri');
+      print('Body: ${jsonEncode(body)}');
+
+      final response = await http
+          .put(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: body != null ? jsonEncode(body) : null,
+          )
+          .timeout(_timeout);
+
+      return _handleResponse(response);
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } on http.ClientException {
+      throw Exception('Failed to connect to server. Please try again.');
+    } on TimeoutException {
+      throw Exception('Request timeout. Please try again.');
+    } catch (e) {
+      throw Exception('Failed to update data: $e');
+    }
+  }
+
+  /// Delete request
+  Future<Map<String, dynamic>> deleteRequest({required String endpoint}) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Authentication token not found. Please login again.');
+      }
+
+      final uri = Uri.parse('$_baseUrl$endpoint');
+
+      print('DELETE Request: $uri');
+
+      final response = await http
+          .delete(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(_timeout);
+
+      return _handleResponse(response);
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } on http.ClientException {
+      throw Exception('Failed to connect to server. Please try again.');
+    } on TimeoutException {
+      throw Exception('Request timeout. Please try again.');
+    } catch (e) {
+      throw Exception('Failed to delete data: $e');
+    }
+  }
+
+  /// Handle HTTP response
+  Map<String, dynamic> _handleResponse(http.Response response) {
+    print('Response Status: ${response.statusCode}');
+    print('Response Body: ${response.body}');
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      try {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } catch (e) {
+        throw Exception('Failed to parse response: $e');
+      }
+    } else if (response.statusCode == 401) {
+      throw Exception('Session expired. Please login again.');
+    } else if (response.statusCode == 403) {
+      throw Exception('Access denied. You do not have permission.');
+    } else if (response.statusCode == 404) {
+      throw Exception('Resource not found.');
+    } else if (response.statusCode == 500) {
+      throw Exception('Server error. Please try again later.');
+    } else {
+      try {
+        final errorBody = jsonDecode(response.body) as Map<String, dynamic>;
+        final errorMessage = errorBody['message'] ?? 'Request failed';
+        throw Exception(errorMessage);
+      } catch (e) {
+        throw Exception('Request failed with status: ${response.statusCode}');
+      }
+    }
+  }
+
+  /// Upload file (for future use - profile pictures, etc.)
+  Future<Map<String, dynamic>> uploadFile({
+    required String endpoint,
+    required File file,
+    required String fieldName,
+    Map<String, String>? additionalFields,
+  }) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Authentication token not found. Please login again.');
+      }
+
+      final uri = Uri.parse('$_baseUrl$endpoint');
+      final request = http.MultipartRequest('POST', uri);
+
+      request.headers.addAll({'Authorization': 'Bearer $token'});
+
+      // Add file
+      request.files.add(
+        await http.MultipartFile.fromPath(fieldName, file.path),
+      );
+
+      // Add additional fields
+      if (additionalFields != null) {
+        request.fields.addAll(additionalFields);
+      }
+
+      print('Upload Request: $uri');
+
+      final streamedResponse = await request.send().timeout(_timeout);
+      final response = await http.Response.fromStream(streamedResponse);
+
+      return _handleResponse(response);
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } on http.ClientException {
+      throw Exception('Failed to connect to server. Please try again.');
+    } on TimeoutException {
+      throw Exception('Upload timeout. Please try again.');
+    } catch (e) {
+      throw Exception('Failed to upload file: $e');
+    }
   }
 }
 
-/// For Card-based Dashboard Integration
-class DashboardCardExample extends StatelessWidget {
-  const DashboardCardExample({super.key});
+// class ApiConfig {
+//   // Development
+//   static const String devBaseUrl = 'http://localhost:3000/api/v1';
 
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.all(16),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [BBColors.primaryColor, BBColors.secondaryColor],
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.redeem, color: BBColors.white, size: 32),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Reward Store',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleLarge?.copyWith(
-                            color: BBColors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Redeem amazing rewards',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(
-                            color: BBColors.white.withOpacity(0.9),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: BBColors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.monetization_on,
-                          color: BBColors.white,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '750 Coins',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.labelLarge?.copyWith(
-                            color: BBColors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RewardCatalogScreen(),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BBColors.white,
-                      foregroundColor: BBColors.primaryColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Shop Now',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+//   // Staging
+//   static const String stagingBaseUrl =
+//       'https://staging-api.brainbee.com/api/v1';
+
+//   // Production
+//   static const String prodBaseUrl = 'https://api.brainbee.com/api/v1';
+
+//   // Current environment
+//   static const String baseUrl = devBaseUrl; // Change based on environment
+
+//   // API endpoints
+//   static const String rewards = '/rewards';
+//   static const String rewardsCoins = '/rewards/coins';
+//   static const String rewardsRedeem = '/rewards/redeem';
+//   static const String rewardsHistory = '/rewards/history';
+//   static const String studentCoins = '/student/coins';
+// }

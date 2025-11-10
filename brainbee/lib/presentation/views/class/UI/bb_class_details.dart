@@ -1,16 +1,19 @@
+// lib/presentation/views/class/UI/bb_class_details_updated.dart
+
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/presentation/views/class/UI/assignment/bb_class_assignment.dart';
-import 'package:brainbee/presentation/views/class/UI/bb_class.dart';
 import 'package:brainbee/presentation/views/class/UI/discussion/bb_discussion.dart';
 import 'package:brainbee/presentation/views/class/UI/material/bb_class_material.dart';
 import 'package:brainbee/presentation/views/class/UI/quiz/bb_class_quiz.dart';
+import 'package:brainbee/presentation/views/class/models/class_models.dart';
 import 'package:flutter/material.dart';
 
 class ClassDetailScreen extends StatelessWidget {
   final EnrolledClass classItem;
+  final String? classId; // Optional: for fetching fresh data
 
-  const ClassDetailScreen({super.key, required this.classItem});
+  const ClassDetailScreen({super.key, required this.classItem, this.classId});
 
   @override
   Widget build(BuildContext context) {
@@ -36,30 +39,7 @@ class ClassDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _getSubjectColor(classItem.subject),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  BBText(
-                    data: 'Teacher: ${classItem.teacher}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildClassHeader(context),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -75,23 +55,7 @@ class ClassDetailScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   _buildInfoSection(context, 'Progress'),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _buildProgressIndicator(
-                        classItem.completedAssignments,
-                        classItem.totalAssignments,
-                      ),
-                      const SizedBox(width: 12),
-                      BBText(
-                        data:
-                            '${classItem.completedAssignments}/${classItem.totalAssignments} Assignments',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[800],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+                  _buildProgressRow(context),
                   const SizedBox(height: 24),
                   _buildInfoSection(context, 'Actions'),
                   const SizedBox(height: 12),
@@ -100,19 +64,7 @@ class ClassDetailScreen extends StatelessWidget {
                     'View Materials',
                     Icons.book,
                     Colors.blueAccent,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => const ClassMaterialsScreen(
-                                classId: 'your_class_id',
-                                className: 'Mathematics',
-                                teacherName: 'Mr. Johnson',
-                              ),
-                        ),
-                      );
-                    },
+                    () => _navigateToMaterials(context),
                   ),
                   const SizedBox(height: 12),
                   _buildActionButton(
@@ -120,20 +72,7 @@ class ClassDetailScreen extends StatelessWidget {
                     'Assignments',
                     Icons.assignment,
                     Colors.orangeAccent,
-                    () {
-                      // In your class details screen, add this to the assignments button:
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => const ClassAssignmentsScreen(
-                                classId: 'your_class_id',
-                                className: 'Mathematics',
-                                teacherName: 'Mr. Johnson',
-                              ),
-                        ),
-                      );
-                    },
+                    () => _navigateToAssignments(context),
                   ),
                   const SizedBox(height: 12),
                   _buildActionButton(
@@ -141,27 +80,7 @@ class ClassDetailScreen extends StatelessWidget {
                     'Forum',
                     Icons.forum,
                     Colors.purpleAccent,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => const ClassForumScreen(
-                                classId: 'your_class_id',
-                                className: 'Mathematics',
-                                teacherName: 'Mr. Johnson',
-                              ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildActionButton(
-                    context,
-                    'Contact Teacher',
-                    Icons.email,
-                    Colors.green,
-                    () {},
+                    () => _navigateToForum(context),
                   ),
                   const SizedBox(height: 12),
                   _buildActionButton(
@@ -169,24 +88,48 @@ class ClassDetailScreen extends StatelessWidget {
                     'Quizzes',
                     Icons.quiz,
                     Colors.red,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => const QuizListScreen(
-                                classId: 'your_class_id',
-                                className: 'Mathematics',
-                              ),
-                        ),
-                      );
-                    },
+                    () => _navigateToQuizzes(context),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionButton(
+                    context,
+                    'Contact Teacher',
+                    Icons.email,
+                    Colors.green,
+                    () => _contactTeacher(context),
                   ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildClassHeader(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _getSubjectColor(classItem.subject),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          BBText(
+            data: 'Teacher: ${classItem.teacher}',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white.withValues(alpha: 0.85),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -234,6 +177,26 @@ class ClassDetailScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProgressRow(BuildContext context) {
+    return Row(
+      children: [
+        _buildProgressIndicator(
+          classItem.completedAssignments,
+          classItem.totalAssignments,
+        ),
+        const SizedBox(width: 12),
+        BBText(
+          data:
+              '${classItem.completedAssignments}/${classItem.totalAssignments} Assignments',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Colors.grey[800],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 
@@ -314,8 +277,13 @@ class ClassDetailScreen extends StatelessWidget {
   Color _getSubjectColor(String subject) {
     switch (subject.toLowerCase()) {
       case 'mathematics':
+      case 'math':
         return BBColors.progressColor1;
       case 'science':
+      case 'physics':
+      case 'chemistry':
+      case 'biology':
+      case 'bio':
         return BBColors.progressColor2;
       case 'english':
         return BBColors.progressColor3;
@@ -324,5 +292,76 @@ class ClassDetailScreen extends StatelessWidget {
       default:
         return BBColors.progressColor4;
     }
+  }
+
+  // Navigation Methods
+  void _navigateToMaterials(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => ClassMaterialsScreen(
+              classId: classId ?? classItem.id.toString(),
+              className: classItem.name,
+              teacherName: classItem.teacher,
+            ),
+      ),
+    );
+  }
+
+  void _navigateToAssignments(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => ClassAssignmentsScreen(
+              classId: classId ?? classItem.id.toString(),
+              className: classItem.name,
+              teacherName: classItem.teacher,
+            ),
+      ),
+    );
+  }
+
+  void _navigateToForum(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => ClassForumScreen(
+              classId: classId ?? classItem.id.toString(),
+              className: classItem.name,
+              teacherName: classItem.teacher,
+            ),
+      ),
+    );
+  }
+
+  void _navigateToQuizzes(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => QuizListScreen(
+              classId: classId ?? classItem.id.toString(),
+              className: classItem.name,
+            ),
+      ),
+    );
+  }
+
+  void _contactTeacher(BuildContext context) {
+    // TODO: Implement contact teacher functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Contact ${classItem.teacher}'),
+        action: SnackBarAction(
+          label: 'Email',
+          onPressed: () {
+            // Open email client or navigate to messaging screen
+          },
+        ),
+      ),
+    );
   }
 }

@@ -1,4 +1,6 @@
+import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 void showExtraPopup(
   BuildContext context,
@@ -149,12 +151,30 @@ Widget _buildEnhancedItem(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () {
+        onTap: () async {
+          // Close the bottom sheet first
           Navigator.of(context).pop();
 
-          Navigator.of(
-            context,
+          // Get the root context (not the bottom sheet context)
+          final rootContext =
+              Navigator.of(context, rootNavigator: true).context;
+
+          // Navigate to the screen
+          final result = await Navigator.of(
+            rootContext,
           ).push(MaterialPageRoute(builder: (context) => item['navigateTo']));
+
+          // Check if we're returning from rewards screen and refresh student data
+          final widgetType = item['navigateTo'].runtimeType.toString();
+          print('Returned from: $widgetType'); // Debug log
+
+          if (widgetType.contains('Reward')) {
+            print('Refreshing student data...'); // Debug log
+            // Use the root context to access StudentBloc
+            if (rootContext.mounted) {
+              rootContext.read<StudentBloc>().add(StudentFetchData());
+            }
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(5),
@@ -166,7 +186,6 @@ Widget _buildEnhancedItem(
                 SizedBox(
                   width: 50,
                   height: 50,
-
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Padding(

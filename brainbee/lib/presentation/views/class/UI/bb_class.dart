@@ -1,132 +1,30 @@
+// lib/presentation/views/class/UI/bb_class_integrated.dart
+
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/presentation/views/class/UI/bb_class_details.dart';
+import 'package:brainbee/presentation/views/class/bloc/class_bloc.dart';
+import 'package:brainbee/presentation/views/class/models/class_models.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class EnrolledClass {
-  final int id;
-  final String name;
-  final String subject;
-  final String teacher;
-  final String imageUrl;
-  final String schedule;
-  final int totalStudents;
-  final int completedAssignments;
-  final int totalAssignments;
-
-  EnrolledClass({
-    required this.id,
-    required this.name,
-    required this.subject,
-    required this.teacher,
-    required this.imageUrl,
-    required this.schedule,
-    required this.totalStudents,
-    required this.totalAssignments,
-    required this.completedAssignments,
-  });
-}
-
-class BBClass extends StatefulWidget {
+class BBClass extends StatelessWidget {
   const BBClass({super.key});
 
   @override
-  State<BBClass> createState() => _BBClassState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create:
+          (context) =>
+              context.read<ClassBloc>()..add(const FetchMyClassesEvent()),
+      child: const BBClassView(),
+    );
+  }
 }
 
-class _BBClassState extends State<BBClass> {
-  bool _isLoading = true;
-  bool _hasError = false;
-  List<EnrolledClass>? _enrolledClasses;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchEnrolledClasses();
-  }
-
-  Future<void> _fetchEnrolledClasses() async {
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-    });
-
-    await Future.delayed(const Duration(seconds: 2));
-
-    final bool shouldSimulateError =
-        ModalRoute.of(context)?.settings.arguments == 'simulateError';
-    final bool shouldSimulateNoClasses =
-        ModalRoute.of(context)?.settings.arguments == 'simulateNoClasses';
-
-    if (shouldSimulateError) {
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-      });
-      return;
-    }
-
-    if (shouldSimulateNoClasses) {
-      setState(() {
-        _isLoading = false;
-        _enrolledClasses = [];
-      });
-      return;
-    }
-
-    final mockClasses = [
-      EnrolledClass(
-        id: 1,
-        name: 'Mathematics',
-        subject: 'Mathematics',
-        teacher: 'Mr. Johnson',
-        imageUrl: 'assets/images/math.png',
-        schedule: 'Mon, Wed, Fri - 10:00 AM',
-        totalStudents: 30,
-        totalAssignments: 12,
-        completedAssignments: 5,
-      ),
-      EnrolledClass(
-        id: 2,
-        name: 'Science',
-        subject: 'Science',
-        teacher: 'Mrs. Williams',
-        imageUrl: 'assets/images/science.png',
-        schedule: 'Tue, Thu - 1:30 PM',
-        totalStudents: 25,
-        totalAssignments: 10,
-        completedAssignments: 8,
-      ),
-      EnrolledClass(
-        id: 3,
-        name: 'English Literature',
-        subject: 'English',
-        teacher: 'Ms. Davis',
-        imageUrl: 'assets/images/english.png',
-        schedule: 'Mon, Wed - 3:00 PM',
-        totalStudents: 28,
-        totalAssignments: 15,
-        completedAssignments: 10,
-      ),
-      EnrolledClass(
-        id: 4,
-        name: 'World History',
-        subject: 'History',
-        teacher: 'Mr. Brown',
-        imageUrl: 'assets/images/history.png',
-        schedule: 'Tue, Thu - 11:00 AM',
-        totalStudents: 22,
-        totalAssignments: 8,
-        completedAssignments: 3,
-      ),
-    ];
-
-    setState(() {
-      _isLoading = false;
-      _enrolledClasses = mockClasses;
-    });
-  }
+class BBClassView extends StatelessWidget {
+  const BBClassView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -139,55 +37,103 @@ class _BBClassState extends State<BBClass> {
         ),
         centerTitle: true,
       ),
-      body: _buildBody(),
+      body: BlocBuilder<ClassBloc, ClassState>(
+        builder: (context, state) {
+          if (state is ClassLoading) {
+            return const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  BBColors.secondaryColor,
+                ),
+              ),
+            );
+          }
+
+          if (state is ClassRefreshing) {
+            // Show previous data while refreshing
+            return _buildClassList(
+              context,
+              state.previousClasses,
+              isRefreshing: true,
+            );
+          }
+
+          if (state is ClassError) {
+            return _buildErrorState(context, state);
+          }
+
+          if (state is ClassEmpty) {
+            return _buildNoClassesState(context);
+          }
+
+          if (state is ClassLoadSuccess) {
+            return _buildClassList(context, state.classes);
+          }
+
+          return const SizedBox.shrink();
+        },
+      ),
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(BBColors.secondaryColor),
-        ),
-      );
-    }
-
-    if (_hasError) {
-      return _buildErrorState();
-    }
-
-    if (_enrolledClasses == null || _enrolledClasses!.isEmpty) {
-      return _buildNoClassesState();
-    }
-
-    return _buildClassList();
-  }
-
-  Widget _buildClassList() {
+  Widget _buildClassList(
+    BuildContext context,
+    List<ClassModel> classes, {
+    bool isRefreshing = false,
+  }) {
     return RefreshIndicator(
-      onRefresh: _fetchEnrolledClasses,
+      onRefresh: () async {
+        context.read<ClassBloc>().add(const RefreshMyClassesEvent());
+        // Wait for the refresh to complete
+        await context.read<ClassBloc>().stream.firstWhere(
+          (state) => state is! ClassRefreshing,
+        );
+      },
       color: BBColors.secondaryColor,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
+      child: Stack(
         children: [
-          BBText(
-            data: 'Enrolled Classes',
-            style: context.textStyle.titleMedium?.copyWith(fontSize: 16),
+          ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              BBText(
+                data: 'Enrolled Classes',
+                style: context.textStyle.titleMedium?.copyWith(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              ...classes.map(
+                (classItem) => _buildClassCard(context, classItem),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          ..._enrolledClasses!.map((classItem) => _buildClassCard(classItem)),
+          if (isRefreshing)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SizedBox(
+                height: 2,
+                child: const LinearProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    BBColors.secondaryColor,
+                  ),
+                  backgroundColor: Colors.transparent,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildClassCard(EnrolledClass classItem) {
+  Widget _buildClassCard(BuildContext context, ClassModel classItem) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ClassDetailScreen(classItem: classItem),
+            builder:
+                (context) =>
+                    ClassDetailScreen(classItem: classItem.toEnrolledClass()),
           ),
         );
       },
@@ -241,7 +187,7 @@ class _BBClassState extends State<BBClass> {
                   ),
                   const SizedBox(height: 6),
                   BBText(
-                    data: 'Teacher: ${classItem.teacher}',
+                    data: 'Teacher: ${classItem.teacher.fullName}',
                     style: context.textStyle.bodyMedium?.copyWith(
                       color: BBColors.white.withValues(alpha: 0.85),
                     ),
@@ -253,6 +199,13 @@ class _BBClassState extends State<BBClass> {
                       color: BBColors.white.withOpacity(0.85),
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  BBText(
+                    data: 'Grade ${classItem.grade}',
+                    style: context.textStyle.bodySmall?.copyWith(
+                      color: BBColors.white.withOpacity(0.75),
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -262,6 +215,7 @@ class _BBClassState extends State<BBClass> {
                           _buildProgressIndicator(
                             classItem.completedAssignments,
                             classItem.totalAssignments,
+                            classItem.subject,
                           ),
                           const SizedBox(width: 10),
                           BBText(
@@ -302,7 +256,7 @@ class _BBClassState extends State<BBClass> {
     );
   }
 
-  Widget _buildProgressIndicator(int completed, int total) {
+  Widget _buildProgressIndicator(int completed, int total, String subject) {
     double progress = total > 0 ? completed / total : 0;
     return Container(
       width: 32,
@@ -323,8 +277,13 @@ class _BBClassState extends State<BBClass> {
   Color _getSubjectColor(String subject) {
     switch (subject.toLowerCase()) {
       case 'mathematics':
+      case 'math':
         return BBColors.progressColor1;
       case 'science':
+      case 'physics':
+      case 'chemistry':
+      case 'biology':
+      case 'bio':
         return BBColors.progressColor2;
       case 'english':
         return BBColors.progressColor3;
@@ -335,7 +294,7 @@ class _BBClassState extends State<BBClass> {
     }
   }
 
-  Widget _buildNoClassesState() {
+  Widget _buildNoClassesState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -383,76 +342,88 @@ class _BBClassState extends State<BBClass> {
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildErrorState(BuildContext context, ClassError state) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 80, color: BBColors.alertRed),
-          const SizedBox(height: 16),
-          BBText(
-            data: 'Failed to retrieve classes',
-            style: context.textStyle.titleMedium?.copyWith(
-              color: BBColors.darkHeading,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              state.isNetworkError ? Icons.wifi_off : Icons.error_outline,
+              size: 80,
+              color: BBColors.alertRed,
             ),
-          ),
-          const SizedBox(height: 8),
-          BBText(
-            data: 'Please check your connection and try again',
-            style: context.textStyle.bodyMedium?.copyWith(
-              color: BBColors.bodyText,
+            const SizedBox(height: 16),
+            BBText(
+              data:
+                  state.isNetworkError
+                      ? 'No Internet Connection'
+                      : 'Failed to Load Classes',
+              style: context.textStyle.titleMedium?.copyWith(
+                color: BBColors.darkHeading,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              OutlinedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: BBColors.bodyText,
-                  side: const BorderSide(color: BBColors.borderGray),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: BBText(
-                  data: 'Cancel',
-                  style: context.textStyle.labelLarge?.copyWith(
-                    color: BBColors.bodyText,
-                  ),
-                ),
+            const SizedBox(height: 8),
+            BBText(
+              data: state.message,
+              style: context.textStyle.bodyMedium?.copyWith(
+                color: BBColors.bodyText,
               ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: _fetchEnrolledClasses,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BBColors.primaryColor,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: BBColors.bodyText,
+                    side: const BorderSide(color: BBColors.borderGray),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  child: BBText(
+                    data: 'Cancel',
+                    style: context.textStyle.labelLarge?.copyWith(
+                      color: BBColors.bodyText,
+                    ),
                   ),
                 ),
-                child: BBText(
-                  data: 'Retry',
-                  style: context.textStyle.labelLarge?.copyWith(
-                    color: BBColors.white,
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<ClassBloc>().add(const FetchMyClassesEvent());
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BBColors.primaryColor,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: BBText(
+                    data: 'Retry',
+                    style: context.textStyle.labelLarge?.copyWith(
+                      color: BBColors.white,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
