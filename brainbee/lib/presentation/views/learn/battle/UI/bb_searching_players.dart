@@ -103,12 +103,33 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
                 ? state.room
                 : null;
 
+        // ✅ Determine which player is "You" and which is "Opponent"
+        BattlePlayer? currentPlayer;
+        BattlePlayer? opponentPlayer;
+
+        if (currentRoom != null) {
+          // Check if current user is the host or opponent
+          // We use widget.currentPlayerName to match against room players
+          final isHost =
+              currentRoom.host.username == widget.currentPlayerName ||
+              currentRoom.host.avatarInitial == widget.currentPlayerInitial;
+
+          if (isHost) {
+            currentPlayer = currentRoom.host;
+            opponentPlayer = currentRoom.opponent;
+          } else {
+            currentPlayer = currentRoom.opponent;
+            opponentPlayer = currentRoom.host;
+          }
+        }
+
         print(
           '🔍 UI State - opponentFound: $opponentFound, currentRoom: ${currentRoom?.roomId}',
         );
-        if (currentRoom?.opponent != null) {
-          print('   Opponent: ${currentRoom!.opponent!.username}');
-        }
+        print(
+          '   Current Player: ${currentPlayer?.username ?? widget.currentPlayerName}',
+        );
+        print('   Opponent Player: ${opponentPlayer?.username ?? "NULL"}');
 
         return Scaffold(
           backgroundColor: const Color(0xFFF8F8F8),
@@ -209,8 +230,12 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
 
                             // Current Player Card
                             _buildPlayerCard(
-                              name: widget.currentPlayerName,
-                              initial: widget.currentPlayerInitial,
+                              name:
+                                  currentPlayer?.username ??
+                                  widget.currentPlayerName,
+                              initial:
+                                  currentPlayer?.avatarInitial ??
+                                  widget.currentPlayerInitial,
                               color: widget.currentPlayerColor,
                               isCurrentPlayer: true,
                             ),
@@ -230,13 +255,12 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
                             // Opponent Card
                             _buildPlayerCard(
                               name:
-                                  opponentFound && currentRoom?.opponent != null
-                                      ? currentRoom!.opponent!.username
+                                  opponentFound && opponentPlayer != null
+                                      ? opponentPlayer.username
                                       : 'Searching...',
                               initial:
-                                  opponentFound && currentRoom?.opponent != null
-                                      ? currentRoom!.opponent!.username[0]
-                                          .toUpperCase()
+                                  opponentFound && opponentPlayer != null
+                                      ? opponentPlayer.avatarInitial
                                       : '?',
                               color:
                                   opponentFound
