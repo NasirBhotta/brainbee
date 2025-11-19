@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:brainbee/config/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 class AuthApiService {
-  static const String baseUrl = "http://10.0.2.2:5000";
+  static const String baseUrl = BBApiConfig.baseUrl;
   static const Duration timeoutDuration = Duration(seconds: 30);
 
   Future<http.Response> getProfile(String token) async {

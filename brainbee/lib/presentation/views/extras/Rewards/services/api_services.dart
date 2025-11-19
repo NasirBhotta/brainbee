@@ -4,12 +4,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:brainbee/config/api_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RewardApiService {
   // Base URL - Change this to your backend URL
-  static const String _baseUrl = 'http://10.0.2.2:5000/api/student';
+  static const String _baseUrl = '${BBApiConfig.baseUrl}/api/student';
 
   // For local testing:
   // static const String _baseUrl = 'http://localhost:3000/api/v1';

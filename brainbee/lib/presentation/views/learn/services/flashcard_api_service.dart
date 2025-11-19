@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:brainbee/config/api_config.dart';
 import 'package:brainbee/core/utils/helper/bb_token.dart';
 import 'package:http/http.dart' as http;
 
@@ -15,7 +16,7 @@ class FlashCardContentApiException implements Exception {
 }
 
 class FlashCardContentApiService {
-  static const String _baseUrl = 'http://10.0.2.2:5000';
+  static const String _baseUrl = BBApiConfig.baseUrl;
   final http.Client _client;
   final Duration timeout;
 

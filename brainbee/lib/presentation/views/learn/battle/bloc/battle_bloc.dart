@@ -52,7 +52,12 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
 
       print("it is comming here");
       if (event.mode == BattleMode.random) {
-        emit(BattleSearching(room: room));
+        // Check if opponent already matched (shouldn't happen for create, but be safe)
+        if (room.status == BattleStatus.matched && room.opponent != null) {
+          emit(BattleOpponentFound(room: room));
+        } else {
+          emit(BattleSearching(room: room));
+        }
       } else {
         emit(BattleRoomCreated(room: room));
       }
@@ -71,11 +76,23 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         invitationCode: event.invitationCode,
       );
 
+      print('🔍 JOINED ROOM DATA:');
+      print('   Host: ${room.host.username}');
+      print('   Opponent: ${room.opponent?.username ?? "NULL"}');
+      print('   Status: ${room.status}');
+
       // Store current user ID (opponent)
       _currentUserId = room.opponent?.id;
 
-      _connectToRoom(room.roomId);
-      emit(BattleOpponentFound(room: room));
+      await _connectToRoom(room.roomId);
+
+      // Check if room has opponent data
+      if (room.opponent != null) {
+        emit(BattleOpponentFound(room: room));
+      } else {
+        // If no opponent data yet, emit searching state
+        emit(BattleSearching(room: room));
+      }
     } catch (e) {
       emit(BattleError(message: e.toString()));
     }
@@ -92,11 +109,17 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         chapters: event.chapters,
       );
 
-      // Store current user ID (host)
       _currentUserId = room.host.id;
-
       await _connectToRoom(room.roomId);
-      emit(BattleSearching(room: room));
+
+      // ✅ Check if opponent is already found
+      if (room.status == BattleStatus.matched && room.opponent != null) {
+        print('🎯 Opponent already matched! Emitting BattleOpponentFound');
+        emit(BattleOpponentFound(room: room));
+      } else {
+        print('🔍 No opponent yet, emitting BattleSearching');
+        emit(BattleSearching(room: room));
+      }
     } catch (e) {
       emit(BattleError(message: e.toString()));
     }
@@ -181,83 +204,120 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
     }
   }
 
+  // lib/presentation/views/learn/battle/bloc/battle_bloc.dart
+
   Future<void> _onRoomUpdateReceived(
     RoomUpdateReceivedEvent event,
     Emitter<BattleState> emit,
   ) async {
     final update = event.update;
+    print('✅ WebSocket Update Received by BLoC: $update');
+    final type = update['type'] as String?;
 
-    // Handle different WebSocket event structures
-    final eventType = update['event'] as String?;
-    final data = update['data'] as Map<String, dynamic>?;
+    switch (type) {
+      case 'opponent_joined':
+        if ((state is BattleRoomCreated ||
+                state is BattleSearching ||
+                state is BattleOpponentFound) &&
+            update.containsKey('opponent')) {
+          final currentState = state as dynamic;
+          final room = (currentState.room as BattleRoom).copyWith(
+            opponent: BattlePlayer.fromJson(update['opponent']),
+            status: BattleStatus.matched,
+          );
+          emit(BattleOpponentFound(room: room));
+        }
+        break;
+      case 'room_update':
+        print('🔄 Processing room_update in BLoC');
 
-    if (eventType == 'room_update' && data != null) {
-      final type = data['type'] as String?;
+        // Check if this update contains room data with opponent
+        if (update.containsKey('room')) {
+          final roomData = update['room'];
+          final updatedRoom = BattleRoom.fromJson(roomData);
 
-      switch (type) {
-        case 'opponent_joined':
-          if (state is BattleRoomCreated || state is BattleSearching) {
-            final currentState = state as dynamic;
-            final room = (currentState.room as BattleRoom).copyWith(
-              opponent: BattlePlayer.fromJson(data['opponent']),
-              status: BattleStatus.matched,
-            );
-            emit(BattleOpponentFound(room: room));
+          print(
+            '   Updated room opponent: ${updatedRoom.opponent?.username ?? "NULL"}',
+          );
+
+          if (state is BattleSearching || state is BattleOpponentFound) {
+            emit(BattleOpponentFound(room: updatedRoom));
           }
-          break;
+        }
+        break;
+      case 'player_ready':
+        if ((state is BattleOpponentFound || state is BattleReady) &&
+            update.containsKey('playerId')) {
+          final String playerId = update['playerId'] as String;
 
-        case 'player_ready':
-          if (state is BattleOpponentFound || state is BattleReady) {
-            final currentState = state as dynamic;
-            final room = currentState.room as BattleRoom;
-            final playerId = data['playerId'] as String;
+          // Safely obtain the room from the concrete state type
+          final BattleRoom room =
+              (state is BattleReady)
+                  ? (state as BattleReady).room
+                  : (state as BattleOpponentFound).room;
 
-            emit(
-              BattleReady(
-                room: room,
-                isHostReady:
-                    playerId == room.host.id
-                        ? true
-                        : (state is BattleReady
-                            ? (state as BattleReady).isHostReady
-                            : false),
-                isOpponentReady:
-                    playerId == room.opponent?.id
-                        ? true
-                        : (state is BattleReady
-                            ? (state as BattleReady).isOpponentReady
-                            : false),
-              ),
-            );
+          // 1. Determine the PREVIOUS ready state.
+          bool previousHostReady = false;
+          bool previousOpponentReady = false;
+          if (state is BattleReady) {
+            final readyState = state as BattleReady;
+            previousHostReady = readyState.isHostReady;
+            previousOpponentReady = readyState.isOpponentReady;
           }
-          break;
 
-        case 'battle_started':
-          add(StartBattleEvent(roomId: data['roomId']));
-          break;
+          // 2. Calculate the NEW ready state based on the event.
+          final bool isHostNowReady =
+              (playerId == room.host.id) ? true : previousHostReady;
+          final bool isOpponentNowReady =
+              (playerId == room.opponent?.id) ? true : previousOpponentReady;
 
-        case 'opponent_answered':
-          add(
-            OpponentAnsweredEvent(
-              questionIndex: data['questionIndex'],
-              score: data['score'],
+          // 3. Emit the new BattleReady state.
+          emit(
+            BattleReady(
+              room: room,
+              isHostReady: isHostNowReady,
+              isOpponentReady: isOpponentNowReady,
             ),
           );
-          break;
+        }
+        break;
 
-        case 'battle_completed':
-          add(GetBattleResultEvent(roomId: data['roomId']));
-          break;
+      case 'battle_started':
+        if (update.containsKey('roomId')) {
+          add(StartBattleEvent(roomId: update['roomId']));
+        }
+        break;
 
-        case 'opponent_left':
-          emit(BattleCancelled(message: 'Opponent left the battle'));
-          break;
-      }
-    } else if (eventType == 'joined_room') {
-      // Successfully joined room via WebSocket
-      print('Successfully joined room: ${data?['roomId']}');
-    } else if (eventType == 'error') {
-      emit(BattleError(message: data?['message'] ?? 'WebSocket error'));
+      case 'opponent_answered':
+        if (update.containsKey('score') &&
+            update.containsKey('questionIndex')) {
+          add(
+            OpponentAnsweredEvent(
+              questionIndex: update['questionIndex'],
+              score: update['score'],
+            ),
+          );
+        }
+        break;
+
+      case 'battle_completed':
+        if (update.containsKey('roomId')) {
+          add(GetBattleResultEvent(roomId: update['roomId']));
+        }
+        break;
+
+      case 'opponent_left':
+        _disconnectFromRoom();
+        emit(BattleCancelled(message: 'Opponent left the battle'));
+        break;
+
+      case 'joined_room':
+        print('✅ Successfully joined room via WebSocket: ${update['roomId']}');
+        break;
+
+      case 'error':
+        emit(BattleError(message: update['message'] ?? 'WebSocket error'));
+        break;
     }
   }
 

@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:brainbee/config/api_config.dart';
 import 'package:http/http.dart' as http;
 
 class AuthApiService {
-  static const String _baseUrl = "http://10.0.2.2:5000/api/auth";
+  // 10.0.2.2
+  static const String _baseUrl = BBApiConfig.baseUrl;
   static const Duration _timeoutDuration = Duration(seconds: 15);
 
   // Login API call
@@ -16,7 +18,7 @@ class AuthApiService {
     try {
       final response = await http
           .post(
-            Uri.parse("$_baseUrl/login"),
+            Uri.parse("$_baseUrl/api/auth/login"),
             headers: {"Content-Type": "application/json"},
             body: jsonEncode({
               "email": email,
@@ -75,7 +77,7 @@ class AuthApiService {
     try {
       final response = await http
           .post(
-            Uri.parse("$_baseUrl/register"),
+            Uri.parse("$_baseUrl/api/auth/register"),
             headers: {"Content-Type": "application/json"},
             body: jsonEncode({
               "email": email,

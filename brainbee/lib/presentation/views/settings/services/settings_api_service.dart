@@ -1,9 +1,10 @@
 import 'dart:convert';
 
+import 'package:brainbee/config/api_config.dart';
 import 'package:http/http.dart' as http;
 
 class SettingsApiService {
-  static const String baseUrl = "http://10.0.2.2:5000";
+  static const String baseUrl = BBApiConfig.baseUrl;
   static const Duration timeoutDuration = Duration(seconds: 15);
 
   Future<http.Response> getProfile(String token) async {

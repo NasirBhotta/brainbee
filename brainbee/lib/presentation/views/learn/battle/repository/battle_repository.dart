@@ -1,9 +1,9 @@
 // lib/presentation/views/learn/battle/repositories/battle_repository.dart
 
-import 'dart:async';
 import 'dart:convert';
 import 'package:brainbee/presentation/views/learn/battle/models/battle_models.dart';
 import 'package:brainbee/presentation/views/learn/battle/services/battle_api_service.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 abstract class BattleRepository {
   // Room Management
@@ -44,8 +44,8 @@ abstract class BattleRepository {
   Future<Map<String, dynamic>> getBattleStatistics();
 
   // WebSocket
-  Future<void> connectToRoom(String roomId);
-  Stream<dynamic> getRoomUpdates();
+  Future<IO.Socket> connectToRoom(String roomId);
+  Stream<Map<String, dynamic>> getRoomUpdates();
   void sendRoomMessage(Map<String, dynamic> message);
   void disconnectFromRoom();
   bool get isConnected;
@@ -53,8 +53,6 @@ abstract class BattleRepository {
 
 class BattleRepositoryImpl implements BattleRepository {
   final BattleApiService apiService;
-  final StreamController<dynamic> _roomUpdatesController =
-      StreamController<dynamic>.broadcast();
 
   BattleRepositoryImpl({required this.apiService});
 
@@ -72,8 +70,10 @@ class BattleRepositoryImpl implements BattleRepository {
       );
 
       final data = jsonDecode(response.body);
+      print('✅ Room created: ${data['data']}');
       return BattleRoom.fromJson(data['data']);
     } catch (e) {
+      print('❌ Failed to create battle room: $e');
       throw Exception('Failed to create battle room: $e');
     }
   }
@@ -86,8 +86,10 @@ class BattleRepositoryImpl implements BattleRepository {
       );
 
       final data = jsonDecode(response.body);
+      print('✅ Joined room: ${data['data']}');
       return BattleRoom.fromJson(data['data']);
     } catch (e) {
+      print('❌ Failed to join battle room: $e');
       throw Exception('Failed to join battle room: $e');
     }
   }
@@ -104,8 +106,10 @@ class BattleRepositoryImpl implements BattleRepository {
       );
 
       final data = jsonDecode(response.body);
+      print('✅ Found random opponent: ${data['data']}');
       return BattleRoom.fromJson(data['data']);
     } catch (e) {
+      print('❌ Failed to find random opponent: $e');
       throw Exception('Failed to find random opponent: $e');
     }
   }
@@ -114,7 +118,9 @@ class BattleRepositoryImpl implements BattleRepository {
   Future<void> cancelBattleSearch({required String roomId}) async {
     try {
       await apiService.cancelBattleSearch(roomId: roomId);
+      print('✅ Cancelled battle search for room: $roomId');
     } catch (e) {
+      print('❌ Failed to cancel battle search: $e');
       throw Exception('Failed to cancel battle search: $e');
     }
   }
@@ -123,7 +129,9 @@ class BattleRepositoryImpl implements BattleRepository {
   Future<void> markReady({required String roomId}) async {
     try {
       await apiService.markReady(roomId: roomId);
+      print('✅ Marked ready for room: $roomId');
     } catch (e) {
+      print('❌ Failed to mark ready: $e');
       throw Exception('Failed to mark ready: $e');
     }
   }
@@ -134,8 +142,10 @@ class BattleRepositoryImpl implements BattleRepository {
       final response = await apiService.startBattle(roomId: roomId);
 
       final data = jsonDecode(response.body);
+      print('✅ Battle started: ${data['data']}');
       return BattleQuizData.fromJson(data['data']);
     } catch (e) {
+      print('❌ Failed to start battle: $e');
       throw Exception('Failed to start battle: $e');
     }
   }
@@ -154,7 +164,9 @@ class BattleRepositoryImpl implements BattleRepository {
         selectedOptionIndex: selectedOptionIndex,
         timeSpent: timeSpent,
       );
+      print('✅ Answer submitted for question $questionIndex');
     } catch (e) {
+      print('❌ Failed to submit answer: $e');
       throw Exception('Failed to submit answer: $e');
     }
   }
@@ -165,8 +177,10 @@ class BattleRepositoryImpl implements BattleRepository {
       final response = await apiService.getBattleResult(roomId: roomId);
 
       final data = jsonDecode(response.body);
+      print('✅ Got battle result: ${data['data']}');
       return BattleResult.fromJson(data['data']);
     } catch (e) {
+      print('❌ Failed to get battle result: $e');
       throw Exception('Failed to get battle result: $e');
     }
   }
@@ -175,7 +189,9 @@ class BattleRepositoryImpl implements BattleRepository {
   Future<void> leaveBattle({required String roomId}) async {
     try {
       await apiService.leaveBattle(roomId: roomId);
+      print('✅ Left battle room: $roomId');
     } catch (e) {
+      print('❌ Failed to leave battle: $e');
       throw Exception('Failed to leave battle: $e');
     }
   }
@@ -193,6 +209,7 @@ class BattleRepositoryImpl implements BattleRepository {
 
       return battles.map((battle) => BattleRoom.fromJson(battle)).toList();
     } catch (e) {
+      print('❌ Failed to get battle history: $e');
       throw Exception('Failed to get battle history: $e');
     }
   }
@@ -205,27 +222,21 @@ class BattleRepositoryImpl implements BattleRepository {
       final data = jsonDecode(response.body);
       return data['data'] ?? {};
     } catch (e) {
+      print('❌ Failed to get battle statistics: $e');
       throw Exception('Failed to get battle statistics: $e');
     }
   }
 
   @override
-  Future<void> connectToRoom(String roomId) async {
-    try {
-      final socket = apiService.connectWebSocket(roomId);
-
-      // Listen to room_update events
-
-      print('✅ Connected to room: $roomId');
-    } catch (e) {
-      print('❌ Failed to connect to room: $e');
-      throw Exception('Failed to connect to room: $e');
-    }
+  Future<IO.Socket> connectToRoom(String roomId) async {
+    print('🔌 Connecting to room: $roomId');
+    return await apiService.connectWebSocket(roomId);
   }
 
   @override
-  Stream<dynamic> getRoomUpdates() {
-    return _roomUpdatesController.stream;
+  Stream<Map<String, dynamic>> getRoomUpdates() {
+    print('📡 Setting up room updates stream');
+    return apiService.webSocketStream;
   }
 
   @override
@@ -235,6 +246,7 @@ class BattleRepositoryImpl implements BattleRepository {
 
   @override
   void disconnectFromRoom() {
+    print('🔌 Disconnecting from room');
     apiService.closeWebSocket();
   }
 
@@ -253,11 +265,5 @@ class BattleRepositoryImpl implements BattleRepository {
       case BattleMode.byChapter:
         return 'byChapter';
     }
-  }
-
-  // Dispose method to clean up resources
-  void dispose() {
-    disconnectFromRoom();
-    _roomUpdatesController.close();
   }
 }

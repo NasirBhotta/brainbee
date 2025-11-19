@@ -1,5 +1,6 @@
 // lib/presentation/views/learn/battle/services/battle_api_service.dart
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:brainbee/core/models/token_user.dart';
 import 'package:http/http.dart' as http;
@@ -12,6 +13,10 @@ class BattleApiService {
 
   IO.Socket? _socket;
   String? _currentRoomId;
+
+  // StreamController to broadcast Socket.IO events
+  final StreamController<Map<String, dynamic>> _eventStreamController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
   BattleApiService({
     required this.baseUrl,
@@ -123,11 +128,11 @@ class BattleApiService {
     _socket = IO.io(
       '$wsUrl/battle',
       IO.OptionBuilder()
-          .setTransports(['websocket']) // Use websocket transport
-          .disableAutoConnect() // Manual connection control
+          .setTransports(['websocket'])
+          .disableAutoConnect()
           .setAuth({'token': tokenValue})
           .setExtraHeaders({'Authorization': 'Bearer $tokenValue'})
-          .enableForceNew() // Force new connection
+          .enableForceNew()
           .setReconnectionDelay(1000)
           .setReconnectionDelayMax(5000)
           .setReconnectionAttempts(5)
@@ -150,24 +155,112 @@ class BattleApiService {
 
     _socket!.onConnectError((data) {
       print('❌ Connection Error: $data');
+      _eventStreamController.add({
+        'type': 'error',
+        'message': 'Connection error: $data',
+      });
     });
 
     _socket!.onError((data) {
       print('❌ Socket Error: $data');
+      _eventStreamController.add({
+        'type': 'error',
+        'message': 'Socket error: $data',
+      });
     });
 
     _socket!.onDisconnect((reason) {
       print('🔌 Socket disconnected: $reason');
+      _eventStreamController.add({'type': 'disconnected', 'message': reason});
     });
+
+    // ===== CRITICAL: Listen to all Socket.IO events and forward to stream =====
 
     // Listen for room join confirmation
     _socket!.on('joined_room', (data) {
       print('✅ Successfully joined room: ${data['roomId']}');
+      _eventStreamController.add({
+        'type': 'joined_room',
+        'roomId': data['roomId'],
+      });
+    });
+
+    // Listen for room updates - THIS IS THE KEY EVENT
+    _socket!.on('room_update', (data) {
+      print('🔄 Room update received: $data');
+
+      // Forward the event to the stream
+      if (data is Map) {
+        _eventStreamController.add(Map<String, dynamic>.from(data));
+      } else {
+        print('⚠️ Unexpected room_update format: $data');
+      }
+    });
+
+    // Listen for opponent joined
+    _socket!.on('opponent_joined', (data) {
+      print('👥 Opponent joined: $data');
+      _eventStreamController.add({
+        'type': 'opponent_joined',
+        'opponent': data['opponent'],
+      });
+    });
+
+    // Listen for player ready
+    _socket!.on('player_ready', (data) {
+      print('✅ Player ready: $data');
+      _eventStreamController.add({
+        'type': 'player_ready',
+        'playerId': data['playerId'],
+      });
+    });
+
+    // Listen for battle started
+    _socket!.on('battle_started', (data) {
+      print('🎮 Battle started: $data');
+      _eventStreamController.add({
+        'type': 'battle_started',
+        'roomId': data['roomId'],
+      });
+    });
+
+    // Listen for opponent answered
+    _socket!.on('opponent_answered', (data) {
+      print('📝 Opponent answered: $data');
+      _eventStreamController.add({
+        'type': 'opponent_answered',
+        'questionIndex': data['questionIndex'],
+        'score': data['score'],
+      });
+    });
+
+    // Listen for battle completed
+    _socket!.on('battle_completed', (data) {
+      print('🏁 Battle completed: $data');
+      _eventStreamController.add({
+        'type': 'battle_completed',
+        'roomId': data['roomId'],
+      });
+    });
+
+    // Listen for opponent left
+    _socket!.on('opponent_left', (data) {
+      print('👋 Opponent left: $data');
+      _eventStreamController.add({'type': 'opponent_left'});
+    });
+
+    // Listen for generic messages
+    _socket!.on('message', (data) {
+      print('💬 Message received: $data');
+      if (data is Map) {
+        _eventStreamController.add(Map<String, dynamic>.from(data));
+      }
     });
 
     // Listen for errors
     _socket!.on('error', (data) {
       print('❌ Room error: ${data['message']}');
+      _eventStreamController.add({'type': 'error', 'message': data['message']});
     });
 
     // Connect the socket
@@ -184,39 +277,9 @@ class BattleApiService {
     }
   }
 
-  Stream<dynamic> get webSocketStream {
-    if (_socket == null) {
-      throw Exception('WebSocket not connected');
-    }
-
-    // Create a stream controller to handle Socket.IO events
-    return Stream.empty(); // This will be handled differently - see below
-  }
-
-  // Better approach: Subscribe to specific events
-  void onRoomUpdate(Function(dynamic) callback) {
-    _socket?.on('room_update', callback);
-  }
-
-  void onMessage(Function(dynamic) callback) {
-    _socket?.on('message', callback);
-  }
-
-  void onUserMessage(Function(dynamic) callback) {
-    _socket?.on('user_message', callback);
-  }
-
-  // Remove event listeners
-  void offRoomUpdate() {
-    _socket?.off('room_update');
-  }
-
-  void offMessage() {
-    _socket?.off('message');
-  }
-
-  void offUserMessage() {
-    _socket?.off('user_message');
+  // Stream of all Socket.IO events
+  Stream<Map<String, dynamic>> get webSocketStream {
+    return _eventStreamController.stream;
   }
 
   void closeWebSocket() {
@@ -233,10 +296,14 @@ class BattleApiService {
 
   IO.Socket? get socket => _socket;
 
-  // Battle-specific endpoints
+  // Dispose method to clean up resources
+  void dispose() {
+    closeWebSocket();
+    _eventStreamController.close();
+  }
 
-  /// Create a new battle room
-  /// POST /api/student/battle/create
+  // Battle-specific endpoints (keep all existing ones)
+
   Future<http.Response> createBattleRoom({
     required String subject,
     required String mode,
@@ -252,8 +319,6 @@ class BattleApiService {
     );
   }
 
-  /// Join an existing battle room with invitation code
-  /// POST /api/student/battle/join
   Future<http.Response> joinBattleRoom({required String invitationCode}) async {
     return await post(
       '/api/student/battle/join',
@@ -261,8 +326,6 @@ class BattleApiService {
     );
   }
 
-  /// Find a random opponent
-  /// POST /api/student/battle/find-random
   Future<http.Response> findRandomOpponent({
     required String subject,
     List<String>? chapters,
@@ -273,26 +336,18 @@ class BattleApiService {
     );
   }
 
-  /// Cancel battle search
-  /// POST /api/student/battle/:roomId/cancel
   Future<http.Response> cancelBattleSearch({required String roomId}) async {
     return await post('/api/student/battle/$roomId/cancel', data: {});
   }
 
-  /// Mark player as ready
-  /// POST /api/student/battle/:roomId/ready
   Future<http.Response> markReady({required String roomId}) async {
     return await post('/api/student/battle/$roomId/ready', data: {});
   }
 
-  /// Start the battle (when both players are ready)
-  /// POST /api/student/battle/:roomId/start
   Future<http.Response> startBattle({required String roomId}) async {
     return await post('/api/student/battle/$roomId/start', data: {});
   }
 
-  /// Submit an answer during battle
-  /// POST /api/student/battle/:roomId/answer
   Future<http.Response> submitBattleAnswer({
     required String roomId,
     required int questionIndex,
@@ -309,14 +364,10 @@ class BattleApiService {
     );
   }
 
-  /// Get battle result
-  /// GET /api/student/battle/:roomId/result
   Future<http.Response> getBattleResult({required String roomId}) async {
     return await get('/api/student/battle/$roomId/result');
   }
 
-  /// Get battle history
-  /// GET /api/student/battle/history?limit=20&offset=0
   Future<http.Response> getBattleHistory({int? limit, int? offset}) async {
     return await get(
       '/api/student/battle/history',
@@ -327,14 +378,10 @@ class BattleApiService {
     );
   }
 
-  /// Get battle statistics
-  /// GET /api/student/battle/statistics
   Future<http.Response> getBattleStatistics() async {
     return await get('/api/student/battle/statistics');
   }
 
-  /// Leave battle room
-  /// POST /api/student/battle/:roomId/leave
   Future<http.Response> leaveBattle({required String roomId}) async {
     return await post('/api/student/battle/$roomId/leave', data: {});
   }

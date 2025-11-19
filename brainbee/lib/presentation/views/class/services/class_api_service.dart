@@ -1,6 +1,7 @@
 // lib/data/services/class_api_service.dart
 import 'dart:convert';
 import 'dart:io';
+import 'package:brainbee/config/api_config.dart';
 import 'package:brainbee/core/utils/helper/bb_token.dart';
 import 'package:http/http.dart' as http;
 
@@ -16,7 +17,7 @@ class ClassApiException implements Exception {
 }
 
 class ClassApiService {
-  static const String _baseUrl = 'http://10.0.2.2:5000';
+  static const String _baseUrl = BBApiConfig.baseUrl;
   final http.Client _client;
   final Duration timeout;
 

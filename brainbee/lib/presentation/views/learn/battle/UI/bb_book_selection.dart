@@ -80,7 +80,9 @@ class _BBBookSelectionForBattleState extends State<BBBookSelectionForBattle> {
           }
 
           // Only navigate once
-          if ((state is BattleSearching || state is BattleRoomCreated) &&
+          if ((state is BattleSearching ||
+                  state is BattleRoomCreated ||
+                  state is BattleOpponentFound) &&
               !_hasNavigated) {
             print("Navigating to search screen...");
             _hasNavigated = true;
@@ -177,6 +179,14 @@ class _BBBookSelectionForBattleState extends State<BBBookSelectionForBattle> {
     } else if (state is BattleRoomCreated) {
       room = state.room;
       matchType = MatchType.invitation;
+    } else if (state is BattleOpponentFound) {
+      // ✅ Add this case
+      room = state.room;
+      // Determine match type based on room mode
+      matchType =
+          room.mode == BattleMode.random
+              ? MatchType.random
+              : MatchType.invitation;
     } else {
       return;
     }
@@ -486,7 +496,9 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
             setState(() => _isLoading = true);
           }
 
-          if ((state is BattleSearching || state is BattleRoomCreated) &&
+          if ((state is BattleSearching ||
+                  state is BattleRoomCreated ||
+                  state is BattleOpponentFound) &&
               !_hasNavigated) {
             print("Navigating to search screen from chapter selection...");
             _hasNavigated = true;
@@ -513,6 +525,14 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
             if (state is BattleSearching) {
               room = state.room;
               matchType = MatchType.random;
+            } else if (state is BattleOpponentFound) {
+              // ✅ Add explicit handling
+              room = state.room;
+              // Determine match type from room mode
+              matchType =
+                  room.mode == BattleMode.random
+                      ? MatchType.random
+                      : MatchType.invitation;
             } else {
               room = (state as BattleRoomCreated).room;
               matchType = MatchType.invitation;

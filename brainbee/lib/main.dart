@@ -104,8 +104,8 @@ void main(List<String> args) async {
               (context) => BattleBloc(
                 repository: BattleRepositoryImpl(
                   apiService: BattleApiService(
-                    baseUrl: "http://10.0.2.2:5000",
-                    wsUrl: "ws://10.0.2.2:5000",
+                    baseUrl: "https://fyp-backend-express.onrender.com",
+                    wsUrl: "wss://fyp-backend-express.onrender.com",
                     getToken: getTokenAndUser,
                   ),
                 ),

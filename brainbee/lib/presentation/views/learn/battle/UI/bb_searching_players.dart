@@ -37,8 +37,6 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
   late AnimationController _rotationController;
   bool _isConnecting = true;
   bool _isConnected = false;
-  bool _opponentFound = false;
-  BattleRoom? _currentRoom;
 
   @override
   void initState() {
@@ -73,24 +71,13 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<BattleBloc, BattleState>(
+    return BlocConsumer<BattleBloc, BattleState>(
       listener: (context, state) {
-        if (state is BattleOpponentFound) {
-          // Update UI to show opponent found
-          setState(() {
-            _opponentFound = true;
-            _currentRoom = state.room;
-          });
-        } else if (state is BattleReady) {
-          // Update room state
-          setState(() {
-            _currentRoom = state.room;
-          });
-        } else if (state is BattleInProgress) {
-          // Navigate to battle screen
+        print("Battle State Changed: ${state.runtimeType}");
+
+        if (state is BattleInProgress) {
           _navigateToBattleScreen(context, state);
         } else if (state is BattleCancelled) {
-          // Go back to previous screen
           Navigator.pop(context);
           ScaffoldMessenger.of(
             context,
@@ -101,242 +88,252 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
           );
         }
       },
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8F8F8),
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          title: BBText(
-            data:
-                _opponentFound
-                    ? 'Opponent Found'
-                    : widget.matchType == MatchType.random
-                    ? 'Finding Opponent'
-                    : 'Waiting for Opponent',
-            style: Theme.of(context).textTheme.titleMedium,
+      builder: (context, state) {
+        // ✅ Derive opponent found status from BLoC state
+        final bool opponentFound =
+            state is BattleOpponentFound || state is BattleReady;
+        final BattleRoom? currentRoom =
+            state is BattleOpponentFound
+                ? state.room
+                : state is BattleReady
+                ? state.room
+                : state is BattleSearching
+                ? state.room
+                : state is BattleRoomCreated
+                ? state.room
+                : null;
+
+        print(
+          '🔍 UI State - opponentFound: $opponentFound, currentRoom: ${currentRoom?.roomId}',
+        );
+        if (currentRoom?.opponent != null) {
+          print('   Opponent: ${currentRoom!.opponent!.username}');
+        }
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8F8F8),
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            title: BBText(
+              data:
+                  opponentFound
+                      ? 'Opponent Found'
+                      : widget.matchType == MatchType.random
+                      ? 'Finding Opponent'
+                      : 'Waiting for Opponent',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.close, color: Colors.black),
+              onPressed: () => _handleCancel(context),
+            ),
           ),
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(Icons.close, color: Colors.black),
-            onPressed: () => _handleCancel(context),
-          ),
-        ),
-        body: BlocBuilder<BattleBloc, BattleState>(
-          builder: (context, state) {
-            String? roomId;
-            if (state is BattleSearching) {
-              roomId = state.room.roomId;
-            } else if (state is BattleRoomCreated) {
-              roomId = state.room.roomId;
-            }
-
-            return SafeArea(
-              child: SingleChildScrollView(
-                child: SizedBox(
-                  height:
-                      MediaQuery.of(context).size.height -
-                      kToolbarHeight -
-                      MediaQuery.of(context).padding.top,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Connection Status Indicator
-                      if (_isConnecting)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          color: Colors.orange[100],
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.orange[700]!,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Connecting to server...',
-                                style: TextStyle(
-                                  color: Colors.orange[700],
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      if (_isConnected && !_isConnecting)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          color: Colors.green[100],
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.check_circle,
-                                size: 16,
-                                color: Colors.green[700],
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Connected',
-                                style: TextStyle(
-                                  color: Colors.green[700],
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              // Searching Animation - only show if opponent not found
-                              if (!_opponentFound) _buildSearchingAnimation(),
-                              if (!_opponentFound) const SizedBox(height: 40),
-
-                              // Current Player Card
-                              _buildPlayerCard(
-                                name: widget.currentPlayerName,
-                                initial: widget.currentPlayerInitial,
-                                color: widget.currentPlayerColor,
-                                isCurrentPlayer: true,
-                              ),
-                              const SizedBox(height: 24),
-
-                              // VS Text
-                              const BBText(
-                                data: 'VS',
-                                style: TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  color: BBColors.primaryColor,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-
-                              // Opponent Card
-                              _buildPlayerCard(
-                                name:
-                                    _opponentFound &&
-                                            _currentRoom?.opponent != null
-                                        ? _currentRoom!.opponent!.username
-                                        : 'Searching...',
-                                initial:
-                                    _opponentFound &&
-                                            _currentRoom?.opponent != null
-                                        ? _currentRoom!.opponent!.username[0]
-                                            .toUpperCase()
-                                        : '?',
-                                color:
-                                    _opponentFound
-                                        ? BBColors.primaryColor
-                                        : Colors.grey,
-                                isCurrentPlayer: false,
-                              ),
-                              const SizedBox(height: 40),
-
-                              // Status Message
-                              _buildStatusMessage(),
-
-                              // Invitation Code (if applicable)
-                              if (widget.matchType == MatchType.invitation &&
-                                  widget.invitationCode != null)
-                                _buildInvitationCodeSection(),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // Action Buttons (Cancel and Ready)
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: SizedBox(
+                height:
+                    MediaQuery.of(context).size.height -
+                    kToolbarHeight -
+                    MediaQuery.of(context).padding.top,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Connection Status Indicator
+                    if (_isConnecting)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        color: Colors.orange[100],
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Cancel Button
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed:
-                                    _isConnected
-                                        ? () => _handleCancel(context)
-                                        : null,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red[400],
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  disabledBackgroundColor: Colors.grey[300],
-                                ),
-                                child: BBText(
-                                  data: 'Cancel',
-                                  style: TextStyle(
-                                    color:
-                                        _isConnected
-                                            ? Colors.white
-                                            : Colors.grey[600],
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.orange[700]!,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            // Ready Button
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed:
-                                    _opponentFound && _isConnected
-                                        ? () => _handleReady(context)
-                                        : null,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: BBColors.primaryColor,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  disabledBackgroundColor: Colors.grey[300],
-                                ),
-                                child: BBText(
-                                  data: 'Ready',
-                                  style: TextStyle(
-                                    color:
-                                        _opponentFound && _isConnected
-                                            ? Colors.white
-                                            : Colors.grey[600],
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Connecting to server...',
+                              style: TextStyle(
+                                color: Colors.orange[700],
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                    if (_isConnected && !_isConnecting)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        color: Colors.green[100],
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              size: 16,
+                              color: Colors.green[700],
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Connected',
+                              style: TextStyle(
+                                color: Colors.green[700],
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            // Searching Animation - only show if opponent not found
+                            if (!opponentFound) _buildSearchingAnimation(),
+                            if (!opponentFound) const SizedBox(height: 40),
+
+                            // Current Player Card
+                            _buildPlayerCard(
+                              name: widget.currentPlayerName,
+                              initial: widget.currentPlayerInitial,
+                              color: widget.currentPlayerColor,
+                              isCurrentPlayer: true,
+                            ),
+                            const SizedBox(height: 24),
+
+                            // VS Text
+                            const BBText(
+                              data: 'VS',
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: BBColors.primaryColor,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Opponent Card
+                            _buildPlayerCard(
+                              name:
+                                  opponentFound && currentRoom?.opponent != null
+                                      ? currentRoom!.opponent!.username
+                                      : 'Searching...',
+                              initial:
+                                  opponentFound && currentRoom?.opponent != null
+                                      ? currentRoom!.opponent!.username[0]
+                                          .toUpperCase()
+                                      : '?',
+                              color:
+                                  opponentFound
+                                      ? BBColors.primaryColor
+                                      : Colors.grey,
+                              isCurrentPlayer: false,
+                            ),
+                            const SizedBox(height: 40),
+
+                            // Status Message
+                            _buildStatusMessage(opponentFound),
+
+                            // Invitation Code (if applicable)
+                            if (widget.matchType == MatchType.invitation &&
+                                widget.invitationCode != null)
+                              _buildInvitationCodeSection(),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Action Buttons (Cancel and Ready)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          // Cancel Button
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed:
+                                  _isConnected
+                                      ? () => _handleCancel(context)
+                                      : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red[400],
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                disabledBackgroundColor: Colors.grey[300],
+                              ),
+                              child: BBText(
+                                data: 'Cancel',
+                                style: TextStyle(
+                                  color:
+                                      _isConnected
+                                          ? Colors.white
+                                          : Colors.grey[600],
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Ready Button
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed:
+                                  opponentFound && _isConnected
+                                      ? () => _handleReady(context)
+                                      : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: BBColors.primaryColor,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                disabledBackgroundColor: Colors.grey[300],
+                              ),
+                              child: BBText(
+                                data: 'Ready',
+                                style: TextStyle(
+                                  color:
+                                      opponentFound && _isConnected
+                                          ? Colors.white
+                                          : Colors.grey[600],
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -446,11 +443,11 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
     );
   }
 
-  Widget _buildStatusMessage() {
+  Widget _buildStatusMessage(bool opponentFound) {
     String message;
     if (_isConnecting) {
       message = 'Establishing connection...';
-    } else if (_opponentFound) {
+    } else if (opponentFound) {
       message = 'Opponent found! Click Ready when you\'re prepared';
     } else if (widget.matchType == MatchType.random) {
       message = 'Searching for an opponent...';
@@ -461,7 +458,7 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: (_opponentFound ? Colors.green : BBColors.primaryColor)
+        color: (opponentFound ? Colors.green : BBColors.primaryColor)
             .withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -470,13 +467,13 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
         children: [
           if (!_isConnecting)
             Icon(
-              _opponentFound
+              opponentFound
                   ? Icons.check_circle
                   : widget.matchType == MatchType.random
                   ? Icons.search
                   : Icons.share,
               size: 20,
-              color: _opponentFound ? Colors.green : BBColors.primaryColor,
+              color: opponentFound ? Colors.green : BBColors.primaryColor,
             ),
           if (!_isConnecting) const SizedBox(width: 8),
           Flexible(
@@ -484,7 +481,7 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
               data: message,
               style: TextStyle(
                 fontSize: 14,
-                color: _opponentFound ? Colors.green : BBColors.primaryColor,
+                color: opponentFound ? Colors.green : BBColors.primaryColor,
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
@@ -560,6 +557,10 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
     if (state is BattleSearching) {
       roomId = state.room.roomId;
     } else if (state is BattleRoomCreated) {
+      roomId = state.room.roomId;
+    } else if (state is BattleOpponentFound) {
+      roomId = state.room.roomId;
+    } else if (state is BattleReady) {
       roomId = state.room.roomId;
     }
 
@@ -674,6 +675,8 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
     } else if (state is BattleSearching) {
       roomId = state.room.roomId;
     } else if (state is BattleRoomCreated) {
+      roomId = state.room.roomId;
+    } else if (state is BattleReady) {
       roomId = state.room.roomId;
     }
 
