@@ -140,9 +140,22 @@ class BattleRepositoryImpl implements BattleRepository {
   Future<BattleQuizData> startBattle({required String roomId}) async {
     try {
       final response = await apiService.startBattle(roomId: roomId);
-
       final data = jsonDecode(response.body);
-      print('✅ Battle started: ${data['data']}');
+
+      // --- START: NULL HANDLING FIX ---
+
+      // Check if the 'data' field from the server is null
+      if (data['data'] == null) {
+        print(
+          '✅ Battle already initiated by opponent. Waiting for WebSocket update.',
+        );
+        // Return an empty object. The BLoC will ignore this and wait for the WebSocket.
+        return const BattleQuizData.empty();
+      }
+
+      // --- END: NULL HANDLING FIX ---
+
+      print('✅ Battle started successfully: ${data['data']}');
       return BattleQuizData.fromJson(data['data']);
     } catch (e) {
       print('❌ Failed to start battle: $e');

@@ -218,7 +218,7 @@ class BattleQuizData {
   final List<Question> questions;
   final int totalQuestions;
   final int timePerQuestion;
-  final DateTime startTime;
+  final DateTime? startTime;
 
   BattleQuizData({
     required this.quizId,
@@ -228,6 +228,14 @@ class BattleQuizData {
     this.timePerQuestion = 15,
     required this.startTime,
   });
+
+  const BattleQuizData.empty()
+    : quizId = '',
+      roomId = '',
+      questions = const [],
+      totalQuestions = 0,
+      timePerQuestion = 0,
+      startTime = null;
 
   factory BattleQuizData.fromJson(Map<String, dynamic> json) {
     return BattleQuizData(
@@ -250,7 +258,7 @@ class BattleQuizData {
       'questions': questions.map((q) => q.toJson()).toList(),
       'totalQuestions': totalQuestions,
       'timePerQuestion': timePerQuestion,
-      'startTime': startTime.toIso8601String(),
+      'startTime': startTime?.toIso8601String(),
     };
   }
 }

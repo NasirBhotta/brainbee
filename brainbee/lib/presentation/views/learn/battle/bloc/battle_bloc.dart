@@ -157,6 +157,10 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
     try {
       final quizData = await repository.startBattle(roomId: event.roomId);
 
+      if (quizData.quizId.isEmpty) {
+        return;
+      }
+
       if (state is BattleReady) {
         final currentState = state as BattleReady;
         emit(
