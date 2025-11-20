@@ -30,8 +30,6 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   int? selectedOptionIndex;
   bool isAnswerSubmitted = false;
   bool isCorrectAnswer = false;
-  int userScore = 0;
-  int opponentScore = 0;
   int timeSpent = 0;
   List<int?> answers = [];
   int timeRemaining = 15;
@@ -84,20 +82,17 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         questionStartTime != null
             ? DateTime.now().difference(questionStartTime!).inSeconds
             : 0;
-
+    setState(() {
+      timeSpent += questionTime;
+    });
     answers.add(optionIndex);
 
+    final correctIndex =
+        widget.quizData.questions[currentQuestionIndex].correctOptionIndex;
     setState(() {
       selectedOptionIndex = optionIndex;
       isAnswerSubmitted = true;
-
-      final correctIndex =
-          widget.quizData.questions[currentQuestionIndex].correctOptionIndex;
       isCorrectAnswer = selectedOptionIndex == correctIndex;
-
-      if (isCorrectAnswer) {
-        userScore += 20;
-      }
     });
 
     // Submit answer to backend
@@ -150,52 +145,76 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
           onPressed: () => _showQuitDialog(),
         ),
       ),
-      body: BlocListener<BattleBloc, BattleState>(
+      body: BlocConsumer<BattleBloc, BattleState>(
         listener: (context, state) {
-          if (state is BattleInProgress) {
-            // Update opponent score when received
-            setState(() {
-              opponentScore = state.opponentScore;
-            });
-          } else if (state is BattleCompleted) {
-            _navigateToResults(state.result);
+          if (state is BattleCompleted) {
+            _navigateToResults(state);
           } else if (state is BattleError) {
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildProgressAndScores(),
-                const SizedBox(height: 16),
-                _buildTimerBar(),
-                const SizedBox(height: 24),
-                _buildQuestion(),
-                const SizedBox(height: 24),
-                _buildOptions(),
-              ],
+        builder: (BuildContext context, BattleState state) {
+          if (state is! BattleInProgress) {
+            // Show a loading indicator or an error screen if not in progress
+            return const Center(child: CircularProgressIndicator());
+          }
+          final userScore = state.userScore;
+          final opponentScore = state.opponentScore;
+
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildProgressAndScores(userScore, opponentScore),
+                  const SizedBox(height: 16),
+                  _buildTimerBar(),
+                  const SizedBox(height: 24),
+                  _buildQuestion(),
+                  const SizedBox(height: 24),
+                  _buildOptions(),
+                ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  void _navigateToResults(BattleResult result) {
+  void _navigateToResults(BattleCompleted completedState) {
+    // Get the current user's ID from the BLoC to identify the winner/loser.
+    final String? selfUserId = context.read<BattleBloc>().currentUserId;
+    if (selfUserId == null) {
+      // Handle error case where user ID is not available
+      print("Error: Could not determine current user ID to show results.");
+      return;
+    }
+
+    // Extract the result object from the state
+    final BattleResult result = completedState.result;
+
+    // Determine if the current user is the winner
+    final bool isWinner = result.winner.id == selfUserId;
+
+    // Assign the final scores based on who is the winner
+    final int finalUserScore =
+        isWinner ? result.winnerScore : result.loserScore;
+    final int finalOpponentScore =
+        isWinner ? result.loserScore : result.winnerScore;
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder:
             (context) => BBQuizReportCardScreen(
               quizType: QuizType.battle,
-              score: userScore,
-              opponentScore: opponentScore,
-              won: userScore > opponentScore,
+              score: finalUserScore,
+              opponentScore: finalOpponentScore,
+              won: finalUserScore > finalOpponentScore,
               questions: widget.quizData.questions,
               userAnswers: answers,
               timeSpent: timeSpent,
@@ -204,7 +223,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
     );
   }
 
-  Widget _buildProgressAndScores() {
+  Widget _buildProgressAndScores(int userScore, int opponentScore) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

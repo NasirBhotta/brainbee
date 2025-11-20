@@ -13,7 +13,7 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
   final BattleRepository repository;
   StreamSubscription? _roomUpdatesSubscription;
   String? _currentUserId; // Store current user ID for comparison
-
+  String? get currentUserId => _currentUserId;
   BattleBloc({required this.repository}) : super(BattleInitial()) {
     on<CreateBattleRoomEvent>(_onCreateBattleRoom);
     on<JoinBattleRoomEvent>(_onJoinBattleRoom);
@@ -155,24 +155,9 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
     Emitter<BattleState> emit,
   ) async {
     try {
-      final quizData = await repository.startBattle(roomId: event.roomId);
-
-      if (quizData.quizId.isEmpty) {
-        return;
-      }
-
-      if (state is BattleReady) {
-        final currentState = state as BattleReady;
-        emit(
-          BattleInProgress(
-            room: currentState.room,
-            quizData: quizData,
-            currentQuestionIndex: 0,
-            userScore: 0,
-            opponentScore: 0,
-          ),
-        );
-      }
+      // Just make the call. We don't expect data back.
+      // The WebSocket will handle the state transition.
+      await repository.startBattle(roomId: event.roomId);
     } catch (e) {
       emit(BattleError(message: e.toString()));
     }
@@ -182,14 +167,18 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
     SubmitAnswerEvent event,
     Emitter<BattleState> emit,
   ) async {
+    if (state is! BattleInProgress) return;
+    final currentState = state as BattleInProgress;
     try {
-      await repository.submitAnswer(
+      final newScore = await repository.submitAnswer(
         roomId: event.roomId,
         questionIndex: event.questionIndex,
         selectedOptionIndex: event.selectedOptionIndex,
         timeSpent: event.timeSpent,
       );
       // Score update will come through WebSocket
+
+      emit(currentState.copyWith(userScore: newScore));
     } catch (e) {
       emit(BattleError(message: e.toString()));
     }
@@ -207,8 +196,6 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
       emit(BattleError(message: e.toString()));
     }
   }
-
-  // lib/presentation/views/learn/battle/bloc/battle_bloc.dart
 
   Future<void> _onRoomUpdateReceived(
     RoomUpdateReceivedEvent event,
@@ -291,7 +278,20 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
           add(StartBattleEvent(roomId: update['roomId']));
         }
         break;
-
+      case 'battle_data_ready':
+        if (state is BattleReady && update.containsKey('data')) {
+          final quizData = BattleQuizData.fromJson(update['data']);
+          emit(
+            BattleInProgress(
+              room: (state as BattleReady).room, // Carry the room forward
+              quizData: quizData,
+              currentQuestionIndex: 0,
+              userScore: 0,
+              opponentScore: 0,
+            ),
+          );
+        }
+        break;
       case 'opponent_answered':
         if (update.containsKey('score') &&
             update.containsKey('questionIndex')) {
@@ -329,18 +329,10 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
     OpponentAnsweredEvent event,
     Emitter<BattleState> emit,
   ) async {
-    if (state is BattleInProgress) {
-      final currentState = state as BattleInProgress;
-      emit(
-        BattleInProgress(
-          room: currentState.room,
-          quizData: currentState.quizData,
-          currentQuestionIndex: currentState.currentQuestionIndex,
-          userScore: currentState.userScore,
-          opponentScore: event.score,
-        ),
-      );
-    }
+    if (state is! BattleInProgress) return;
+
+    final currentState = state as BattleInProgress;
+    currentState.copyWith(opponentScore: event.score);
   }
 
   Future<void> _onGetBattleResult(

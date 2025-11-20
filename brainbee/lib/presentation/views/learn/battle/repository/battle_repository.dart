@@ -24,10 +24,10 @@ abstract class BattleRepository {
 
   Future<void> markReady({required String roomId});
 
-  Future<BattleQuizData> startBattle({required String roomId});
+  Future<void> startBattle({required String roomId});
 
   // Battle Gameplay
-  Future<void> submitAnswer({
+  Future<int> submitAnswer({
     required String roomId,
     required int questionIndex,
     required int? selectedOptionIndex,
@@ -137,47 +137,34 @@ class BattleRepositoryImpl implements BattleRepository {
   }
 
   @override
-  Future<BattleQuizData> startBattle({required String roomId}) async {
+  Future<void> startBattle({required String roomId}) async {
     try {
-      final response = await apiService.startBattle(roomId: roomId);
-      final data = jsonDecode(response.body);
-
-      // --- START: NULL HANDLING FIX ---
-
-      // Check if the 'data' field from the server is null
-      if (data['data'] == null) {
-        print(
-          '✅ Battle already initiated by opponent. Waiting for WebSocket update.',
-        );
-        // Return an empty object. The BLoC will ignore this and wait for the WebSocket.
-        return const BattleQuizData.empty();
-      }
-
-      // --- END: NULL HANDLING FIX ---
-
-      print('✅ Battle started successfully: ${data['data']}');
-      return BattleQuizData.fromJson(data['data']);
+      // The response is now simple, we don't need to parse it.
+      await apiService.startBattle(roomId: roomId);
+      print('✅ Start battle request sent successfully.');
     } catch (e) {
-      print('❌ Failed to start battle: $e');
-      throw Exception('Failed to start battle: $e');
+      print('❌ Failed to send start battle request: $e');
+      throw Exception('Failed to send start battle request: $e');
     }
   }
 
   @override
-  Future<void> submitAnswer({
+  Future<int> submitAnswer({
     required String roomId,
     required int questionIndex,
     required int? selectedOptionIndex,
     required int timeSpent,
   }) async {
     try {
-      await apiService.submitBattleAnswer(
+      final response = await apiService.submitBattleAnswer(
         roomId: roomId,
         questionIndex: questionIndex,
         selectedOptionIndex: selectedOptionIndex,
         timeSpent: timeSpent,
       );
-      print('✅ Answer submitted for question $questionIndex');
+      final data = jsonDecode(response.body);
+      print('✅ Answer submitted, new score: ${data['data']['currentScore']}');
+      return data['data']['currentScore'] as int;
     } catch (e) {
       print('❌ Failed to submit answer: $e');
       throw Exception('Failed to submit answer: $e');

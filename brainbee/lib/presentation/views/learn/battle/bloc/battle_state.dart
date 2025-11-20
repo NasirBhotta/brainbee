@@ -76,6 +76,20 @@ class BattleInProgress extends BattleState {
     userScore,
     opponentScore,
   ];
+
+  BattleInProgress copyWith({
+    int? currentQuestionIndex,
+    int? userScore,
+    int? opponentScore,
+  }) {
+    return BattleInProgress(
+      room: room,
+      quizData: quizData,
+      currentQuestionIndex: currentQuestionIndex ?? this.currentQuestionIndex,
+      userScore: userScore ?? this.userScore,
+      opponentScore: opponentScore ?? this.opponentScore,
+    );
+  }
 }
 
 class BattleCompleted extends BattleState {
