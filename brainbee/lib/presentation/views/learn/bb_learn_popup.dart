@@ -1,6 +1,9 @@
+import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
+import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle.dart';
 import 'package:flutter/material.dart';
 
 void showSlidingPopup(
+  StudentState state,
   BuildContext context,
   List<Map<String, dynamic>> items, {
   VoidCallback? onDismiss,
@@ -67,7 +70,7 @@ void showSlidingPopup(
                                   ),
                                 ),
                               ),
-                            _buildItemsGrid(context, items),
+                            _buildItemsGrid(context, items, state),
                           ],
                         ),
                       ),
@@ -81,7 +84,11 @@ void showSlidingPopup(
   });
 }
 
-Widget _buildItemsGrid(BuildContext context, List<Map<String, dynamic>> items) {
+Widget _buildItemsGrid(
+  BuildContext context,
+  List<Map<String, dynamic>> items,
+  StudentState state,
+) {
   // Determine layout based on item count and content
   final isBattleMode =
       items.isNotEmpty && items[0]['title']?.startsWith('Battle') == true;
@@ -100,7 +107,12 @@ Widget _buildItemsGrid(BuildContext context, List<Map<String, dynamic>> items) {
                 padding: EdgeInsets.symmetric(
                   horizontal: items.length == 1 ? 0 : 8,
                 ),
-                child: _buildEnhancedItem(context, entry.key, entry.value),
+                child: _buildEnhancedItem(
+                  context,
+                  entry.key,
+                  entry.value,
+                  state,
+                ),
               ),
             );
           }).toList(),
@@ -118,7 +130,7 @@ Widget _buildItemsGrid(BuildContext context, List<Map<String, dynamic>> items) {
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
-        return _buildEnhancedItem(context, index, items[index]);
+        return _buildEnhancedItem(context, index, items[index], state);
       },
     );
   }
@@ -128,6 +140,7 @@ Widget _buildEnhancedItem(
   BuildContext context,
   int index,
   Map<String, dynamic> item,
+  StudentState state,
 ) {
   return Container(
     decoration: BoxDecoration(
@@ -153,7 +166,15 @@ Widget _buildEnhancedItem(
           Navigator.of(context).pop();
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => item['navigateTo']!),
+            MaterialPageRoute(
+              builder: (context) {
+                if (item['navigateTo'] == BBBattle) {
+                  return BBBattle(state: state);
+                } else {
+                  return item['navigateTo'];
+                }
+              },
+            ),
           );
         },
         child: Padding(

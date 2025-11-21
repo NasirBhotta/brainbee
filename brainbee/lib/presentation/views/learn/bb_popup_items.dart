@@ -1,94 +1,94 @@
-import 'package:brainbee/core/utils/bb_screen_extension.dart';
-import 'package:brainbee/core/utils/bb_text.dart';
+// import 'package:brainbee/core/utils/bb_screen_extension.dart';
+// import 'package:brainbee/core/utils/bb_text.dart';
 
-import 'package:brainbee/presentation/views/learn/Books/bb_select_book.dart';
-import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle.dart';
-import 'package:brainbee/presentation/views/extras/achievements/Certificates/bb_certificates.dart';
-import 'package:brainbee/presentation/views/extras/Rewards/bb_rewards.dart';
-import 'package:brainbee/presentation/views/extras/achievements/badges/bb_badges.dart';
-import 'package:brainbee/presentation/views/extras/coinquests/UI/bb_coin_quests.dart';
-import 'package:brainbee/presentation/views/extras/leaderboard/bb_leaderboard.dart';
-import 'package:brainbee/presentation/views/extras/score_&_reportcard/reportcard/bb_reportcard.dart';
-import 'package:brainbee/presentation/views/extras/score_&_reportcard/scorecard/bb_scorecard.dart';
-import 'package:brainbee/presentation/views/learn/flashcards/bb_selectBook_flashcards.dart';
+// import 'package:brainbee/presentation/views/learn/Books/bb_select_book.dart';
+// import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle.dart';
+// import 'package:brainbee/presentation/views/extras/achievements/Certificates/bb_certificates.dart';
+// import 'package:brainbee/presentation/views/extras/Rewards/bb_rewards.dart';
+// import 'package:brainbee/presentation/views/extras/achievements/badges/bb_badges.dart';
+// import 'package:brainbee/presentation/views/extras/coinquests/UI/bb_coin_quests.dart';
+// import 'package:brainbee/presentation/views/extras/leaderboard/bb_leaderboard.dart';
+// import 'package:brainbee/presentation/views/extras/score_&_reportcard/reportcard/bb_reportcard.dart';
+// import 'package:brainbee/presentation/views/extras/score_&_reportcard/scorecard/bb_scorecard.dart';
+// import 'package:brainbee/presentation/views/learn/flashcards/bb_selectBook_flashcards.dart';
 
-import 'package:flutter/material.dart';
+// import 'package:flutter/material.dart';
 
-enum BottomBarType { learn, extra }
+// enum BottomBarType { learn, extra }
 
-class BBPopupItems extends StatelessWidget {
-  final String? title;
-  final String? imgPath;
-  final int? index;
-  final BottomBarType barType;
-  final List<Widget> learnPopUpWidgets = [
-    const BBBattle(),
-    BBFlashcards(),
-    BbSelectBook(),
-  ];
-  final List<Widget> extraPopUpWidgets = const [
-    BBOverallScoreScreen(),
-    ReportCardScreen(),
-    BBleaderBoard(),
-    BbRewards(),
-    BBCoinQuestScreen(userId: 'S001'),
-    BbBadges(),
-    BbCertificates(),
-  ];
+// class BBPopupItems extends StatelessWidget {
+//   final String? title;
+//   final String? imgPath;
+//   final int? index;
+//   final BottomBarType barType;
+//   final List<Widget> learnPopUpWidgets = [
+//     const BBBattle(state: state),
+//     BBFlashcards(),
+//     BbSelectBook(),
+//   ];
+//   final List<Widget> extraPopUpWidgets = const [
+//     BBOverallScoreScreen(),
+//     ReportCardScreen(),
+//     BBleaderBoard(),
+//     BbRewards(),
+//     BBCoinQuestScreen(userId: 'S001'),
+//     BbBadges(),
+//     BbCertificates(),
+//   ];
 
-  BBPopupItems({
-    super.key,
-    required this.title,
-    required this.imgPath,
-    required this.index,
-    required this.barType,
-  });
+//   BBPopupItems({
+//     super.key,
+//     required this.title,
+//     required this.imgPath,
+//     required this.index,
+//     required this.barType,
+//   });
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) {
-                  if (BottomBarType.learn == barType) {
-                    return learnPopUpWidgets[index!];
-                  }
-                  return extraPopUpWidgets[index!];
-                },
-              ),
-            );
-          },
-          child: Container(
-            height: context.screenHeight * 0.075,
-            width: context.screenWidth * 0.16,
-            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(40),
-              color: const Color.fromARGB(179, 135, 219, 139),
+//   @override
+//   Widget build(BuildContext context) {
+//     return Column(
+//       children: [
+//         GestureDetector(
+//           onTap: () {
+//             Navigator.push(
+//               context,
+//               MaterialPageRoute(
+//                 builder: (context) {
+//                   if (BottomBarType.learn == barType) {
+//                     return learnPopUpWidgets[index!];
+//                   }
+//                   return extraPopUpWidgets[index!];
+//                 },
+//               ),
+//             );
+//           },
+//           child: Container(
+//             height: context.screenHeight * 0.075,
+//             width: context.screenWidth * 0.16,
+//             padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+//             decoration: BoxDecoration(
+//               borderRadius: BorderRadius.circular(40),
+//               color: const Color.fromARGB(179, 135, 219, 139),
 
-              boxShadow: const [
-                BoxShadow(
-                  color: Color.fromARGB(115, 135, 219, 139),
-                  blurRadius: 5,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: Image.asset(imgPath ?? "assets/battle.png"),
-          ),
-        ),
-        BBText(
-          data: title ?? "nothing",
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontSize: 12,
-            fontWeight: FontWeight.w300,
-          ),
-        ),
-      ],
-    );
-  }
-}
+//               boxShadow: const [
+//                 BoxShadow(
+//                   color: Color.fromARGB(115, 135, 219, 139),
+//                   blurRadius: 5,
+//                   spreadRadius: 5,
+//                 ),
+//               ],
+//             ),
+//             child: Image.asset(imgPath ?? "assets/battle.png"),
+//           ),
+//         ),
+//         BBText(
+//           data: title ?? "nothing",
+//           style: Theme.of(context).textTheme.titleSmall?.copyWith(
+//             fontSize: 12,
+//             fontWeight: FontWeight.w300,
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+// }

@@ -1,7 +1,7 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/widgets/popups/bb_model_button.dart';
-import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle_quiz_screen.dart'; // Import your quiz screen
+import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle_quiz_screen.dart';
 import 'package:brainbee/presentation/views/learn/battle/bloc/battle_bloc.dart';
 import 'package:brainbee/presentation/views/learn/battle/models/battle_models.dart';
 import 'package:flutter/material.dart';
@@ -52,7 +52,6 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
       vsync: this,
     )..repeat();
 
-    // Simulate connection delay and update UI
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         setState(() {
@@ -76,7 +75,6 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
       listener: (context, state) {
         print("Listener received state: ${state.runtimeType}");
         if (state is BattleInProgress) {
-          // Navigation is the key side-effect handled here
           _navigateToBattleScreen(context, state);
         } else if (state is BattleCancelled) {
           Navigator.pop(context);
@@ -92,59 +90,57 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
       builder: (context, state) {
         print("Builder received state: ${state.runtimeType}");
 
-        // --- START: CORRECTED STATE DERIVATION LOGIC ---
+        final String? selfUserId = context.read<BattleBloc>().currentUserId;
+        print('🆔 Self User ID in UI: $selfUserId');
 
-        // An opponent is found in any state AFTER searching.
+        // Get room from current state
+        final BattleRoom? currentRoom = _getRoomFromState(state);
+
+        // Determine if opponent is found
         final bool opponentFound =
             state is BattleOpponentFound ||
             state is BattleReady ||
             state is BattleInProgress;
 
-        final BattleRoom? currentRoom =
-            state is BattleSearching
-                ? state.room
-                : state is BattleRoomCreated
-                ? state.room
-                : state is BattleOpponentFound
-                ? state.room
-                : state is BattleReady
-                ? state.room
-                : state is BattleInProgress
-                ? state.room
-                : null;
+        // FIX: Properly determine current player and opponent
+        BattlePlayer? myPlayer;
+        BattlePlayer? theirPlayer;
 
-        // Get the current user's ID from the BLoC
-        final String? selfUserId = context.read<BattleBloc>().currentUserId;
-
-        BattlePlayer? currentPlayer;
-        BattlePlayer? opponentPlayer;
-
-        // This is the new, reliable logic
         if (currentRoom != null && selfUserId != null) {
+          // Check if I am the host
           if (currentRoom.host.id == selfUserId) {
-            // I am the host
-            currentPlayer = currentRoom.host;
-            opponentPlayer = currentRoom.opponent;
-          } else if (currentRoom.opponent?.id == selfUserId) {
-            // I am the opponent
-            currentPlayer = currentRoom.opponent;
-            opponentPlayer = currentRoom.host;
+            myPlayer = currentRoom.host;
+            theirPlayer = currentRoom.opponent;
+            print('👤 I am HOST: ${myPlayer.username}');
+            print('👥 Opponent: ${theirPlayer?.username ?? "waiting..."}');
+          }
+          // Check if I am the opponent
+          else if (currentRoom.opponent?.id == selfUserId) {
+            myPlayer = currentRoom.opponent;
+            theirPlayer = currentRoom.host;
+            print('👤 I am OPPONENT: ${myPlayer?.username}');
+            print('👥 Host (my opponent): ${theirPlayer.username}');
           }
         }
 
-        // Extract ready status ONLY from BattleReady state
-        bool currentPlayerIsReady = false;
-        bool opponentPlayerIsReady = false;
-        if (state is BattleReady && currentPlayer != null) {
-          // Use the IDs to be 100% certain
-          if (currentRoom?.host.id == currentPlayer.id) {
-            currentPlayerIsReady = state.isHostReady;
-            opponentPlayerIsReady = state.isOpponentReady;
+        // FIX: Extract ready status correctly based on who I am
+        bool myReadyStatus = false;
+        bool theirReadyStatus = false;
+
+        if (state is BattleReady && selfUserId != null && currentRoom != null) {
+          // Determine ready status based on whether I'm host or opponent
+          if (currentRoom.host.id == selfUserId) {
+            // I am host
+            myReadyStatus = state.isHostReady;
+            theirReadyStatus = state.isOpponentReady;
           } else {
-            currentPlayerIsReady = state.isOpponentReady;
-            opponentPlayerIsReady = state.isHostReady;
+            // I am opponent
+            myReadyStatus = state.isOpponentReady;
+            theirReadyStatus = state.isHostReady;
           }
+          print('✅ Ready states - Me: $myReadyStatus, Them: $theirReadyStatus');
         }
+
         return Scaffold(
           backgroundColor: const Color(0xFFF8F8F8),
           appBar: AppBar(
@@ -174,12 +170,10 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
                     MediaQuery.of(context).padding.top,
                 child: Column(
                   children: [
-                    // Connection Status Indicator
                     if (_isConnecting)
                       _buildConnectionStatus(isConnecting: true),
                     if (_isConnected && !_isConnecting)
                       _buildConnectionStatus(isConnecting: false),
-
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
@@ -188,16 +182,17 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
                           children: [
                             if (!opponentFound) _buildSearchingAnimation(),
                             if (!opponentFound) const SizedBox(height: 40),
+                            // MY PLAYER CARD (always "You")
                             _buildPlayerCard(
                               name:
-                                  currentPlayer?.username ??
+                                  myPlayer?.username ??
                                   widget.currentPlayerName,
                               initial:
-                                  currentPlayer?.avatarInitial ??
+                                  myPlayer?.avatarInitial ??
                                   widget.currentPlayerInitial,
                               color: widget.currentPlayerColor,
                               isCurrentPlayer: true,
-                              isReady: currentPlayerIsReady,
+                              isReady: myReadyStatus,
                               opponentFound: opponentFound,
                             ),
                             const SizedBox(height: 24),
@@ -210,15 +205,16 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
                               ),
                             ),
                             const SizedBox(height: 24),
+                            // OPPONENT PLAYER CARD
                             _buildPlayerCard(
-                              name: opponentPlayer?.username ?? 'Searching...',
-                              initial: opponentPlayer?.avatarInitial ?? '?',
+                              name: theirPlayer?.username ?? 'Searching...',
+                              initial: theirPlayer?.avatarInitial ?? '?',
                               color:
                                   opponentFound
                                       ? BBColors.primaryColor
                                       : Colors.grey,
                               isCurrentPlayer: false,
-                              isReady: opponentPlayerIsReady,
+                              isReady: theirReadyStatus,
                               opponentFound: opponentFound,
                             ),
                             const SizedBox(height: 40),
@@ -230,7 +226,7 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
                         ),
                       ),
                     ),
-                    _buildActionButtons(opponentFound, currentPlayerIsReady),
+                    _buildActionButtons(opponentFound, myReadyStatus),
                   ],
                 ),
               ),
@@ -241,8 +237,17 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
     );
   }
 
+  // Helper to extract room from various states
+  BattleRoom? _getRoomFromState(BattleState state) {
+    if (state is BattleSearching) return state.room;
+    if (state is BattleRoomCreated) return state.room;
+    if (state is BattleOpponentFound) return state.room;
+    if (state is BattleReady) return state.room;
+    if (state is BattleInProgress) return state.room;
+    return null;
+  }
+
   void _navigateToBattleScreen(BuildContext context, BattleInProgress state) {
-    // Prevent multiple navigations if the listener fires rapidly
     if (ModalRoute.of(context)?.isCurrent ?? false) {
       Navigator.pushReplacement(
         context,
@@ -291,7 +296,7 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
     );
   }
 
-  Widget _buildActionButtons(bool opponentFound, bool currentPlayerIsReady) {
+  Widget _buildActionButtons(bool opponentFound, bool myReadyStatus) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
@@ -320,8 +325,9 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
           const SizedBox(width: 16),
           Expanded(
             child: ElevatedButton(
+              // FIX: Disable if already ready OR opponent not found
               onPressed:
-                  opponentFound && _isConnected && !currentPlayerIsReady
+                  opponentFound && _isConnected && !myReadyStatus
                       ? () => _handleReady(context)
                       : null,
               style: ElevatedButton.styleFrom(
@@ -333,10 +339,10 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
                 disabledBackgroundColor: Colors.grey[300],
               ),
               child: BBText(
-                data: currentPlayerIsReady ? 'Waiting...' : 'Ready',
+                data: myReadyStatus ? 'Waiting...' : 'Ready',
                 style: TextStyle(
                   color:
-                      opponentFound && _isConnected
+                      opponentFound && _isConnected && !myReadyStatus
                           ? Colors.white
                           : Colors.grey[600],
                   fontSize: 16,
@@ -451,7 +457,8 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
               ],
             ),
           ),
-          if (isReady)
+          // Show ready indicator only for found opponents or if player is ready
+          if (isReady && (isCurrentPlayer || opponentFound))
             Padding(
               padding: const EdgeInsets.only(left: 8.0),
               child: Row(
@@ -470,6 +477,7 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
                 ],
               ),
             ),
+          // Show searching animation for opponent when not found
           if (!isCurrentPlayer && !opponentFound)
             FadeTransition(
               opacity: _pulseController,
@@ -584,16 +592,12 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
 
   void _handleCancel(BuildContext context) {
     final state = context.read<BattleBloc>().state;
-    String? roomId;
-    if (state is BattleSearching) roomId = state.room.roomId;
-    if (state is BattleRoomCreated) roomId = state.room.roomId;
-    if (state is BattleOpponentFound) roomId = state.room.roomId;
-    if (state is BattleReady) roomId = state.room.roomId;
+    String? roomId = _getRoomFromState(state)?.roomId;
 
     if (roomId != null) {
       showDialog(
         context: context,
-        builder: (dialogContext) => _buildCancelDialog(context, roomId!),
+        builder: (dialogContext) => _buildCancelDialog(context, roomId),
       );
     } else {
       Navigator.pop(context);
@@ -658,9 +662,7 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
 
   void _handleReady(BuildContext context) {
     final state = context.read<BattleBloc>().state;
-    String? roomId;
-    if (state is BattleOpponentFound) roomId = state.room.roomId;
-    if (state is BattleReady) roomId = state.room.roomId;
+    String? roomId = _getRoomFromState(state)?.roomId;
 
     if (roomId != null) {
       context.read<BattleBloc>().add(MarkReadyEvent(roomId: roomId));

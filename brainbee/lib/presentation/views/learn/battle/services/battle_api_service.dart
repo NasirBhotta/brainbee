@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:brainbee/core/models/token_user.dart';
 import 'package:http/http.dart' as http;
 import 'package:socket_io_client/socket_io_client.dart' as IO;
@@ -224,6 +225,11 @@ class BattleApiService {
       });
     });
 
+    _socket!.on('score_update', (data) {
+      // data: { playerId, questionIndex, score, opponentScore, roomId, timestamp }
+      print('💯 Score update received: $data');
+      _eventStreamController.add(data);
+    });
     // Listen for opponent answered
     _socket!.on('opponent_answered', (data) {
       print('📝 Opponent answered: $data');
@@ -320,6 +326,7 @@ class BattleApiService {
   }
 
   Future<http.Response> joinBattleRoom({required String invitationCode}) async {
+    print("trying to join room with code $invitationCode");
     return await post(
       '/api/student/battle/join',
       data: {'invitationCode': invitationCode},

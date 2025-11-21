@@ -3,25 +3,52 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/widgets/popups/bb_enter_invitation_code.dart';
+import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/learn/battle/UI/bb_book_selection.dart';
+import 'package:brainbee/presentation/views/learn/battle/UI/bb_searching_players.dart';
 import 'package:brainbee/presentation/views/learn/battle/bloc/battle_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+// Helper class to store pending invitation data
+class _PendingInvitationData {
+  final String playerName;
+  final String playerInitial;
+  final String invitationCode;
+
+  _PendingInvitationData({
+    required this.playerName,
+    required this.playerInitial,
+    required this.invitationCode,
+  });
+}
+
 class BBBattle extends StatefulWidget {
-  const BBBattle({super.key});
+  final StudentState? state;
+  const BBBattle({super.key, this.state});
 
   @override
   State<BBBattle> createState() => _BBBattleState();
 }
 
 class _BBBattleState extends State<BBBattle> {
+  dynamic battleStats;
+  List<dynamic> battleHistory = [];
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
-    // Fetch battle stats when screen loads
-    context.read<BattleBloc>().add(FetchBattleStatsEvent());
-    context.read<BattleBloc>().add(FetchBattleHistoryEvent());
+    _loadData();
+  }
+
+  void _loadData() {
+    // Use addPostFrameCallback to ensure context is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<BattleBloc>().add(const FetchBattleStatsEvent());
+      }
+    });
   }
 
   @override
@@ -37,24 +64,70 @@ class _BBBattleState extends State<BBBattle> {
         ),
         centerTitle: true,
         leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back, color: BBColors.black),
         ),
       ),
-      body: BlocBuilder<BattleBloc, BattleState>(
+      body: BlocConsumer<BattleBloc, BattleState>(
+        listener: (context, state) {
+          // Handle join battle response - navigate only on success
+          if (_pendingInvitationData != null) {
+            _dismissLoadingDialog();
+
+            if (state is BattleOpponentFound || state is BattleSearching) {
+              // Success! Now navigate
+              final data = _pendingInvitationData!;
+              _pendingInvitationData = null; // Clear pending data
+
+              final room =
+                  state is BattleOpponentFound
+                      ? (state).room
+                      : (state as BattleSearching).room;
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (ctx) => BlocProvider.value(
+                        value: context.read<BattleBloc>(),
+                        child: BbSearchingPlayers(
+                          matchType: MatchType.invitation,
+                          currentPlayerName: data.playerName,
+                          currentPlayerInitial: data.playerInitial,
+                          currentPlayerColor: BBColors.primaryColor,
+                          roomId: room.roomId,
+                          invitationCode: data.invitationCode,
+                        ),
+                      ),
+                ),
+              );
+            } else if (state is BattleError) {
+              // Failed! Show error message
+              _pendingInvitationData = null; // Clear pending data
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
         builder: (context, state) {
-          // Extract data from state
-          final battleStats = state is BattleStatsLoaded ? state.stats : null;
-          final battleHistory =
-              state is BattleHistoryLoaded ? state.history : [];
-          final isLoading = state is BattleLoading;
+          // Update local state based on bloc state
+          if (state is BattleStatsLoaded) {
+            battleStats = state.stats;
+          }
+          if (state is BattleHistoryItemsLoaded) {
+            battleHistory = state.history;
+          }
+
+          _isLoading = state is BattleLoading;
 
           return RefreshIndicator(
             onRefresh: () async {
-              context.read<BattleBloc>().add(FetchBattleStatsEvent());
-              context.read<BattleBloc>().add(FetchBattleHistoryEvent());
+              context.read<BattleBloc>().add(const FetchBattleStatsEvent());
+              context.read<BattleBloc>().add(const FetchBattleHistoryEvent());
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -65,21 +138,14 @@ class _BBBattleState extends State<BBBattle> {
                 ),
                 child: Column(
                   children: [
-                    // Player Stats Card
-                    _buildPlayerStatsCard(context, battleStats, isLoading),
-
+                    _buildPlayerStatsCard(context, battleStats, _isLoading),
                     const SizedBox(height: 16),
-
-                    // Battle Actions Container (unchanged)
                     _buildBattleActionsContainer(context),
-
                     const SizedBox(height: 16),
-
-                    // Battle History Section
                     _buildBattleHistorySection(
                       context,
                       battleHistory,
-                      isLoading,
+                      _isLoading,
                     ),
                   ],
                 ),
@@ -91,12 +157,215 @@ class _BBBattleState extends State<BBBattle> {
     );
   }
 
+  Widget _buildBattleActionsContainer(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [BBColors.primaryColor, BBColors.secondaryColor],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: BBColors.primaryColor.withOpacity(0.3),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 24,
+                  horizontal: 16,
+                ),
+                child: Column(
+                  spacing: 12,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Start Battle Button
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BBBookSelectionForBattle(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: BBColors.white,
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              offset: const Offset(0, 4),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.play_arrow_rounded,
+                              color: BBColors.alertRed,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            BBText(
+                              data: "Start the Battle",
+                              style: context.textStyle.labelLarge?.copyWith(
+                                color: BBColors.alertRed,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Enter Invitation Code Button - FIXED
+                    InkWell(
+                      onTap: () => _handleEnterInvitationCode(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.vpn_key,
+                              color: BBColors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            BBText(
+                              data: "Enter Invitation Code",
+                              style: context.textStyle.labelMedium?.copyWith(
+                                color: BBColors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            left: -context.screenWidth * 0.015,
+            top: -20,
+            bottom: -20,
+            child: Transform.rotate(
+              angle: 0.2,
+              child: Opacity(
+                opacity: 0.8,
+                child: Image.asset("assets/crown.png"),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // FIX: Separate method to handle invitation code flow
+  Future<void> _handleEnterInvitationCode(BuildContext context) async {
+    // Store references BEFORE showing dialog
+    final battleBloc = context.read<BattleBloc>();
+
+    // Get student data safely - provide defaults if not available
+    String playerName = "Guest Player";
+    String playerInitial = "G";
+
+    if (widget.state != null && widget.state is StudentDataLoaded) {
+      final user = (widget.state as StudentDataLoaded).student;
+      playerName = "${user.firstName} ${user.lastName}";
+      playerInitial =
+          user.firstName.isNotEmpty
+              ? user.firstName.substring(0, 1).toUpperCase()
+              : "G";
+    }
+
+    // Show popup and get code
+    final String? invitationCode = await showInvitationCodePopUp(context);
+
+    // Check if widget is still mounted after async operation
+    if (!mounted) return;
+
+    if (invitationCode != null && invitationCode.length == 6) {
+      // Show loading indicator
+      _showLoadingDialog(context);
+
+      // Dispatch event using stored reference
+      battleBloc.add(JoinBattleRoomEvent(invitationCode: invitationCode));
+
+      // Wait for state change and handle navigation in listener
+      // Store data for use in listener
+      _pendingInvitationData = _PendingInvitationData(
+        playerName: playerName,
+        playerInitial: playerInitial,
+        invitationCode: invitationCode,
+      );
+    }
+  }
+
+  // Store pending invitation data
+  _PendingInvitationData? _pendingInvitationData;
+
+  void _showLoadingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  void _dismissLoadingDialog() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  // ... rest of the widget methods remain the same
   Widget _buildPlayerStatsCard(
     BuildContext context,
     dynamic battleStats,
     bool isLoading,
   ) {
-    if (isLoading) {
+    // Get student data safely
+    String playerName = "Guest";
+    String playerInitial = "G";
+
+    if (widget.state != null && widget.state is StudentDataLoaded) {
+      final student = (widget.state as StudentDataLoaded).student;
+      playerName = "${student.firstName} ${student.lastName}";
+      playerInitial =
+          student.firstName.isNotEmpty
+              ? student.firstName.substring(0, 1).toUpperCase()
+              : "G";
+    }
+
+    if (isLoading && battleStats == null) {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -130,7 +399,6 @@ class _BBBattleState extends State<BBBattle> {
       ),
       child: Column(
         children: [
-          // Header with gradient
           Container(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
             decoration: BoxDecoration(
@@ -147,12 +415,11 @@ class _BBBattleState extends State<BBBattle> {
             ),
             child: Row(
               children: [
-                // Avatar
                 Container(
                   padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       colors: [BBColors.primaryColor, BBColors.secondaryColor],
                     ),
                   ),
@@ -161,7 +428,7 @@ class _BBBattleState extends State<BBBattle> {
                     backgroundColor:
                         battleStats?.avatarColor ?? Colors.green[700],
                     child: BBText(
-                      data: battleStats?.initial ?? 'N',
+                      data: battleStats?.initial ?? playerInitial,
                       style: Theme.of(
                         context,
                       ).textTheme.headlineSmall?.copyWith(
@@ -172,13 +439,12 @@ class _BBBattleState extends State<BBBattle> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                // User info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       BBText(
-                        data: battleStats?.username ?? "@Username",
+                        data: playerName,
                         style: context.textStyle.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -193,22 +459,15 @@ class _BBBattleState extends State<BBBattle> {
                           color: BBColors.primaryColor.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.emoji_events,
                               size: 16,
                               color: BBColors.primaryColor,
                             ),
-                            const SizedBox(width: 4),
-                            BBText(
-                              data: "Rank ${battleStats?.ranking ?? '70007'}",
-                              style: context.textStyle.labelMedium?.copyWith(
-                                color: BBColors.primaryColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            SizedBox(width: 4),
                           ],
                         ),
                       ),
@@ -218,8 +477,6 @@ class _BBBattleState extends State<BBBattle> {
               ],
             ),
           ),
-
-          // Stats Grid
           Padding(
             padding: const EdgeInsets.all(20),
             child: Row(
@@ -297,136 +554,6 @@ class _BBBattleState extends State<BBBattle> {
     );
   }
 
-  Widget _buildBattleActionsContainer(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [BBColors.primaryColor, BBColors.secondaryColor],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: BBColors.primaryColor.withOpacity(0.3),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 24,
-                  horizontal: 16,
-                ),
-                child: Column(
-                  spacing: 12,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BBBookSelectionForBattle(),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: BBColors.white,
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              offset: const Offset(0, 4),
-                              blurRadius: 8,
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.play_arrow_rounded,
-                              color: BBColors.alertRed,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 8),
-                            BBText(
-                              data: "Start the Battle",
-                              style: context.textStyle.labelLarge?.copyWith(
-                                color: BBColors.alertRed,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () {
-                        showInvitationCodePopUp(context);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.vpn_key,
-                              color: BBColors.white,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 6),
-                            BBText(
-                              data: "Enter Invitation Code",
-                              style: context.textStyle.labelMedium?.copyWith(
-                                color: BBColors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          Positioned(
-            left: -context.screenWidth * 0.015,
-            top: -20,
-            bottom: -20,
-            child: Transform.rotate(
-              angle: 0.2,
-              child: Opacity(
-                opacity: 0.8,
-                child: Image.asset("assets/crown.png"),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildBattleHistorySection(
     BuildContext context,
     List<dynamic> battleHistory,
@@ -447,7 +574,6 @@ class _BBBattleState extends State<BBBattle> {
       ),
       child: Column(
         children: [
-          // Header
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -500,9 +626,7 @@ class _BBBattleState extends State<BBBattle> {
               ],
             ),
           ),
-
-          // History List
-          if (isLoading)
+          if (isLoading && battleHistory.isEmpty)
             Container(
               height: 200,
               alignment: Alignment.center,
@@ -538,8 +662,7 @@ class _BBBattleState extends State<BBBattle> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: battleHistory.length,
                 separatorBuilder:
-                    (context, index) =>
-                        Divider(height: 1, color: Colors.grey[200]),
+                    (_, __) => Divider(height: 1, color: Colors.grey[200]),
                 itemBuilder: (context, index) {
                   final battle = battleHistory[index];
                   return _buildBattleHistoryItem(context, battle, index);
@@ -568,10 +691,8 @@ class _BBBattleState extends State<BBBattle> {
       Colors.indigo[700],
       Colors.cyan[700],
     ];
-
     final letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-
-    final isWin = battle?.result == 'win' || index % 2 == 0; // Example logic
+    final isWin = battle?.result == 'win';
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -606,45 +727,22 @@ class _BBBattleState extends State<BBBattle> {
         data: battle?.date ?? "Today",
         style: context.textStyle.labelSmall?.copyWith(color: Colors.grey[600]),
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color:
-                  isWin
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.red.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: BBText(
-              data: isWin ? "Won" : "Lost",
-              style: context.textStyle.labelSmall?.copyWith(
-                color: isWin ? Colors.green : Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color:
+              isWin
+                  ? Colors.green.withOpacity(0.1)
+                  : Colors.red.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: BBText(
+          data: isWin ? "Won" : "Lost",
+          style: context.textStyle.labelSmall?.copyWith(
+            color: isWin ? Colors.green : Colors.red,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(width: 8),
-          InkWell(
-            onTap: () {
-              // Navigate to battle details
-            },
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: BBColors.primaryColor, width: 1.5),
-              ),
-              child: const Icon(
-                Icons.arrow_forward_ios,
-                color: BBColors.primaryColor,
-                size: 16,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

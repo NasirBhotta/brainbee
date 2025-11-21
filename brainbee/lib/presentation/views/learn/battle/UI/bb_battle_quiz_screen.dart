@@ -3,7 +3,6 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/utils/helper/bb_confirmation_dialog.dart';
-import 'package:brainbee/core/utils/helper/bb_result_extention.dart';
 import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle_report_card.dart';
 import 'package:brainbee/presentation/views/learn/battle/bloc/battle_bloc.dart';
 import 'package:brainbee/presentation/views/learn/battle/models/battle_models.dart';
@@ -32,9 +31,10 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   bool isCorrectAnswer = false;
   int timeSpent = 0;
   List<int?> answers = [];
-  int timeRemaining = 15;
-  late Timer timer;
+  int timeRemaining = 60;
+  Timer? timer;
   DateTime? questionStartTime;
+  bool _isWaitingForResult = false;
 
   @override
   void initState() {
@@ -45,13 +45,13 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
 
   @override
   void dispose() {
-    timer.cancel();
+    timer?.cancel();
     super.dispose();
   }
 
   void startTimer() {
     timeRemaining = widget.quizData.timePerQuestion;
-    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (mounted) {
         setState(() {
           if (timeRemaining > 0) {
@@ -67,7 +67,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   }
 
   void resetTimerForNextQuestion() {
-    timer.cancel();
+    timer?.cancel();
     questionStartTime = DateTime.now();
     timeRemaining = widget.quizData.timePerQuestion;
     startTimer();
@@ -76,12 +76,13 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
   void submitAnswer(int? optionIndex) {
     if (isAnswerSubmitted) return;
 
-    timer.cancel();
+    timer?.cancel();
 
     final questionTime =
         questionStartTime != null
             ? DateTime.now().difference(questionStartTime!).inSeconds
             : 0;
+
     setState(() {
       timeSpent += questionTime;
     });
@@ -89,6 +90,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
 
     final correctIndex =
         widget.quizData.questions[currentQuestionIndex].correctOptionIndex;
+
     setState(() {
       selectedOptionIndex = optionIndex;
       isAnswerSubmitted = true;
@@ -119,13 +121,13 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         }
       });
     } else {
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          context.read<BattleBloc>().add(
-            GetBattleResultEvent(roomId: widget.room.roomId),
-          );
-        }
+      // Last question - wait for battle completion
+      setState(() {
+        _isWaitingForResult = true;
       });
+
+      // Don't immediately request result - wait for WebSocket event
+      // The BLoC will handle the battle_completed event
     }
   }
 
@@ -153,15 +155,27 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(state.message)));
+          } else if (state is BattleCancelled) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
+            Navigator.pop(context);
           }
         },
         builder: (BuildContext context, BattleState state) {
-          if (state is! BattleInProgress) {
-            // Show a loading indicator or an error screen if not in progress
-            return const Center(child: CircularProgressIndicator());
+          // Get scores from state
+          int userScore = 0;
+          int opponentScore = 0;
+
+          if (state is BattleInProgress) {
+            userScore = state.userScore;
+            opponentScore = state.opponentScore;
           }
-          final userScore = state.userScore;
-          final opponentScore = state.opponentScore;
+
+          // Show waiting UI if waiting for opponent to finish
+          if (_isWaitingForResult && state is BattleInProgress) {
+            return _buildWaitingForOpponent(userScore, opponentScore);
+          }
 
           return SafeArea(
             child: Padding(
@@ -185,22 +199,78 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
     );
   }
 
+  Widget _buildWaitingForOpponent(int userScore, int opponentScore) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(BBColors.primaryColor),
+          ),
+          const SizedBox(height: 24),
+          BBText(
+            data: "You've finished!",
+            style: context.textStyle.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          BBText(
+            data: "Waiting for opponent to complete...",
+            style: context.textStyle.bodyMedium?.copyWith(color: Colors.grey),
+          ),
+          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+              ],
+            ),
+            child: Column(
+              children: [
+                BBText(data: "Your Score", style: context.textStyle.bodyMedium),
+                const SizedBox(height: 8),
+                BBText(
+                  data: "$userScore",
+                  style: context.textStyle.headlineLarge?.copyWith(
+                    color: BBColors.primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                BBText(
+                  data: "Opponent's Score",
+                  style: context.textStyle.bodyMedium,
+                ),
+                const SizedBox(height: 8),
+                BBText(
+                  data: "$opponentScore",
+                  style: context.textStyle.headlineLarge?.copyWith(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _navigateToResults(BattleCompleted completedState) {
-    // Get the current user's ID from the BLoC to identify the winner/loser.
     final String? selfUserId = context.read<BattleBloc>().currentUserId;
     if (selfUserId == null) {
-      // Handle error case where user ID is not available
-      print("Error: Could not determine current user ID to show results.");
+      print("Error: Could not determine current user ID");
       return;
     }
 
-    // Extract the result object from the state
     final BattleResult result = completedState.result;
-
-    // Determine if the current user is the winner
     final bool isWinner = result.winner.id == selfUserId;
 
-    // Assign the final scores based on who is the winner
     final int finalUserScore =
         isWinner ? result.winnerScore : result.loserScore;
     final int finalOpponentScore =
@@ -350,7 +420,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -394,12 +464,12 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
           Color backgroundColor =
               isSelected
                   ? (isCorrect
-                      ? Colors.green.withValues(alpha: 0.3)
+                      ? Colors.green.withOpacity(0.3)
                       : isWrong
-                      ? Colors.red.withValues(alpha: 0.3)
-                      : BBColors.primaryColor.withValues(alpha: 0.3))
+                      ? Colors.red.withOpacity(0.3)
+                      : BBColors.primaryColor.withOpacity(0.3))
                   : (isAnswerSubmitted && isCorrect
-                      ? Colors.green.withValues(alpha: 0.3)
+                      ? Colors.green.withOpacity(0.3)
                       : Colors.white);
 
           Color borderColor =
@@ -424,7 +494,7 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
                 border: Border.all(color: borderColor, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Colors.black.withOpacity(0.05),
                     blurRadius: 5,
                     offset: const Offset(0, 2),
                   ),
@@ -503,8 +573,8 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         context.read<BattleBloc>().add(
           LeaveBattleEvent(roomId: widget.room.roomId),
         );
-        Navigator.pop(context); // Close dialog
-        Navigator.pop(context); // Return to previous screen
+        Navigator.pop(context);
+        Navigator.pop(context);
       },
     );
   }

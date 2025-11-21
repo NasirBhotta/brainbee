@@ -12,8 +12,9 @@ part 'battle_state.dart';
 class BattleBloc extends Bloc<BattleEvent, BattleState> {
   final BattleRepository repository;
   StreamSubscription? _roomUpdatesSubscription;
-  String? _currentUserId; // Store current user ID for comparison
+  String? _currentUserId;
   String? get currentUserId => _currentUserId;
+
   BattleBloc({required this.repository}) : super(BattleInitial()) {
     on<CreateBattleRoomEvent>(_onCreateBattleRoom);
     on<JoinBattleRoomEvent>(_onJoinBattleRoom);
@@ -27,9 +28,16 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
     on<OpponentAnsweredEvent>(_onOpponentAnswered);
     on<GetBattleResultEvent>(_onGetBattleResult);
     on<LoadBattleHistoryEvent>(_onLoadBattleHistory);
-    // New handlers for stats
     on<FetchBattleStatsEvent>(_onFetchBattleStats);
     on<FetchBattleHistoryEvent>(_onFetchBattleHistory);
+    on<SetCurrentUserIdEvent>(_onSetCurrentUserId);
+  }
+
+  Future<void> _onSetCurrentUserId(
+    SetCurrentUserIdEvent event,
+    Emitter<BattleState> emit,
+  ) async {
+    _currentUserId = event.userId;
   }
 
   Future<void> _onCreateBattleRoom(
@@ -43,16 +51,11 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         mode: event.mode,
         chapters: event.chapters,
       );
-
-      // Store current user ID (host)
       _currentUserId = room.host.id;
-
-      // Connect to WebSocket for real-time updates
+      print('🆔 Set currentUserId (host/create): $_currentUserId');
       await _connectToRoom(room.roomId);
 
-      print("it is comming here");
       if (event.mode == BattleMode.random) {
-        // Check if opponent already matched (shouldn't happen for create, but be safe)
         if (room.status == BattleStatus.matched && room.opponent != null) {
           emit(BattleOpponentFound(room: room));
         } else {
@@ -75,22 +78,13 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
       final room = await repository.joinBattleRoom(
         invitationCode: event.invitationCode,
       );
-
-      print('🔍 JOINED ROOM DATA:');
-      print('   Host: ${room.host.username}');
-      print('   Opponent: ${room.opponent?.username ?? "NULL"}');
-      print('   Status: ${room.status}');
-
-      // Store current user ID (opponent)
       _currentUserId = room.opponent?.id;
-
+      print('🆔 Set currentUserId (opponent/join): $_currentUserId');
       await _connectToRoom(room.roomId);
 
-      // Check if room has opponent data
       if (room.opponent != null) {
         emit(BattleOpponentFound(room: room));
       } else {
-        // If no opponent data yet, emit searching state
         emit(BattleSearching(room: room));
       }
     } catch (e) {
@@ -109,15 +103,19 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         chapters: event.chapters,
       );
 
-      _currentUserId = room.host.id;
+      if (room.opponent != null && room.status == BattleStatus.matched) {
+        _currentUserId = room.opponent!.id;
+        print('🆔 Set currentUserId (opponent/random-join): $_currentUserId');
+      } else {
+        _currentUserId = room.host.id;
+        print('🆔 Set currentUserId (host/random-create): $_currentUserId');
+      }
+
       await _connectToRoom(room.roomId);
 
-      // ✅ Check if opponent is already found
       if (room.status == BattleStatus.matched && room.opponent != null) {
-        print('🎯 Opponent already matched! Emitting BattleOpponentFound');
         emit(BattleOpponentFound(room: room));
       } else {
-        print('🔍 No opponent yet, emitting BattleSearching');
         emit(BattleSearching(room: room));
       }
     } catch (e) {
@@ -144,7 +142,6 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
   ) async {
     try {
       await repository.markReady(roomId: event.roomId);
-      // Wait for WebSocket update to confirm both players are ready
     } catch (e) {
       emit(BattleError(message: e.toString()));
     }
@@ -155,8 +152,6 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
     Emitter<BattleState> emit,
   ) async {
     try {
-      // Just make the call. We don't expect data back.
-      // The WebSocket will handle the state transition.
       await repository.startBattle(roomId: event.roomId);
     } catch (e) {
       emit(BattleError(message: e.toString()));
@@ -176,8 +171,6 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         selectedOptionIndex: event.selectedOptionIndex,
         timeSpent: event.timeSpent,
       );
-      // Score update will come through WebSocket
-
       emit(currentState.copyWith(userScore: newScore));
     } catch (e) {
       emit(BattleError(message: e.toString()));
@@ -202,7 +195,7 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
     Emitter<BattleState> emit,
   ) async {
     final update = event.update;
-    print('✅ WebSocket Update Received by BLoC: $update');
+    print('✅ WebSocket Update: $update');
     final type = update['type'] as String?;
 
     switch (type) {
@@ -219,50 +212,37 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
           emit(BattleOpponentFound(room: room));
         }
         break;
+
       case 'room_update':
-        print('🔄 Processing room_update in BLoC');
-
-        // Check if this update contains room data with opponent
         if (update.containsKey('room')) {
-          final roomData = update['room'];
-          final updatedRoom = BattleRoom.fromJson(roomData);
-
-          print(
-            '   Updated room opponent: ${updatedRoom.opponent?.username ?? "NULL"}',
-          );
-
+          final updatedRoom = BattleRoom.fromJson(update['room']);
           if (state is BattleSearching || state is BattleOpponentFound) {
             emit(BattleOpponentFound(room: updatedRoom));
           }
         }
         break;
+
       case 'player_ready':
         if ((state is BattleOpponentFound || state is BattleReady) &&
             update.containsKey('playerId')) {
-          final String playerId = update['playerId'] as String;
-
-          // Safely obtain the room from the concrete state type
+          final String readyPlayerId = update['playerId'] as String;
           final BattleRoom room =
               (state is BattleReady)
                   ? (state as BattleReady).room
                   : (state as BattleOpponentFound).room;
 
-          // 1. Determine the PREVIOUS ready state.
-          bool previousHostReady = false;
-          bool previousOpponentReady = false;
+          bool prevHostReady = false;
+          bool prevOpponentReady = false;
           if (state is BattleReady) {
-            final readyState = state as BattleReady;
-            previousHostReady = readyState.isHostReady;
-            previousOpponentReady = readyState.isOpponentReady;
+            prevHostReady = (state as BattleReady).isHostReady;
+            prevOpponentReady = (state as BattleReady).isOpponentReady;
           }
 
-          // 2. Calculate the NEW ready state based on the event.
           final bool isHostNowReady =
-              (playerId == room.host.id) ? true : previousHostReady;
+              (readyPlayerId == room.host.id) ? true : prevHostReady;
           final bool isOpponentNowReady =
-              (playerId == room.opponent?.id) ? true : previousOpponentReady;
+              (readyPlayerId == room.opponent?.id) ? true : prevOpponentReady;
 
-          // 3. Emit the new BattleReady state.
           emit(
             BattleReady(
               room: room,
@@ -278,12 +258,13 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
           add(StartBattleEvent(roomId: update['roomId']));
         }
         break;
+
       case 'battle_data_ready':
         if (state is BattleReady && update.containsKey('data')) {
           final quizData = BattleQuizData.fromJson(update['data']);
           emit(
             BattleInProgress(
-              room: (state as BattleReady).room, // Carry the room forward
+              room: (state as BattleReady).room,
               quizData: quizData,
               currentQuestionIndex: 0,
               userScore: 0,
@@ -292,21 +273,36 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
           );
         }
         break;
+
       case 'opponent_answered':
-        if (update.containsKey('score') &&
-            update.containsKey('questionIndex')) {
-          add(
-            OpponentAnsweredEvent(
-              questionIndex: update['questionIndex'],
-              score: update['score'],
-            ),
-          );
+        // FIX: Handle opponent score update
+        if (state is BattleInProgress &&
+            update.containsKey('score') &&
+            update.containsKey('playerId')) {
+          final String answeringPlayerId = update['playerId'] as String;
+          final int newScore = update['score'] as int;
+
+          // Only update if it's the opponent's answer, not our own
+          if (answeringPlayerId != _currentUserId) {
+            print('📊 Opponent score update: $newScore');
+            add(
+              OpponentAnsweredEvent(
+                questionIndex: update['questionIndex'] ?? 0,
+                score: newScore,
+              ),
+            );
+          }
         }
         break;
 
       case 'battle_completed':
+        // FIX: Add delay before fetching results to avoid race condition
         if (update.containsKey('roomId')) {
-          add(GetBattleResultEvent(roomId: update['roomId']));
+          final roomId = update['roomId'] as String;
+          print('🏁 Battle completed event received for room: $roomId');
+          // Delay to ensure backend has saved the results
+          await Future.delayed(const Duration(milliseconds: 500));
+          add(GetBattleResultEvent(roomId: roomId));
         }
         break;
 
@@ -316,7 +312,7 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         break;
 
       case 'joined_room':
-        print('✅ Successfully joined room via WebSocket: ${update['roomId']}');
+        print('✅ Joined room: ${update['roomId']}');
         break;
 
       case 'error':
@@ -330,22 +326,40 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
     Emitter<BattleState> emit,
   ) async {
     if (state is! BattleInProgress) return;
-
     final currentState = state as BattleInProgress;
-    currentState.copyWith(opponentScore: event.score);
+    // FIX: Actually emit the updated state
+    emit(currentState.copyWith(opponentScore: event.score));
   }
 
+  // FIX: Add retry logic for getting battle result
   Future<void> _onGetBattleResult(
     GetBattleResultEvent event,
     Emitter<BattleState> emit,
   ) async {
-    try {
-      final result = await repository.getBattleResult(roomId: event.roomId);
-      emit(BattleCompleted(result: result));
-      _disconnectFromRoom();
-    } catch (e) {
-      emit(BattleError(message: e.toString()));
+    // Don't fetch if already completed
+    if (state is BattleCompleted) return;
+
+    int retries = 3;
+    Exception? lastError;
+
+    while (retries > 0) {
+      try {
+        final result = await repository.getBattleResult(roomId: event.roomId);
+        emit(BattleCompleted(result: result));
+        _disconnectFromRoom();
+        return;
+      } catch (e) {
+        lastError = e as Exception;
+        retries--;
+        print('⚠️ Failed to get battle result, retries left: $retries');
+        if (retries > 0) {
+          await Future.delayed(const Duration(seconds: 1));
+        }
+      }
     }
+
+    // All retries failed
+    emit(BattleError(message: 'Failed to get battle result: $lastError'));
   }
 
   Future<void> _onLoadBattleHistory(
@@ -364,61 +378,45 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
     }
   }
 
-  // New handler for fetching battle stats
   Future<void> _onFetchBattleStats(
     FetchBattleStatsEvent event,
     Emitter<BattleState> emit,
   ) async {
     try {
       emit(BattleLoading());
-
       final statsData = await repository.getBattleStatistics();
       final stats = BattleStats.fromJson(statsData);
-
       emit(BattleStatsLoaded(stats: stats));
     } catch (e) {
       emit(BattleError(message: 'Error loading battle stats: $e'));
     }
   }
 
-  // New handler for fetching battle history (stats-specific)
   Future<void> _onFetchBattleHistory(
     FetchBattleHistoryEvent event,
     Emitter<BattleState> emit,
   ) async {
     try {
       emit(BattleLoading());
-
-      // Fetch battle history with limit
       final rooms = await repository.getBattleHistory(limit: 20);
-
-      // Convert BattleRoom to BattleHistoryItem
       final history =
           rooms
               .where((room) => room.status == BattleStatus.completed)
               .map((room) => _convertRoomToHistoryItem(room))
               .toList();
-
       emit(BattleHistoryItemsLoaded(history: history));
     } catch (e) {
       emit(BattleError(message: 'Error loading battle history: $e'));
     }
   }
 
-  /// Convert BattleRoom to BattleHistoryItem
   BattleHistoryItem _convertRoomToHistoryItem(BattleRoom room) {
-    // Determine if current user is host or opponent
     final bool isHost = _currentUserId == room.host.id;
-
-    // Get current user and opponent
     final currentUser = isHost ? room.host : room.opponent!;
     final opponent = isHost ? room.opponent : room.host;
-
-    // Get scores from BattlePlayer's currentScore
     final yourScore = currentUser.currentScore;
     final opponentScore = opponent?.currentScore ?? 0;
 
-    // Determine result based on scores
     String result;
     if (yourScore > opponentScore) {
       result = 'win';
@@ -441,34 +439,24 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
 
   String _formatDate(DateTime? date) {
     if (date == null) return 'Today';
-
     final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      return 'Today';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
+    final diff = now.difference(date);
+    if (diff.inDays == 0) return 'Today';
+    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays < 7) return '${diff.inDays} days ago';
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   Future<void> _connectToRoom(String roomId) async {
     repository.connectToRoom(roomId);
     _roomUpdatesSubscription = repository.getRoomUpdates().listen(
-      (update) {
-        add(RoomUpdateReceivedEvent(update: update));
-      },
-      onError: (error) {
-        add(
-          RoomUpdateReceivedEvent(
-            update: {'type': 'error', 'message': error.toString()},
+      (update) => add(RoomUpdateReceivedEvent(update: update)),
+      onError:
+          (e) => add(
+            RoomUpdateReceivedEvent(
+              update: {'type': 'error', 'message': e.toString()},
+            ),
           ),
-        );
-      },
     );
   }
 

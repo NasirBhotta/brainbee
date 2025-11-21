@@ -153,3 +153,12 @@ class FetchBattleHistoryEvent extends BattleEvent {
   @override
   List<Object?> get props => [];
 }
+
+// NEW: Add this event to battle_event.dart
+class SetCurrentUserIdEvent extends BattleEvent {
+  final String userId;
+  const SetCurrentUserIdEvent({required this.userId});
+
+  @override
+  List<Object?> get props => [userId];
+}
