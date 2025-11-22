@@ -1,33 +1,33 @@
 part of 'quiz_bloc.dart';
 
-abstract class QuizEvent extends Equatable {
-  const QuizEvent();
+abstract class ClassQuizEvent extends Equatable {
+  const ClassQuizEvent();
   @override
   List<Object?> get props => [];
 }
 
-class FetchQuizzesEvent extends QuizEvent {
+class FetchQuizzesEvent extends ClassQuizEvent {
   final String classId;
   const FetchQuizzesEvent({required this.classId});
   @override
   List<Object?> get props => [classId];
 }
 
-class RefreshQuizzesEvent extends QuizEvent {
+class RefreshQuizzesEvent extends ClassQuizEvent {
   final String classId;
   const RefreshQuizzesEvent({required this.classId});
   @override
   List<Object?> get props => [classId];
 }
 
-class StartQuizEvent extends QuizEvent {
+class StartQuizEvent extends ClassQuizEvent {
   final ClassQuiz quiz;
   const StartQuizEvent({required this.quiz});
   @override
   List<Object?> get props => [quiz];
 }
 
-class SubmitQuizEvent extends QuizEvent {
+class SubmitQuizEvent extends ClassQuizEvent {
   final String quizId;
   final Map<String, dynamic> answers;
   final bool isAutoSubmit;
@@ -40,7 +40,7 @@ class SubmitQuizEvent extends QuizEvent {
   List<Object?> get props => [quizId, answers, isAutoSubmit];
 }
 
-class UpdateAnswerEvent extends QuizEvent {
+class UpdateAnswerEvent extends ClassQuizEvent {
   final String questionId;
   final dynamic answer;
   const UpdateAnswerEvent({required this.questionId, required this.answer});
@@ -48,14 +48,14 @@ class UpdateAnswerEvent extends QuizEvent {
   List<Object?> get props => [questionId, answer];
 }
 
-class DownloadQuizSheetEvent extends QuizEvent {
+class DownloadQuizSheetEvent extends ClassQuizEvent {
   final ClassQuiz quiz;
   const DownloadQuizSheetEvent({required this.quiz});
   @override
   List<Object?> get props => [quiz];
 }
 
-class UploadQuizSheetEvent extends QuizEvent {
+class UploadQuizSheetEvent extends ClassQuizEvent {
   final String quizId;
   final String filePath;
   const UploadQuizSheetEvent({required this.quizId, required this.filePath});

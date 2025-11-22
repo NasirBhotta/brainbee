@@ -17,21 +17,28 @@ class QuizListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create:
-          (context) =>
-              QuizBloc(repository: context.read())
-                ..add(FetchQuizzesEvent(classId: classId)),
-      child: _QuizListView(classId: classId, className: className),
-    );
+    return _QuizListView(classId: classId, className: className);
   }
 }
 
-class _QuizListView extends StatelessWidget {
+class _QuizListView extends StatefulWidget {
   final String classId;
   final String className;
 
   const _QuizListView({required this.classId, required this.className});
+
+  @override
+  State<_QuizListView> createState() => _QuizListViewState();
+}
+
+class _QuizListViewState extends State<_QuizListView> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<ClassQuizBloc>().add(
+      FetchQuizzesEvent(classId: widget.classId),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +56,7 @@ class _QuizListView extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: BlocBuilder<QuizBloc, QuizState>(
+      body: BlocBuilder<ClassQuizBloc, ClassQuizState>(
         builder: (context, state) {
           if (state is QuizLoading) return _buildLoading();
           if (state is QuizError) return _buildError(context, state);
@@ -94,8 +101,8 @@ class _QuizListView extends StatelessWidget {
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed:
-                () => context.read<QuizBloc>().add(
-                  FetchQuizzesEvent(classId: classId),
+                () => context.read<ClassQuizBloc>().add(
+                  FetchQuizzesEvent(classId: widget.classId),
                 ),
             style: ElevatedButton.styleFrom(
               backgroundColor: BBColors.primaryColor,
@@ -139,8 +146,10 @@ class _QuizListView extends StatelessWidget {
   Widget _buildList(BuildContext context, QuizListLoaded state) {
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<QuizBloc>().add(RefreshQuizzesEvent(classId: classId));
-        await context.read<QuizBloc>().stream.firstWhere(
+        context.read<ClassQuizBloc>().add(
+          RefreshQuizzesEvent(classId: widget.classId),
+        );
+        await context.read<ClassQuizBloc>().stream.firstWhere(
           (s) => s is! QuizLoading,
         );
       },
@@ -285,7 +294,7 @@ class _QuizListView extends StatelessWidget {
       MaterialPageRoute(
         builder:
             (ctx) => BlocProvider.value(
-              value: context.read<QuizBloc>(),
+              value: context.read<ClassQuizBloc>(),
               child:
                   hasOnlyMCQ
                       ? MCQQuizScreen(quiz: quiz)
@@ -322,7 +331,7 @@ class _MCQQuizScreenState extends State<MCQQuizScreen>
     super.initState();
     _calculateRemainingTime();
     _initializeTimer();
-    context.read<QuizBloc>().add(StartQuizEvent(quiz: widget.quiz));
+    context.read<ClassQuizBloc>().add(StartQuizEvent(quiz: widget.quiz));
   }
 
   void _calculateRemainingTime() {
@@ -385,7 +394,7 @@ class _MCQQuizScreenState extends State<MCQQuizScreen>
             ) ??
             false;
       },
-      child: BlocListener<QuizBloc, QuizState>(
+      child: BlocListener<ClassQuizBloc, ClassQuizState>(
         listener: (context, state) {
           if (state is QuizSubmitSuccess) {
             Navigator.pushReplacement(
@@ -525,7 +534,7 @@ class _MCQQuizScreenState extends State<MCQQuizScreen>
                           answers[question.id!] = option;
                         }
                       });
-                      context.read<QuizBloc>().add(
+                      context.read<ClassQuizBloc>().add(
                         UpdateAnswerEvent(
                           questionId: question.id!,
                           answer: answers[question.id],
@@ -583,7 +592,7 @@ class _MCQQuizScreenState extends State<MCQQuizScreen>
   }
 
   Widget _buildSubmitButton() {
-    return BlocBuilder<QuizBloc, QuizState>(
+    return BlocBuilder<ClassQuizBloc, ClassQuizState>(
       builder: (context, state) {
         final isSubmitting = state is QuizInProgress && state.isSubmitting;
         return Container(
@@ -632,7 +641,7 @@ class _MCQQuizScreenState extends State<MCQQuizScreen>
       return;
     }
     _timerController.stop();
-    context.read<QuizBloc>().add(
+    context.read<ClassQuizBloc>().add(
       SubmitQuizEvent(
         quizId: widget.quiz.id,
         answers: answers,
@@ -656,7 +665,7 @@ class DocumentQuizScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<QuizBloc, QuizState>(
+    return BlocListener<ClassQuizBloc, ClassQuizState>(
       listener: (context, state) {
         if (state is QuizSheetDownloadSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -710,7 +719,7 @@ class DocumentQuizScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        body: BlocBuilder<QuizBloc, QuizState>(
+        body: BlocBuilder<ClassQuizBloc, ClassQuizState>(
           builder: (context, state) {
             final isDownloading = state is QuizSheetDownloading;
             final isUploading = state is QuizSheetUploading;
@@ -792,7 +801,7 @@ class DocumentQuizScreen extends StatelessWidget {
                 onPressed:
                     isDownloading
                         ? null
-                        : () => context.read<QuizBloc>().add(
+                        : () => context.read<ClassQuizBloc>().add(
                           DownloadQuizSheetEvent(quiz: quiz),
                         ),
                 icon:
@@ -883,7 +892,7 @@ class DocumentQuizScreen extends StatelessWidget {
       return;
     }
     // In real impl, use file_picker
-    context.read<QuizBloc>().add(
+    context.read<ClassQuizBloc>().add(
       UploadQuizSheetEvent(quizId: quiz.id, filePath: '/mock/path.pdf'),
     );
   }

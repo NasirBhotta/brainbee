@@ -5,8 +5,16 @@ import 'package:brainbee/presentation/views/auth/bloc/auth_bloc.dart';
 import 'package:brainbee/presentation/views/bot/bloc/bot_bloc.dart';
 import 'package:brainbee/presentation/views/bot/repository/chat_repository.dart';
 import 'package:brainbee/presentation/views/bot/services/api_services.dart';
+import 'package:brainbee/presentation/views/class/bloc/assignment/bloc/assignment_bloc.dart';
 import 'package:brainbee/presentation/views/class/bloc/class_bloc.dart';
+import 'package:brainbee/presentation/views/class/bloc/disscussion/bloc/discussion_bloc.dart';
+import 'package:brainbee/presentation/views/class/bloc/material/bloc/classMaterial_bloc.dart';
+import 'package:brainbee/presentation/views/class/bloc/quiz/bloc/quiz_bloc.dart';
+import 'package:brainbee/presentation/views/class/repo/asign_repo_impl.dart';
+import 'package:brainbee/presentation/views/class/repo/class_quiz_repo_impl.dart';
 import 'package:brainbee/presentation/views/class/repo/class_repo_impl.dart';
+import 'package:brainbee/presentation/views/class/repo/disscussion_repo_impl.dart';
+import 'package:brainbee/presentation/views/class/repo/material_repo_impl.dart';
 import 'package:brainbee/presentation/views/class/services/class_api_service.dart';
 import 'package:brainbee/presentation/views/extras/Rewards/bloc/reward_bloc.dart';
 import 'package:brainbee/presentation/views/extras/Rewards/repo/reward_repo.dart';
@@ -127,6 +135,42 @@ void main(List<String> args) async {
                 ),
               ),
           child: Container(),
+        ),
+
+        BlocProvider(
+          create:
+              (context) => AssignmentBloc(
+                repository: AssignmentRepositoryImpl(
+                  apiService: ClassApiService(),
+                ),
+              ),
+          child: Container(),
+        ),
+
+        BlocProvider(
+          create:
+              (context) => DiscussionBloc(
+                repository: DiscussionRepositoryImpl(
+                  apiService: ClassApiService(),
+                ),
+              ),
+        ),
+        BlocProvider(
+          create:
+              (context) => ClassMaterialBloc(
+                repository: MaterialRepositoryImpl(
+                  apiService: ClassApiService(),
+                ),
+              ),
+        ),
+
+        BlocProvider(
+          create:
+              (context) => ClassQuizBloc(
+                repository: ClassQuizRepositoryImpl(
+                  apiService: ClassApiService(),
+                ),
+              ),
         ),
       ],
       child: const BrainBeeApp(),

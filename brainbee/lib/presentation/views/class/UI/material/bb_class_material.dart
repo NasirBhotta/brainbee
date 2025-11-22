@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 
-class ClassMaterialsScreen extends StatelessWidget {
+class ClassMaterialsScreen extends StatefulWidget {
   final String classId;
   final String className;
   final String teacherName;
@@ -17,17 +17,25 @@ class ClassMaterialsScreen extends StatelessWidget {
   });
 
   @override
+  State<ClassMaterialsScreen> createState() => _ClassMaterialsScreenState();
+}
+
+class _ClassMaterialsScreenState extends State<ClassMaterialsScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    context.read<ClassMaterialBloc>().add(
+      FetchMaterialsEvent(classId: widget.classId),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create:
-          (context) =>
-              ClassMaterialBloc(repository: context.read())
-                ..add(FetchMaterialsEvent(classId: classId)),
-      child: _MaterialsView(
-        classId: classId,
-        className: className,
-        teacherName: teacherName,
-      ),
+    return _MaterialsView(
+      classId: widget.classId,
+      className: widget.className,
+      teacherName: widget.teacherName,
     );
   }
 }

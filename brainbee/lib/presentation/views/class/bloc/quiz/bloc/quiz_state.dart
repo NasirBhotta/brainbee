@@ -1,25 +1,25 @@
 part of 'quiz_bloc.dart';
 
-abstract class QuizState extends Equatable {
-  const QuizState();
+abstract class ClassQuizState extends Equatable {
+  const ClassQuizState();
   @override
   List<Object?> get props => [];
 }
 
-class QuizInitial extends QuizState {}
+class QuizInitial extends ClassQuizState {}
 
-class QuizLoading extends QuizState {}
+class QuizLoading extends ClassQuizState {}
 
-class QuizListLoaded extends QuizState {
+class QuizListLoaded extends ClassQuizState {
   final List<ClassQuiz> quizzes;
   const QuizListLoaded({required this.quizzes});
   @override
   List<Object?> get props => [quizzes];
 }
 
-class QuizEmpty extends QuizState {}
+class QuizEmpty extends ClassQuizState {}
 
-class QuizError extends QuizState {
+class QuizError extends ClassQuizState {
   final String message;
   final bool isNetworkError;
   const QuizError({required this.message, this.isNetworkError = false});
@@ -27,7 +27,7 @@ class QuizError extends QuizState {
   List<Object?> get props => [message, isNetworkError];
 }
 
-class QuizInProgress extends QuizState {
+class QuizInProgress extends ClassQuizState {
   final ClassQuiz quiz;
   final Map<String, dynamic> answers;
   final Duration remainingTime;
@@ -58,7 +58,7 @@ class QuizInProgress extends QuizState {
   }
 }
 
-class QuizSubmitSuccess extends QuizState {
+class QuizSubmitSuccess extends ClassQuizState {
   final String quizId;
   final DateTime submittedAt;
   final bool isAutoSubmit;
@@ -73,7 +73,7 @@ class QuizSubmitSuccess extends QuizState {
   List<Object?> get props => [quizId, submittedAt, isAutoSubmit, answers];
 }
 
-class QuizSubmitError extends QuizState {
+class QuizSubmitError extends ClassQuizState {
   final String quizId;
   final String message;
   const QuizSubmitError({required this.quizId, required this.message});
@@ -81,25 +81,25 @@ class QuizSubmitError extends QuizState {
   List<Object?> get props => [quizId, message];
 }
 
-class QuizSheetDownloading extends QuizState {}
+class QuizSheetDownloading extends ClassQuizState {}
 
-class QuizSheetDownloadSuccess extends QuizState {
+class QuizSheetDownloadSuccess extends ClassQuizState {
   final String path;
   const QuizSheetDownloadSuccess({required this.path});
   @override
   List<Object?> get props => [path];
 }
 
-class QuizSheetDownloadError extends QuizState {
+class QuizSheetDownloadError extends ClassQuizState {
   final String message;
   const QuizSheetDownloadError({required this.message});
   @override
   List<Object?> get props => [message];
 }
 
-class QuizSheetUploading extends QuizState {}
+class QuizSheetUploading extends ClassQuizState {}
 
-class QuizSheetUploadSuccess extends QuizState {
+class QuizSheetUploadSuccess extends ClassQuizState {
   final String quizId;
   final DateTime uploadedAt;
   const QuizSheetUploadSuccess({
@@ -110,7 +110,7 @@ class QuizSheetUploadSuccess extends QuizState {
   List<Object?> get props => [quizId, uploadedAt];
 }
 
-class QuizSheetUploadError extends QuizState {
+class QuizSheetUploadError extends ClassQuizState {
   final String message;
   const QuizSheetUploadError({required this.message});
   @override

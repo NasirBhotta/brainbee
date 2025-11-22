@@ -19,21 +19,15 @@ class ClassAssignmentsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create:
-          (context) =>
-              AssignmentBloc(repository: context.read())
-                ..add(FetchAssignmentsEvent(classId: classId)),
-      child: _AssignmentsView(
-        classId: classId,
-        className: className,
-        teacherName: teacherName,
-      ),
+    return _AssignmentsView(
+      classId: classId,
+      className: className,
+      teacherName: teacherName,
     );
   }
 }
 
-class _AssignmentsView extends StatelessWidget {
+class _AssignmentsView extends StatefulWidget {
   final String classId;
   final String className;
   final String teacherName;
@@ -43,6 +37,20 @@ class _AssignmentsView extends StatelessWidget {
     required this.className,
     required this.teacherName,
   });
+
+  @override
+  State<_AssignmentsView> createState() => _AssignmentsViewState();
+}
+
+class _AssignmentsViewState extends State<_AssignmentsView> {
+  @override
+  void initState() {
+    super.initState();
+
+    context.read<AssignmentBloc>().add(
+      FetchAssignmentsEvent(classId: widget.classId),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +74,7 @@ class _AssignmentsView extends StatelessWidget {
               ),
             ),
             Text(
-              className,
+              widget.className,
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: Colors.white70),
@@ -78,7 +86,7 @@ class _AssignmentsView extends StatelessWidget {
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed:
                 () => context.read<AssignmentBloc>().add(
-                  RefreshAssignmentsEvent(classId: classId),
+                  RefreshAssignmentsEvent(classId: widget.classId),
                 ),
           ),
         ],
@@ -181,7 +189,7 @@ class _AssignmentsView extends StatelessWidget {
           ElevatedButton(
             onPressed:
                 () => context.read<AssignmentBloc>().add(
-                  FetchAssignmentsEvent(classId: classId),
+                  FetchAssignmentsEvent(classId: widget.classId),
                 ),
             style: ElevatedButton.styleFrom(
               backgroundColor: BBColors.primaryColor,
@@ -224,7 +232,7 @@ class _AssignmentsView extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () async {
         context.read<AssignmentBloc>().add(
-          RefreshAssignmentsEvent(classId: classId),
+          RefreshAssignmentsEvent(classId: widget.classId),
         );
         await context.read<AssignmentBloc>().stream.firstWhere(
           (s) => s is! AssignmentLoading,
@@ -404,7 +412,7 @@ class _AssignmentsView extends StatelessWidget {
               value: context.read<AssignmentBloc>(),
               child: AssignmentDetailsScreen(
                 assignment: assignment,
-                classId: classId,
+                classId: widget.classId,
               ),
             ),
       ),

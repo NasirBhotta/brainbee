@@ -18,21 +18,15 @@ class ClassForumScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create:
-          (context) =>
-              DiscussionBloc(repository: context.read())
-                ..add(FetchTopicsEvent(classId: classId)),
-      child: _ForumView(
-        classId: classId,
-        className: className,
-        teacherName: teacherName,
-      ),
+    return _ForumView(
+      classId: classId,
+      className: className,
+      teacherName: teacherName,
     );
   }
 }
 
-class _ForumView extends StatelessWidget {
+class _ForumView extends StatefulWidget {
   final String classId;
   final String className;
   final String teacherName;
@@ -42,6 +36,19 @@ class _ForumView extends StatelessWidget {
     required this.className,
     required this.teacherName,
   });
+
+  @override
+  State<_ForumView> createState() => _ForumViewState();
+}
+
+class _ForumViewState extends State<_ForumView> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<DiscussionBloc>().add(
+      FetchTopicsEvent(classId: widget.classId),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,14 +65,14 @@ class _ForumView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '$className Forum',
+              '${widget.className} Forum',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),
             ),
             Text(
-              'Teacher: $teacherName',
+              'Teacher: ${widget.teacherName}',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: Colors.white70),
@@ -120,7 +127,7 @@ class _ForumView extends StatelessWidget {
           ElevatedButton(
             onPressed:
                 () => context.read<DiscussionBloc>().add(
-                  FetchTopicsEvent(classId: classId),
+                  FetchTopicsEvent(classId: widget.classId),
                 ),
             style: ElevatedButton.styleFrom(
               backgroundColor: BBColors.primaryColor,
@@ -139,7 +146,9 @@ class _ForumView extends StatelessWidget {
   ) {
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<DiscussionBloc>().add(FetchTopicsEvent(classId: classId));
+        context.read<DiscussionBloc>().add(
+          FetchTopicsEvent(classId: widget.classId),
+        );
         await context.read<DiscussionBloc>().stream.firstWhere(
           (s) => s is! TopicsLoading,
         );
@@ -372,8 +381,8 @@ class _ForumView extends StatelessWidget {
       MaterialPageRoute(
         builder:
             (context) => ClassDiscussionScreen(
-              classId: classId,
-              className: className,
+              classId: widget.classId,
+              className: widget.className,
               topic: topic,
             ),
       ),

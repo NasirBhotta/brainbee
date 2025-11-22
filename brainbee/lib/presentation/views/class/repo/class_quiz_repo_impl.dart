@@ -3,9 +3,9 @@ import 'package:brainbee/presentation/views/class/models/quiz_model.dart';
 import 'package:brainbee/presentation/views/class/repo/class_quiz_repo.dart';
 import 'package:brainbee/presentation/views/class/services/class_api_service.dart';
 
-class QuizRepositoryImpl implements ClassQuizRepository {
+class ClassQuizRepositoryImpl implements ClassQuizRepository {
   final ClassApiService apiService;
-  QuizRepositoryImpl({required this.apiService});
+  ClassQuizRepositoryImpl({required this.apiService});
 
   @override
   Future<List<ClassQuiz>> getQuizzes(String classId) async {

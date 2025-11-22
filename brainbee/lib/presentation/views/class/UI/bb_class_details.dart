@@ -11,8 +11,7 @@ import 'package:flutter/material.dart';
 
 class ClassDetailScreen extends StatelessWidget {
   final EnrolledClass classItem;
-  final String? classId; // Optional: for fetching fresh data
-
+  final String? classId;
   const ClassDetailScreen({super.key, required this.classItem, this.classId});
 
   @override
