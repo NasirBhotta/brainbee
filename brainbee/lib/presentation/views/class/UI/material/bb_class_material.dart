@@ -1,86 +1,10 @@
-// screens/class_materials_screen.dart
+import 'package:brainbee/presentation/views/class/bloc/material/bloc/classMaterial_bloc.dart';
+import 'package:brainbee/presentation/views/class/models/material.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 
-// models/material_models.dart
-class ClassMaterial {
-  final String id;
-  final String name;
-  final String type; // 'pdf', 'doc', 'video', 'image', 'ppt'
-  final String url;
-  final int size; // in bytes
-  final DateTime uploadedDate;
-  final String uploadedBy;
-  final String? description;
-
-  ClassMaterial({
-    required this.id,
-    required this.name,
-    required this.type,
-    required this.url,
-    required this.size,
-    required this.uploadedDate,
-    required this.uploadedBy,
-    this.description,
-  });
-
-  String get formattedSize {
-    if (size < 1024) return '${size}B';
-    if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)}KB';
-    if (size < 1024 * 1024 * 1024) {
-      return '${(size / (1024 * 1024)).toStringAsFixed(1)}MB';
-    }
-    return '${(size / (1024 * 1024 * 1024)).toStringAsFixed(1)}GB';
-  }
-
-  IconData get typeIcon {
-    switch (type.toLowerCase()) {
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'doc':
-      case 'docx':
-        return Icons.description;
-      case 'video':
-      case 'mp4':
-      case 'avi':
-        return Icons.video_file;
-      case 'image':
-      case 'jpg':
-      case 'png':
-        return Icons.image;
-      case 'ppt':
-      case 'pptx':
-        return Icons.slideshow;
-      default:
-        return Icons.insert_drive_file;
-    }
-  }
-
-  Color get typeColor {
-    switch (type.toLowerCase()) {
-      case 'pdf':
-        return Colors.red;
-      case 'doc':
-      case 'docx':
-        return Colors.blue;
-      case 'video':
-      case 'mp4':
-      case 'avi':
-        return Colors.purple;
-      case 'image':
-      case 'jpg':
-      case 'png':
-        return Colors.green;
-      case 'ppt':
-      case 'pptx':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
-  }
-}
-
-class ClassMaterialsScreen extends StatefulWidget {
+class ClassMaterialsScreen extends StatelessWidget {
   final String classId;
   final String className;
   final String teacherName;
@@ -93,347 +17,31 @@ class ClassMaterialsScreen extends StatefulWidget {
   });
 
   @override
-  State<ClassMaterialsScreen> createState() => _ClassMaterialsScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create:
+          (context) =>
+              ClassMaterialBloc(repository: context.read())
+                ..add(FetchMaterialsEvent(classId: classId)),
+      child: _MaterialsView(
+        classId: classId,
+        className: className,
+        teacherName: teacherName,
+      ),
+    );
+  }
 }
 
-class _ClassMaterialsScreenState extends State<ClassMaterialsScreen> {
-  bool _isLoading = false;
-  bool _hasError = false;
-  List<ClassMaterial> _materials = [];
-  final Map<String, double> _downloadProgress = {};
-  final Set<String> _downloadingItems = {};
+class _MaterialsView extends StatelessWidget {
+  final String classId;
+  final String className;
+  final String teacherName;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadMaterials();
-  }
-
-  Future<void> _loadMaterials() async {
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-    });
-
-    try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Mock data - only teacher-uploaded materials
-      _materials = [
-        ClassMaterial(
-          id: '1',
-          name: 'Chapter 3 - Algebra Basics.pdf',
-          type: 'pdf',
-          url: 'https://example.com/algebra-basics.pdf',
-          size: 2048576, // 2MB
-          uploadedDate: DateTime.now().subtract(const Duration(days: 2)),
-          uploadedBy: widget.teacherName,
-          description: 'Essential algebra concepts and formulas',
-        ),
-        ClassMaterial(
-          id: '2',
-          name: 'Homework Assignment 5.docx',
-          type: 'doc',
-          url: 'https://example.com/homework-5.docx',
-          size: 512000, // 500KB
-          uploadedDate: DateTime.now().subtract(const Duration(days: 1)),
-          uploadedBy: widget.teacherName,
-          description: 'Due Friday - Quadratic Equations',
-        ),
-        ClassMaterial(
-          id: '3',
-          name: 'Lecture Video - Linear Functions.mp4',
-          type: 'video',
-          url: 'https://example.com/linear-functions.mp4',
-          size: 52428800, // 50MB
-          uploadedDate: DateTime.now().subtract(const Duration(hours: 12)),
-          uploadedBy: widget.teacherName,
-          description: 'Complete lecture on linear functions',
-        ),
-        ClassMaterial(
-          id: '4',
-          name: 'Formula Sheet.png',
-          type: 'image',
-          url: 'https://example.com/formula-sheet.png',
-          size: 1024000, // 1MB
-          uploadedDate: DateTime.now().subtract(const Duration(hours: 6)),
-          uploadedBy: widget.teacherName,
-          description: 'Quick reference for all formulas',
-        ),
-        ClassMaterial(
-          id: '5',
-          name: 'Midterm Preparation.pptx',
-          type: 'ppt',
-          url: 'https://example.com/midterm-prep.pptx',
-          size: 5242880, // 5MB
-          uploadedDate: DateTime.now().subtract(const Duration(hours: 3)),
-          uploadedBy: widget.teacherName,
-          description: 'Study guide for upcoming midterm',
-        ),
-      ];
-
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-      });
-    }
-  }
-
-  Future<void> _downloadMaterial(ClassMaterial material) async {
-    // Show download confirmation dialog
-    final shouldDownload = await _showDownloadConfirmationDialog(material);
-    if (!shouldDownload) return;
-
-    setState(() {
-      _downloadingItems.add(material.id);
-      _downloadProgress[material.id] = 0.0;
-    });
-
-    try {
-      // Simulate download progress
-      for (int i = 0; i <= 100; i += 10) {
-        await Future.delayed(const Duration(milliseconds: 200));
-        setState(() {
-          _downloadProgress[material.id] = i / 100.0;
-        });
-      }
-
-      // Simulate random failure (20% chance)
-      if (DateTime.now().millisecond % 5 == 0) {
-        throw Exception('Download failed');
-      }
-
-      // Download successful
-      setState(() {
-        _downloadingItems.remove(material.id);
-        _downloadProgress.remove(material.id);
-      });
-
-      _showDownloadSuccessDialog(material);
-    } catch (e) {
-      setState(() {
-        _downloadingItems.remove(material.id);
-        _downloadProgress.remove(material.id);
-      });
-
-      _showDownloadErrorDialog(material);
-    }
-  }
-
-  Future<bool> _showDownloadConfirmationDialog(ClassMaterial material) async {
-    return await showDialog<bool>(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: Row(
-                  children: [
-                    const Icon(
-                      Icons.download,
-                      color: BBColors.primaryColor,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Download Material',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.titleMedium?.copyWith(
-                          color: BBColors.darkHeading,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Do you want to download this file?',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: BBColors.bodyText,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: BBColors.lightGrayBG,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: BBColors.borderGray),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                material.typeIcon,
-                                color: material.typeColor,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  material.name,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleSmall?.copyWith(
-                                    color: BBColors.darkHeading,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Text(
-                                'Size: ${material.formattedSize}',
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: BBColors.bodyText),
-                              ),
-                              const SizedBox(width: 16),
-                              Text(
-                                'Type: ${material.type.toUpperCase()}',
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: BBColors.bodyText),
-                              ),
-                            ],
-                          ),
-                          if (material.description != null) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              material.description!,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodySmall?.copyWith(
-                                color: BBColors.bodyText,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: BBColors.disabledText),
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BBColors.primaryColor,
-                    ),
-                    child: const Text('Download'),
-                  ),
-                ],
-              ),
-        ) ??
-        false;
-  }
-
-  void _showDownloadSuccessDialog(ClassMaterial material) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Row(
-              children: [
-                const Icon(
-                  Icons.check_circle,
-                  color: BBColors.successGreen,
-                  size: 24,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Download Complete',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: BBColors.darkHeading,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            content: Text(
-              '${material.name} has been downloaded successfully.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BBColors.successGreen,
-                ),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  void _showDownloadErrorDialog(ClassMaterial material) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Row(
-              children: [
-                const Icon(Icons.error, color: BBColors.alertRed, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  'Download Failed',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: BBColors.darkHeading,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            content: Text(
-              'Failed to download ${material.name}. Please check your connection and try again.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: BBColors.disabledText),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _downloadMaterial(material);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BBColors.alertRed,
-                ),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-    );
-  }
+  const _MaterialsView({
+    required this.classId,
+    required this.className,
+    required this.teacherName,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -457,7 +65,7 @@ class _ClassMaterialsScreenState extends State<ClassMaterialsScreen> {
               ),
             ),
             Text(
-              widget.className,
+              className,
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: Colors.white70),
@@ -467,60 +75,89 @@ class _ClassMaterialsScreenState extends State<ClassMaterialsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _loadMaterials,
+            onPressed:
+                () => context.read<ClassMaterialBloc>().add(
+                  RefreshMaterialsEvent(classId: classId),
+                ),
           ),
         ],
       ),
-      body: _buildBody(),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(BBColors.primaryColor),
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<ClassMaterialBloc, ClassMaterialState>(
+            listenWhen: (prev, curr) => curr is MaterialDownloadSuccess,
+            listener: (context, state) {
+              if (state is MaterialDownloadSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${state.material.name} downloaded'),
+                    backgroundColor: BBColors.successGreen,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+          ),
+          BlocListener<ClassMaterialBloc, ClassMaterialState>(
+            listenWhen: (prev, curr) => curr is MaterialDownloadError,
+            listener: (context, state) {
+              if (state is MaterialDownloadError) {
+                _showDownloadErrorDialog(
+                  context,
+                  state.material,
+                  state.message,
+                );
+              }
+            },
+          ),
+        ],
+        child: BlocBuilder<ClassMaterialBloc, ClassMaterialState>(
+          buildWhen:
+              (prev, curr) =>
+                  curr is! MaterialDownloadSuccess &&
+                  curr is! MaterialDownloadError,
+          builder: (context, state) {
+            if (state is MaterialLoading) return _buildLoading();
+            if (state is MaterialError) return _buildError(context, state);
+            if (state is MaterialEmpty) return _buildEmpty(context);
+            if (state is MaterialLoaded) return _buildList(context, state);
+            return const SizedBox.shrink();
+          },
         ),
-      );
-    }
-
-    if (_hasError) {
-      return _buildErrorState();
-    }
-
-    if (_materials.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadMaterials,
-      color: BBColors.primaryColor,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: _materials.length,
-        itemBuilder: (context, index) {
-          return _buildMaterialCard(_materials[index]);
-        },
       ),
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildLoading() {
+    return const Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(BBColors.primaryColor),
+      ),
+    );
+  }
+
+  Widget _buildError(BuildContext context, MaterialError state) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: BBColors.alertRed),
+          Icon(
+            state.isNetworkError ? Icons.wifi_off : Icons.error_outline,
+            size: 64,
+            color: BBColors.alertRed,
+          ),
           const SizedBox(height: 16),
           Text(
-            'Failed to load materials',
+            state.isNetworkError
+                ? 'No Internet Connection'
+                : 'Failed to load materials',
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(color: BBColors.darkHeading),
           ),
           const SizedBox(height: 8),
           Text(
-            'Please check your connection and try again',
+            state.message,
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
@@ -528,7 +165,10 @@ class _ClassMaterialsScreenState extends State<ClassMaterialsScreen> {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _loadMaterials,
+            onPressed:
+                () => context.read<ClassMaterialBloc>().add(
+                  FetchMaterialsEvent(classId: classId),
+                ),
             style: ElevatedButton.styleFrom(
               backgroundColor: BBColors.primaryColor,
             ),
@@ -539,7 +179,7 @@ class _ClassMaterialsScreenState extends State<ClassMaterialsScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmpty(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -554,15 +194,17 @@ class _ClassMaterialsScreenState extends State<ClassMaterialsScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'No materials available at this time.\nYour teacher will upload resources here.',
+            'Your teacher will upload resources here.',
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _loadMaterials,
+            onPressed:
+                () => context.read<ClassMaterialBloc>().add(
+                  RefreshMaterialsEvent(classId: classId),
+                ),
             style: ElevatedButton.styleFrom(
               backgroundColor: BBColors.primaryColor,
             ),
@@ -573,19 +215,45 @@ class _ClassMaterialsScreenState extends State<ClassMaterialsScreen> {
     );
   }
 
-  Widget _buildMaterialCard(ClassMaterial material) {
-    final isDownloading = _downloadingItems.contains(material.id);
-    final progress = _downloadProgress[material.id] ?? 0.0;
+  Widget _buildList(BuildContext context, MaterialLoaded state) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<ClassMaterialBloc>().add(
+          RefreshMaterialsEvent(classId: classId),
+        );
+        await context.read<ClassMaterialBloc>().stream.firstWhere(
+          (s) => s is! MaterialLoading,
+        );
+      },
+      color: BBColors.primaryColor,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: state.materials.length,
+        itemBuilder:
+            (context, index) =>
+                _buildMaterialCard(context, state, state.materials[index]),
+      ),
+    );
+  }
+
+  Widget _buildMaterialCard(
+    BuildContext context,
+    MaterialLoaded state,
+    ClassMaterial material,
+  ) {
+    final isDownloading = state.downloadingIds.contains(material.id);
+    final progress = state.downloadProgress[material.id] ?? 0.0;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12.0),
+      margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: isDownloading ? null : () => _downloadMaterial(material),
+        onTap:
+            isDownloading ? null : () => _showDownloadDialog(context, material),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -732,18 +400,95 @@ class _ClassMaterialsScreenState extends State<ClassMaterialsScreen> {
     );
   }
 
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
+  void _showDownloadDialog(BuildContext context, ClassMaterial material) {
+    showDialog(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: Row(
+              children: [
+                const Icon(
+                  Icons.download,
+                  color: BBColors.primaryColor,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                const Expanded(child: Text('Download Material')),
+              ],
+            ),
+            content: Text('Download ${material.name}?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: BBColors.disabledText),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  context.read<ClassMaterialBloc>().add(
+                    DownloadMaterialEvent(material: material),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BBColors.primaryColor,
+                ),
+                child: const Text('Download'),
+              ),
+            ],
+          ),
+    );
+  }
 
-    if (difference.inDays > 0) {
-      return '${difference.inDays} days ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} hours ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} minutes ago';
-    } else {
-      return 'Just now';
-    }
+  void _showDownloadErrorDialog(
+    BuildContext context,
+    ClassMaterial material,
+    String message,
+  ) {
+    showDialog(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.error, color: BBColors.alertRed, size: 24),
+                SizedBox(width: 8),
+                Text('Download Failed'),
+              ],
+            ),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: BBColors.disabledText),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  context.read<ClassMaterialBloc>().add(
+                    DownloadMaterialEvent(material: material),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BBColors.alertRed,
+                ),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  String _formatTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 0) return '${diff.inDays} days ago';
+    if (diff.inHours > 0) return '${diff.inHours} hours ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes} minutes ago';
+    return 'Just now';
   }
 }

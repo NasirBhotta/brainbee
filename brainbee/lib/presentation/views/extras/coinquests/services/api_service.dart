@@ -1,170 +1,167 @@
 import 'dart:convert';
-import 'package:brainbee/core/models/wallet.dart';
+import 'package:brainbee/config/api_config.dart';
+import 'package:brainbee/core/utils/helper/bb_token.dart';
 import 'package:http/http.dart' as http;
 import '../models/quest.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://your-backend-url.com/api';
+  static const String baseUrl = BBApiConfig.baseUrl;
 
-  // Get all quests for a user
+  /// Get authentication token
+  Future<String> token() async {
+    final tokenUserData = await getTokenAndUser();
+    return tokenUserData.token ?? '';
+  }
+
+  /// Get headers with authorization token
+  Future<Map<String, String>> _getHeaders() async {
+    final authToken = await token();
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $authToken',
+    };
+  }
+
+  /// Get all quests for authenticated user
   Future<List<Quest>> getQuests(String userId) async {
     try {
+      final headers = await _getHeaders();
       final response = await http.get(
-        Uri.parse('$baseUrl/quests/$userId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('$baseUrl/api/student/quests'),
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final responseData = json.decode(response.body);
+        final List<dynamic> data = responseData['data'] ?? responseData;
         return data.map((json) => Quest.fromJson(json)).toList();
       } else {
-        throw Exception('Failed to load quests');
+        throw Exception('Failed to load quests: ${response.statusCode}');
       }
     } catch (e) {
-      // For demo purposes, return dummy data
-      return _getDummyQuests();
+      print('Error loading quests: $e');
+      throw Exception('Failed to load quests: $e');
     }
   }
 
-  // Get user wallet
-  Future<Wallet> getWallet(String userId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/wallet/$userId'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        return Wallet.fromJson(json.decode(response.body));
-      } else {
-        throw Exception('Failed to load wallet');
-      }
-    } catch (e) {
-      // For demo purposes, return dummy wallet
-      return Wallet(userId: userId, balance: 150, lastUpdated: DateTime.now());
-    }
-  }
-
-  // Claim quest reward
+  /// Claim quest reward
+  /// This updates both quest status AND student coins on backend
+  /// @param questId - The questId field (e.g., "daily_complete_5_lessons")
   Future<Map<String, dynamic>> claimQuest(String userId, String questId) async {
     try {
+      final headers = await _getHeaders();
       final response = await http.post(
-        Uri.parse('$baseUrl/quests/claim'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'userId': userId, 'questId': questId}),
+        Uri.parse('$baseUrl/api/quests/claim'),
+        headers: headers,
+        body: json.encode({'questId': questId}),
       );
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final result = json.decode(response.body);
+        // Backend returns: { status, message, data: { success, coinsAdded, newBalance, quest } }
+        if (result['data'] != null) {
+          return result['data'];
+        }
+        return result;
       } else {
-        throw Exception('Failed to claim quest');
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to claim quest');
       }
     } catch (e) {
-      // For demo purposes, simulate successful claim
-      await Future.delayed(Duration(milliseconds: 500));
-      return {'success': true, 'coinsAdded': 50, 'newBalance': 200};
+      print('Error claiming quest: $e');
+      throw Exception('Failed to claim quest: $e');
     }
   }
 
-  // Update quest completion status
+  /// Update quest completion status
   Future<bool> updateQuestStatus(
     String userId,
     String questId,
     QuestStatus status,
   ) async {
     try {
+      final headers = await _getHeaders();
       final response = await http.put(
-        Uri.parse('$baseUrl/quests/$questId/status'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'userId': userId, 'status': status.name}),
+        Uri.parse('$baseUrl/api/quests/$questId/status'),
+        headers: headers,
+        body: json.encode({'status': status.name}),
       );
 
-      return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        print('Failed to update quest status: ${response.statusCode}');
+        return false;
+      }
     } catch (e) {
-      // For demo purposes, return true
-      await Future.delayed(Duration(milliseconds: 300));
-      return true;
+      print('Error updating quest status: $e');
+      return false;
     }
   }
 
-  // Check for quest completion updates (polling)
+  /// Check for quest completion updates (polling)
   Future<List<Quest>> checkQuestUpdates(
     String userId,
     DateTime lastCheck,
   ) async {
     try {
+      final headers = await _getHeaders();
       final response = await http.get(
         Uri.parse(
-          '$baseUrl/quests/$userId/updates?since=${lastCheck.toIso8601String()}',
+          '$baseUrl/api/quests/updates?since=${lastCheck.toIso8601String()}',
         ),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final responseData = json.decode(response.body);
+        final List<dynamic> data = responseData['data'] ?? responseData;
         return data.map((json) => Quest.fromJson(json)).toList();
       } else {
+        print('Failed to check quest updates: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      // For demo purposes, randomly mark a quest as complete
-      final quests = await getQuests(userId);
-      final incompleteQuests =
-          quests.where((q) => q.status == QuestStatus.incomplete).toList();
-      if (incompleteQuests.isNotEmpty && DateTime.now().second % 10 == 0) {
-        final randomQuest = incompleteQuests.first;
-        return [
-          randomQuest.copyWith(
-            status: QuestStatus.complete,
-            completedAt: DateTime.now(),
-          ),
-        ];
-      }
+      print('Error checking quest updates: $e');
       return [];
     }
   }
 
-  List<Quest> _getDummyQuests() {
-    return [
-      Quest(
-        id: '1',
-        title: 'Complete 5 Lessons',
-        description: 'Finish 5 lessons in any subject',
-        coinReward: 50,
-        type: QuestType.daily,
-        status: QuestStatus.complete,
-        iconUrl: '📚',
-        completedAt: DateTime.now().subtract(Duration(minutes: 5)),
-      ),
-      Quest(
-        id: '2',
-        title: 'Study for 30 Minutes',
-        description: 'Spend at least 30 minutes studying',
-        coinReward: 25,
-        type: QuestType.daily,
-        status: QuestStatus.incomplete,
-        iconUrl: '⏰',
-      ),
-      Quest(
-        id: '3',
-        title: 'Weekly Quiz Champion',
-        description: 'Score 90% or higher on weekly quiz',
-        coinReward: 100,
-        type: QuestType.weekly,
-        status: QuestStatus.complete,
-        iconUrl: '🏆',
-        completedAt: DateTime.now().subtract(Duration(hours: 2)),
-      ),
-      Quest(
-        id: '4',
-        title: 'First Login Bonus',
-        description: 'Welcome bonus for new users',
-        coinReward: 200,
-        type: QuestType.oneTime,
-        status: QuestStatus.claimed,
-        iconUrl: '🎁',
-        claimedAt: DateTime.now().subtract(Duration(days: 1)),
-      ),
-    ];
+  /// Get quest statistics
+  Future<Map<String, dynamic>?> getQuestStats(String userId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/quests/stats'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return responseData['data']?['stats'];
+      } else {
+        print('Failed to get quest stats: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error getting quest stats: $e');
+      return null;
+    }
+  }
+
+  /// Manually reset expired quests
+  Future<bool> resetExpiredQuests(String userId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/quests/reset'),
+        headers: headers,
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error resetting quests: $e');
+      return false;
+    }
   }
 }

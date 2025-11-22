@@ -1,19 +1,20 @@
 import 'dart:async';
 import 'package:brainbee/presentation/views/extras/coinquests/bloc/quest_event.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/bloc/quest_state.dart';
+import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/quest.dart';
-
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 
 class QuestBloc extends Bloc<QuestEvent, QuestState> {
   final ApiService _apiService;
   final NotificationService _notificationService;
+  final StudentBloc _studentBloc;
   Timer? _pollingTimer;
   DateTime _lastQuestCheck = DateTime.now();
 
-  QuestBloc(this._apiService, this._notificationService)
+  QuestBloc(this._apiService, this._notificationService, this._studentBloc)
     : super(QuestInitial()) {
     on<LoadQuests>(_onLoadQuests);
     on<RefreshQuests>(_onRefreshQuests);
@@ -27,8 +28,18 @@ class QuestBloc extends Bloc<QuestEvent, QuestState> {
     emit(QuestLoading());
     try {
       final quests = await _apiService.getQuests(event.userId);
-      final wallet = await _apiService.getWallet(event.userId);
-      emit(QuestLoaded(quests, wallet));
+
+      // Get coins from student bloc state
+      final studentState = _studentBloc.state;
+      int currentCoins = 0;
+
+      if (studentState is StudentDataLoaded) {
+        currentCoins = studentState.student.coins ?? 0;
+
+        print(" current coins in quest bloc is $currentCoins");
+      }
+
+      emit(QuestLoaded(quests, currentCoins));
     } catch (e) {
       emit(QuestError(e.toString()));
     }
@@ -39,9 +50,23 @@ class QuestBloc extends Bloc<QuestEvent, QuestState> {
     Emitter<QuestState> emit,
   ) async {
     try {
+      // Refresh student data first
+      _studentBloc.add(StudentFetchData());
+
+      // Wait a bit for student data to load
+      await Future.delayed(Duration(milliseconds: 500));
+
       final quests = await _apiService.getQuests(event.userId);
-      final wallet = await _apiService.getWallet(event.userId);
-      emit(QuestLoaded(quests, wallet));
+
+      // Get updated coins from student bloc
+      final studentState = _studentBloc.state;
+      int currentCoins = 0;
+
+      if (studentState is StudentDataLoaded) {
+        currentCoins = studentState.student.coins ?? 0;
+      }
+
+      emit(QuestLoaded(quests, currentCoins));
     } catch (e) {
       emit(QuestError(e.toString()));
     }
@@ -52,7 +77,11 @@ class QuestBloc extends Bloc<QuestEvent, QuestState> {
     if (currentState is! QuestLoaded) return;
 
     emit(
-      QuestClaiming(currentState.quests, currentState.wallet, event.quest.id),
+      QuestClaiming(
+        currentState.quests,
+        currentState.currentCoins,
+        event.quest.id,
+      ),
     );
 
     try {
@@ -71,20 +100,21 @@ class QuestBloc extends Bloc<QuestEvent, QuestState> {
               return q;
             }).toList();
 
-        // Update wallet
-        final updatedWallet = currentState.wallet.copyWith(
-          balance: result['newBalance'],
-          lastUpdated: DateTime.now(),
-        );
+        // Calculate new coin balance
+        final coinsAdded = result['coinsAdded'] as int;
+        final newCoins = currentState.currentCoins + coinsAdded;
+
+        // Update student data with new coins
+        _studentBloc.add(StudentFetchData());
 
         // Cancel notification for this quest
         await _notificationService.cancelQuestNotification(event.quest.id);
 
-        emit(QuestClaimed(updatedQuests, updatedWallet, result['coinsAdded']));
+        emit(QuestClaimed(updatedQuests, newCoins, coinsAdded));
 
         // After showing success state, go back to loaded state
         await Future.delayed(Duration(seconds: 2));
-        emit(QuestLoaded(updatedQuests, updatedWallet));
+        emit(QuestLoaded(updatedQuests, newCoins));
       } else {
         emit(QuestError('Failed to claim quest'));
       }
@@ -108,7 +138,7 @@ class QuestBloc extends Bloc<QuestEvent, QuestState> {
           return q;
         }).toList();
 
-    emit(QuestLoaded(updatedQuests, currentState.wallet));
+    emit(QuestLoaded(updatedQuests, currentState.currentCoins));
 
     // Show notification if quest is now complete
     if (event.quest.status == QuestStatus.complete) {

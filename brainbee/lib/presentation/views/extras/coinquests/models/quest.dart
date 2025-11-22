@@ -6,6 +6,7 @@ enum QuestStatus { incomplete, complete, claimed }
 
 class Quest extends Equatable {
   final String id;
+  final String questId;
   final String title;
   final String description;
   final int coinReward;
@@ -15,9 +16,12 @@ class Quest extends Equatable {
   final DateTime? resetTime;
   final DateTime? completedAt;
   final DateTime? claimedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   const Quest({
     required this.id,
+    required this.questId,
     required this.title,
     required this.description,
     required this.coinReward,
@@ -27,10 +31,13 @@ class Quest extends Equatable {
     this.resetTime,
     this.completedAt,
     this.claimedAt,
+    this.createdAt,
+    this.updatedAt,
   });
 
   Quest copyWith({
     String? id,
+    String? questId,
     String? title,
     String? description,
     int? coinReward,
@@ -40,9 +47,12 @@ class Quest extends Equatable {
     DateTime? resetTime,
     DateTime? completedAt,
     DateTime? claimedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return Quest(
       id: id ?? this.id,
+      questId: questId ?? this.questId,
       title: title ?? this.title,
       description: description ?? this.description,
       coinReward: coinReward ?? this.coinReward,
@@ -52,12 +62,15 @@ class Quest extends Equatable {
       resetTime: resetTime ?? this.resetTime,
       completedAt: completedAt ?? this.completedAt,
       claimedAt: claimedAt ?? this.claimedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      '_id': id,
+      'questId': questId,
       'title': title,
       'description': description,
       'coinReward': coinReward,
@@ -67,17 +80,20 @@ class Quest extends Equatable {
       'resetTime': resetTime?.toIso8601String(),
       'completedAt': completedAt?.toIso8601String(),
       'claimedAt': claimedAt?.toIso8601String(),
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 
   factory Quest.fromJson(Map<String, dynamic> json) {
     return Quest(
-      id: json['id'],
-      title: json['title'],
-      description: json['description'],
-      coinReward: json['coinReward'],
-      type: QuestType.values.firstWhere((e) => e.name == json['type']),
-      status: QuestStatus.values.firstWhere((e) => e.name == json['status']),
+      id: json['_id'] ?? json['id'] ?? '',
+      questId: json['questId'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      coinReward: json['coinReward'] ?? 0,
+      type: _parseQuestType(json['type']),
+      status: _parseQuestStatus(json['status']),
       iconUrl: json['iconUrl'],
       resetTime:
           json['resetTime'] != null ? DateTime.parse(json['resetTime']) : null,
@@ -87,7 +103,46 @@ class Quest extends Equatable {
               : null,
       claimedAt:
           json['claimedAt'] != null ? DateTime.parse(json['claimedAt']) : null,
+      createdAt:
+          json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      updatedAt:
+          json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
     );
+  }
+
+  static QuestType _parseQuestType(dynamic type) {
+    if (type == null) return QuestType.daily;
+
+    final typeStr = type.toString().toLowerCase();
+
+    switch (typeStr) {
+      case 'daily':
+        return QuestType.daily;
+      case 'weekly':
+        return QuestType.weekly;
+      case 'onetime':
+      case 'one_time':
+        return QuestType.oneTime;
+      default:
+        return QuestType.daily;
+    }
+  }
+
+  static QuestStatus _parseQuestStatus(dynamic status) {
+    if (status == null) return QuestStatus.incomplete;
+
+    final statusStr = status.toString().toLowerCase();
+
+    switch (statusStr) {
+      case 'incomplete':
+        return QuestStatus.incomplete;
+      case 'complete':
+        return QuestStatus.complete;
+      case 'claimed':
+        return QuestStatus.claimed;
+      default:
+        return QuestStatus.incomplete;
+    }
   }
 
   bool get canClaim => status == QuestStatus.complete;
@@ -97,6 +152,7 @@ class Quest extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    questId,
     title,
     description,
     coinReward,
@@ -106,5 +162,7 @@ class Quest extends Equatable {
     resetTime,
     completedAt,
     claimedAt,
+    createdAt,
+    updatedAt,
   ];
 }

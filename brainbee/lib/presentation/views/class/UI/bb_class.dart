@@ -1,30 +1,40 @@
-// lib/presentation/views/class/UI/bb_class_integrated.dart
-
+import 'package:brainbee/presentation/views/class/UI/DI/class_injection.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/presentation/views/class/UI/bb_class_details.dart';
 import 'package:brainbee/presentation/views/class/bloc/class_bloc.dart';
 import 'package:brainbee/presentation/views/class/models/class_models.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-class BBClass extends StatelessWidget {
-  const BBClass({super.key});
+/// Entry point widget - wraps with dependency provider
+class BBClassPage extends StatelessWidget {
+  const BBClassPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create:
-          (context) =>
-              context.read<ClassBloc>()..add(const FetchMyClassesEvent()),
-      child: const BBClassView(),
-    );
+    return ClassDependencyProvider(child: const BBClass());
   }
 }
 
-class BBClassView extends StatelessWidget {
-  const BBClassView({super.key});
+/// Main class list screen
+class BBClass extends StatefulWidget {
+  const BBClass({super.key});
+
+  @override
+  State<BBClass> createState() => _BBClassState();
+}
+
+class _BBClassState extends State<BBClass> {
+  @override
+  void initState() {
+    super.initState();
+    // Dispatch event after frame is built to ensure bloc is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ClassBloc>().add(const FetchMyClassesEvent());
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +60,6 @@ class BBClassView extends StatelessWidget {
           }
 
           if (state is ClassRefreshing) {
-            // Show previous data while refreshing
             return _buildClassList(
               context,
               state.previousClasses,
@@ -84,7 +93,6 @@ class BBClassView extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () async {
         context.read<ClassBloc>().add(const RefreshMyClassesEvent());
-        // Wait for the refresh to complete
         await context.read<ClassBloc>().stream.firstWhere(
           (state) => state is! ClassRefreshing,
         );
@@ -106,13 +114,13 @@ class BBClassView extends StatelessWidget {
             ],
           ),
           if (isRefreshing)
-            Positioned(
+            const Positioned(
               top: 0,
               left: 0,
               right: 0,
               child: SizedBox(
                 height: 2,
-                child: const LinearProgressIndicator(
+                child: LinearProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(
                     BBColors.secondaryColor,
                   ),
@@ -132,8 +140,10 @@ class BBClassView extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder:
-                (context) =>
-                    ClassDetailScreen(classItem: classItem.toEnrolledClass()),
+                (context) => ClassDetailScreen(
+                  classItem: classItem.toEnrolledClass(),
+                  classId: classItem.id,
+                ),
           ),
         );
       },
@@ -189,7 +199,7 @@ class BBClassView extends StatelessWidget {
                   BBText(
                     data: 'Teacher: ${classItem.teacher.fullName}',
                     style: context.textStyle.bodyMedium?.copyWith(
-                      color: BBColors.white.withValues(alpha: 0.85),
+                      color: BBColors.white.withOpacity(0.85),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -215,7 +225,6 @@ class BBClassView extends StatelessWidget {
                           _buildProgressIndicator(
                             classItem.completedAssignments,
                             classItem.totalAssignments,
-                            classItem.subject,
                           ),
                           const SizedBox(width: 10),
                           BBText(
@@ -234,7 +243,7 @@ class BBClassView extends StatelessWidget {
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: BBColors.white.withValues(alpha: 0.15),
+                          color: BBColors.white.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: BBText(
@@ -256,19 +265,19 @@ class BBClassView extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressIndicator(int completed, int total, String subject) {
+  Widget _buildProgressIndicator(int completed, int total) {
     double progress = total > 0 ? completed / total : 0;
     return Container(
       width: 32,
       height: 32,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: BBColors.white.withValues(alpha: 0.1),
+        color: BBColors.white.withOpacity(0.1),
       ),
       child: CircularProgressIndicator(
         value: progress,
         strokeWidth: 3,
-        backgroundColor: BBColors.white.withValues(alpha: 0.3),
+        backgroundColor: BBColors.white.withOpacity(0.3),
         valueColor: const AlwaysStoppedAnimation<Color>(BBColors.white),
       ),
     );
@@ -320,9 +329,7 @@ class BBClassView extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
+            onPressed: () => Navigator.of(context).pop(),
             style: ElevatedButton.styleFrom(
               backgroundColor: BBColors.primaryColor,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -377,9 +384,7 @@ class BBClassView extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 OutlinedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
+                  onPressed: () => Navigator.of(context).pop(),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: BBColors.bodyText,
                     side: const BorderSide(color: BBColors.borderGray),
@@ -400,9 +405,10 @@ class BBClassView extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
-                  onPressed: () {
-                    context.read<ClassBloc>().add(const FetchMyClassesEvent());
-                  },
+                  onPressed:
+                      () => context.read<ClassBloc>().add(
+                        const FetchMyClassesEvent(),
+                      ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: BBColors.primaryColor,
                     padding: const EdgeInsets.symmetric(

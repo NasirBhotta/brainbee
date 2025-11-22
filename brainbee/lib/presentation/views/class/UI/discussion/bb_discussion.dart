@@ -1,45 +1,10 @@
-// screens/class_forum_screen.dart
+import 'package:brainbee/presentation/views/class/bloc/disscussion/bloc/discussion_bloc.dart';
+import 'package:brainbee/presentation/views/class/models/disscussion_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brainbee/core/constants/bb_colors.dart';
 
-// models/discussion_models.dart
-class DiscussionMessage {
-  final String id;
-  final String senderId;
-  final String senderName;
-  final String senderRole; // 'teacher' or 'student'
-  final String message;
-  final DateTime timestamp;
-  final String? topicId;
-
-  DiscussionMessage({
-    required this.id,
-    required this.senderId,
-    required this.senderName,
-    required this.senderRole,
-    required this.message,
-    required this.timestamp,
-    this.topicId,
-  });
-}
-
-class DiscussionTopic {
-  final String id;
-  final String title;
-  final String createdBy;
-  final DateTime createdAt;
-  final int messageCount;
-
-  DiscussionTopic({
-    required this.id,
-    required this.title,
-    required this.createdBy,
-    required this.createdAt,
-    required this.messageCount,
-  });
-}
-
-class ClassForumScreen extends StatefulWidget {
+class ClassForumScreen extends StatelessWidget {
   final String classId;
   final String className;
   final String teacherName;
@@ -52,170 +17,31 @@ class ClassForumScreen extends StatefulWidget {
   });
 
   @override
-  State<ClassForumScreen> createState() => _ClassForumScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create:
+          (context) =>
+              DiscussionBloc(repository: context.read())
+                ..add(FetchTopicsEvent(classId: classId)),
+      child: _ForumView(
+        classId: classId,
+        className: className,
+        teacherName: teacherName,
+      ),
+    );
+  }
 }
 
-class _ClassForumScreenState extends State<ClassForumScreen> {
-  bool _isLoading = false;
-  bool _hasError = false;
-  List<DiscussionTopic> _topics = [];
-  late DiscussionTopic _generalTopic;
+class _ForumView extends StatelessWidget {
+  final String classId;
+  final String className;
+  final String teacherName;
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeGeneralTopic();
-    _loadDiscussions();
-  }
-
-  void _initializeGeneralTopic() {
-    // Built-in General Discussion - always available
-    _generalTopic = DiscussionTopic(
-      id: 'general_${widget.classId}',
-      title: 'General Discussion',
-      createdBy: 'System',
-      createdAt: DateTime.now().subtract(
-        const Duration(days: 30),
-      ), // Created when class was made
-      messageCount: 0, // Will be updated from API
-    );
-  }
-
-  Future<void> _loadDiscussions() async {
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-    });
-
-    try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Mock data - only teacher-created topics
-      _topics = [
-        DiscussionTopic(
-          id: '1',
-          title: 'Chapter 3: Algebra Questions',
-          createdBy: 'Mr. Johnson',
-          createdAt: DateTime.now().subtract(const Duration(days: 2)),
-          messageCount: 12,
-        ),
-        DiscussionTopic(
-          id: '2',
-          title: 'Homework Assignment - Due Friday',
-          createdBy: 'Mr. Johnson',
-          createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-          messageCount: 8,
-        ),
-        DiscussionTopic(
-          id: '3',
-          title: 'Midterm Exam Preparation',
-          createdBy: 'Mr. Johnson',
-          createdAt: DateTime.now().subtract(const Duration(days: 1)),
-          messageCount: 15,
-        ),
-      ];
-
-      // Update general topic message count (simulate API response)
-      _generalTopic = DiscussionTopic(
-        id: _generalTopic.id,
-        title: _generalTopic.title,
-        createdBy: _generalTopic.createdBy,
-        createdAt: _generalTopic.createdAt,
-        messageCount: 25, // Updated from API
-      );
-
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-      });
-    }
-  }
-
-  void _showNewTopicDialog() {
-    // Show message that only teachers can create topics
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Row(
-              children: [
-                const Icon(
-                  Icons.info_outline,
-                  color: BBColors.primaryBlue,
-                  size: 24,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Information',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: BBColors.darkHeading,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Only teachers can create new discussion topics.',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'You can participate in existing discussions or use the General Discussion for open conversations.',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: BBColors.bodyText),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Got it',
-                  style: TextStyle(color: BBColors.primaryColor),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  // Navigate to General Discussion
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => ClassDiscussionScreen(
-                            classId: widget.classId,
-                            className: widget.className,
-                            topic: _generalTopic,
-                          ),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BBColors.primaryColor,
-                ),
-                child: const Text('Go to General Discussion'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  void _createNewTopic(String title) {
-    // This method is now unused since students can't create topics
-    // Keeping for potential future use or teacher app integration
-  }
+  const _ForumView({
+    required this.classId,
+    required this.className,
+    required this.teacherName,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -232,14 +58,14 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${widget.className} Forum',
+              '$className Forum',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
               ),
             ),
             Text(
-              'Teacher: ${widget.teacherName}',
+              'Teacher: $teacherName',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: Colors.white70),
@@ -247,144 +73,92 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
           ],
         ),
       ),
-      body: _buildBody(),
+      body: BlocBuilder<DiscussionBloc, DiscussionState>(
+        builder: (context, state) {
+          if (state is TopicsLoading) return _buildLoading();
+          if (state is TopicsError) return _buildError(context, state);
+          if (state is TopicsEmpty)
+            return _buildTopicsList(context, [], state.generalTopic);
+          if (state is TopicsLoaded)
+            return _buildTopicsList(context, state.topics, state.generalTopic);
+          return const SizedBox.shrink();
+        },
+      ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showNewTopicDialog,
+        onPressed: () => _showNewTopicInfo(context),
         backgroundColor: BBColors.primaryBlue.withOpacity(0.8),
         icon: const Icon(Icons.info_outline, color: Colors.white),
-        label: Text(
-          'New Topic?',
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        label: const Text('New Topic?', style: TextStyle(color: Colors.white)),
       ),
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(BBColors.primaryColor),
-        ),
-      );
-    }
+  Widget _buildLoading() {
+    return const Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(BBColors.primaryColor),
+      ),
+    );
+  }
 
-    if (_hasError) {
-      return _buildErrorState();
-    }
+  Widget _buildError(BuildContext context, TopicsError state) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            state.isNetworkError ? Icons.wifi_off : Icons.error_outline,
+            size: 64,
+            color: BBColors.alertRed,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Failed to load discussions',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed:
+                () => context.read<DiscussionBloc>().add(
+                  FetchTopicsEvent(classId: classId),
+                ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: BBColors.primaryColor,
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
 
-    if (_topics.isEmpty) {
-      return _buildEmptyState();
-    }
-
+  Widget _buildTopicsList(
+    BuildContext context,
+    List<DiscussionTopic> topics,
+    DiscussionTopic generalTopic,
+  ) {
     return RefreshIndicator(
-      onRefresh: _loadDiscussions,
+      onRefresh: () async {
+        context.read<DiscussionBloc>().add(FetchTopicsEvent(classId: classId));
+        await context.read<DiscussionBloc>().stream.firstWhere(
+          (s) => s is! TopicsLoading,
+        );
+      },
       color: BBColors.primaryColor,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: _topics.length + 1, // +1 for General Discussion
+        padding: const EdgeInsets.all(16),
+        itemCount: topics.length + 1,
         itemBuilder: (context, index) {
-          if (index == 0) {
-            // Always show General Discussion first
-            return _buildGeneralTopicCard();
-          }
-          return _buildTopicCard(_topics[index - 1]);
+          if (index == 0) return _buildGeneralTopicCard(context, generalTopic);
+          return _buildTopicCard(context, topics[index - 1]);
         },
       ),
     );
   }
 
-  Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: BBColors.alertRed),
-          const SizedBox(height: 16),
-          Text(
-            'Failed to load discussions',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: BBColors.darkHeading),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Please check your connection and try again',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: _loadDiscussions,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BBColors.primaryColor,
-                ),
-                child: const Text('Retry'),
-              ),
-              const SizedBox(width: 16),
-              OutlinedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return RefreshIndicator(
-      onRefresh: _loadDiscussions,
-      color: BBColors.primaryColor,
-      child: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          // Always show General Discussion even when no other topics
-          _buildGeneralTopicCard(),
-          const SizedBox(height: 32),
-          Center(
-            child: Column(
-              children: [
-                const Icon(
-                  Icons.school_outlined,
-                  size: 64,
-                  color: BBColors.disabledText,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No specific topics yet',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: BBColors.darkHeading,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Your teacher will create discussion topics\nMeanwhile, use General Discussion to chat!',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGeneralTopicCard() {
+  Widget _buildGeneralTopicCard(BuildContext context, DiscussionTopic topic) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12.0),
+      margin: const EdgeInsets.only(bottom: 12),
       elevation: 3,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -394,19 +168,7 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
         ),
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (context) => ClassDiscussionScreen(
-                    classId: widget.classId,
-                    className: widget.className,
-                    topic: _generalTopic,
-                  ),
-            ),
-          );
-        },
+        onTap: () => _navigateToChat(context, topic),
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
@@ -421,7 +183,7 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -445,7 +207,7 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _generalTopic.title,
+                            topic.title,
                             style: Theme.of(
                               context,
                             ).textTheme.titleMedium?.copyWith(
@@ -497,7 +259,7 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        '${_generalTopic.messageCount} messages',
+                        '${topic.messageCount} messages',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: BBColors.primaryColor,
                           fontWeight: FontWeight.w600,
@@ -514,28 +276,16 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
     );
   }
 
-  Widget _buildTopicCard(DiscussionTopic topic) {
+  Widget _buildTopicCard(BuildContext context, DiscussionTopic topic) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12.0),
+      margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (context) => ClassDiscussionScreen(
-                    classId: widget.classId,
-                    className: widget.className,
-                    topic: topic,
-                  ),
-            ),
-          );
-        },
+        onTap: () => _navigateToChat(context, topic),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -616,23 +366,57 @@ class _ClassForumScreenState extends State<ClassForumScreen> {
     );
   }
 
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
+  void _navigateToChat(BuildContext context, DiscussionTopic topic) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => ClassDiscussionScreen(
+              classId: classId,
+              className: className,
+              topic: topic,
+            ),
+      ),
+    );
+  }
 
-    if (difference.inDays > 0) {
-      return '${difference.inDays} days ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} hours ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} minutes ago';
-    } else {
-      return 'Just now';
-    }
+  void _showNewTopicInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.info_outline, color: BBColors.primaryBlue, size: 24),
+                SizedBox(width: 8),
+                Text('Information'),
+              ],
+            ),
+            content: const Text(
+              'Only teachers can create new discussion topics.\n\nUse the General Discussion for open conversations.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Got it'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  String _formatTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 0) return '${diff.inDays} days ago';
+    if (diff.inHours > 0) return '${diff.inHours} hours ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes} minutes ago';
+    return 'Just now';
   }
 }
 
-// screens/class_discussion_screen.dart
+// ============================================
+// lib/presentation/views/class/UI/discussion/bb_discussion_chat.dart
+// ============================================
 class ClassDiscussionScreen extends StatefulWidget {
   final String classId;
   final String className;
@@ -652,15 +436,6 @@ class ClassDiscussionScreen extends StatefulWidget {
 class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  bool _isLoading = false;
-  bool _hasError = false;
-  List<DiscussionMessage> _messages = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMessages();
-  }
 
   @override
   void dispose() {
@@ -669,228 +444,111 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
     super.dispose();
   }
 
-  Future<void> _loadMessages() async {
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-    });
-
-    try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Mock messages
-      _messages = [
-        DiscussionMessage(
-          id: '1',
-          senderId: 'teacher1',
-          senderName: 'Mr. Johnson',
-          senderRole: 'teacher',
-          message:
-              widget.topic.id.contains('general')
-                  ? 'Welcome to the general discussion! Feel free to ask questions, share thoughts, or help each other with studies.'
-                  : 'Welcome to our discussion forum! Feel free to ask any questions about the chapter.',
-          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-          topicId: widget.topic.id,
-        ),
-        if (widget.topic.id.contains('general')) ...[
-          DiscussionMessage(
-            id: '2',
-            senderId: 'student1',
-            senderName: 'Sarah Ahmed',
-            senderRole: 'student',
-            message:
-                'Hi everyone! Can someone help me understand the homework from yesterday?',
-            timestamp: DateTime.now().subtract(
-              const Duration(hours: 1, minutes: 30),
-            ),
-            topicId: widget.topic.id,
-          ),
-          DiscussionMessage(
-            id: '3',
-            senderId: 'student2',
-            senderName: 'Ahmed Ali',
-            senderRole: 'student',
-            message: 'Sure Sarah! Which part are you having trouble with?',
-            timestamp: DateTime.now().subtract(
-              const Duration(hours: 1, minutes: 25),
-            ),
-            topicId: widget.topic.id,
-          ),
-          DiscussionMessage(
-            id: '4',
-            senderId: 'student1',
-            senderName: 'Sarah Ahmed',
-            senderRole: 'student',
-            message:
-                'The quadratic equations part. I keep getting confused with the formula.',
-            timestamp: DateTime.now().subtract(const Duration(minutes: 45)),
-            topicId: widget.topic.id,
-          ),
-        ] else ...[
-          DiscussionMessage(
-            id: '2',
-            senderId: 'student1',
-            senderName: 'Sarah Ahmed',
-            senderRole: 'student',
-            message:
-                'Thank you sir! I have a question about quadratic equations.',
-            timestamp: DateTime.now().subtract(
-              const Duration(hours: 1, minutes: 30),
-            ),
-            topicId: widget.topic.id,
-          ),
-          DiscussionMessage(
-            id: '3',
-            senderId: 'teacher1',
-            senderName: 'Mr. Johnson',
-            senderRole: 'teacher',
-            message: 'Sure Sarah, go ahead with your question.',
-            timestamp: DateTime.now().subtract(
-              const Duration(hours: 1, minutes: 25),
-            ),
-            topicId: widget.topic.id,
-          ),
-        ],
-      ];
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      // Scroll to bottom
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom();
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-      });
-    }
-  }
-
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
-  }
-
-  Future<void> _sendMessage() async {
-    final message = _messageController.text.trim();
-    if (message.isEmpty) return;
-
-    final newMessage = DiscussionMessage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      senderId: 'current_user',
-      senderName: 'You',
-      senderRole: 'student', // Replace with actual user role
-      message: message,
-      timestamp: DateTime.now(),
-      topicId: widget.topic.id,
-    );
-
-    setState(() {
-      _messages.add(newMessage);
-    });
-
-    _messageController.clear();
-
-    // Scroll to bottom after adding message
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
-    });
-
-    // Simulate sending to server
-    // In real implementation, call API here
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: BBColors.lightGrayBG,
-      appBar: AppBar(
-        backgroundColor: BBColors.secondaryColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.topic.title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+    return BlocProvider(
+      create:
+          (context) =>
+              DiscussionBloc(repository: context.read())
+                ..add(FetchMessagesEvent(topicId: widget.topic.id)),
+      child: Scaffold(
+        backgroundColor: BBColors.lightGrayBG,
+        appBar: AppBar(
+          backgroundColor: BBColors.secondaryColor,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.topic.title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            Text(
-              widget.className,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.white70),
-            ),
+              Text(
+                widget.className,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.white70),
+              ),
+            ],
+          ),
+        ),
+        body: Column(
+          children: [
+            Expanded(child: _buildMessagesList()),
+            _buildMessageInput(),
           ],
         ),
-      ),
-      body: Column(
-        children: [Expanded(child: _buildMessagesList()), _buildMessageInput()],
       ),
     );
   }
 
   Widget _buildMessagesList() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(BBColors.primaryColor),
-        ),
-      );
-    }
-
-    if (_hasError) {
-      return _buildErrorState();
-    }
-
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(16.0),
-      itemCount: _messages.length,
-      itemBuilder: (context, index) {
-        return _buildMessageBubble(_messages[index]);
-      },
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: BBColors.alertRed),
-          const SizedBox(height: 16),
-          Text(
-            'Failed to load messages',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: BBColors.darkHeading),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _loadMessages,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: BBColors.primaryColor,
+    return BlocConsumer<DiscussionBloc, DiscussionState>(
+      listener: (context, state) {
+        if (state is MessagesLoaded) {
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _scrollToBottom(),
+          );
+        }
+        if (state is MessageSendError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.error),
+              backgroundColor: BBColors.alertRed,
             ),
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
+          );
+        }
+      },
+      builder: (context, state) {
+        if (state is MessagesLoading) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(BBColors.primaryColor),
+            ),
+          );
+        }
+        if (state is MessagesError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: BBColors.alertRed,
+                ),
+                const SizedBox(height: 16),
+                Text(state.message),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed:
+                      () => context.read<DiscussionBloc>().add(
+                        FetchMessagesEvent(topicId: widget.topic.id),
+                      ),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+        if (state is MessagesLoaded) {
+          return ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(16),
+            itemCount: state.messages.length,
+            itemBuilder:
+                (context, index) => _buildMessageBubble(state.messages[index]),
+          );
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
@@ -899,7 +557,7 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
     final isTeacher = message.senderRole == 'teacher';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12.0),
+      margin: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1013,70 +671,102 @@ class _ClassDiscussionScreenState extends State<ClassDiscussionScreen> {
   }
 
   Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: BBColors.borderGray, width: 1)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: 'Type your message...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: const BorderSide(color: BBColors.borderGray),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: const BorderSide(color: BBColors.borderGray),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: const BorderSide(
-                    color: BBColors.primaryColor,
-                    width: 2,
+    return BlocBuilder<DiscussionBloc, DiscussionState>(
+      builder: (context, state) {
+        final isSending = state is MessagesLoaded && state.isSending;
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              top: BorderSide(color: BBColors.borderGray, width: 1),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _messageController,
+                  decoration: InputDecoration(
+                    hintText: 'Type your message...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: const BorderSide(color: BBColors.borderGray),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: const BorderSide(color: BBColors.borderGray),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: const BorderSide(
+                        color: BBColors.primaryColor,
+                        width: 2,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  maxLines: null,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: isSending ? null : (_) => _sendMessage(context),
                 ),
               ),
-              maxLines: null,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _sendMessage(),
-            ),
+              const SizedBox(width: 12),
+              CircleAvatar(
+                radius: 24,
+                backgroundColor:
+                    isSending ? BBColors.disabledText : BBColors.primaryColor,
+                child:
+                    isSending
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                        : IconButton(
+                          icon: const Icon(Icons.send, color: Colors.white),
+                          onPressed: () => _sendMessage(context),
+                        ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: BBColors.primaryColor,
-            child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white),
-              onPressed: _sendMessage,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  String _formatMessageTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
+  void _sendMessage(BuildContext context) {
+    final message = _messageController.text.trim();
+    if (message.isEmpty) return;
+    context.read<DiscussionBloc>().add(
+      SendMessageEvent(topicId: widget.topic.id, message: message),
+    );
+    _messageController.clear();
+  }
 
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     }
+  }
+
+  String _formatMessageTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'Just now';
   }
 }

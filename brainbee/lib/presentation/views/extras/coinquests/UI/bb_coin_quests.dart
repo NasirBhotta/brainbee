@@ -1,6 +1,5 @@
 import 'package:brainbee/core/widgets/quests/claim_dialog.dart';
 import 'package:brainbee/core/widgets/quests/quest_card.dart';
-import 'package:brainbee/core/widgets/wallet/bb_wallet.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/bloc/quest_event.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/bloc/quest_state.dart';
 import 'package:brainbee/presentation/views/extras/coinquests/models/quest.dart';
@@ -20,6 +19,7 @@ class BBCoinQuestScreen extends StatefulWidget {
 
 class _BBCoinQuestScreenState extends State<BBCoinQuestScreen> {
   late QuestBloc _questBloc;
+
   @override
   void initState() {
     super.initState();
@@ -60,14 +60,13 @@ class _BBCoinQuestScreenState extends State<BBCoinQuestScreen> {
       ),
       body: BlocConsumer<QuestBloc, QuestState>(
         listener: (context, state) {
-          if (!mounted) {
-            return;
-          }
+          if (!mounted) return;
+
           if (state is QuestClaimed) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  '+${state.coinsAdded} Coins added to your Wallet!',
+                  '+${state.coinsAdded} Coins added to your account!',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: BBColors.white,
                     fontWeight: FontWeight.w500,
@@ -159,16 +158,16 @@ class _BBCoinQuestScreenState extends State<BBCoinQuestScreen> {
                     ? state.quests
                     : (state as QuestClaimed).quests;
 
-            final wallet =
+            final currentCoins =
                 state is QuestLoaded
-                    ? state.wallet
+                    ? state.currentCoins
                     : state is QuestClaiming
-                    ? state.wallet
-                    : (state as QuestClaimed).wallet;
+                    ? state.currentCoins
+                    : (state as QuestClaimed).newCoins;
 
             return Column(
               children: [
-                WalletWidget(wallet: wallet),
+                _buildCoinsHeader(context, currentCoins),
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () async {
@@ -237,6 +236,64 @@ class _BBCoinQuestScreenState extends State<BBCoinQuestScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCoinsHeader(BuildContext context, int coins) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [BBColors.primaryColor, BBColors.secondaryColor],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: BBColors.primaryColor.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: BBColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.monetization_on,
+              color: BBColors.yellowAccent,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Your Balance',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: BBColors.white.withOpacity(0.9),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                '$coins Coins',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: BBColors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

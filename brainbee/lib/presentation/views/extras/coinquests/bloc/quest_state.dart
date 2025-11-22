@@ -1,4 +1,3 @@
-import 'package:brainbee/core/models/wallet.dart';
 import 'package:equatable/equatable.dart';
 import '../models/quest.dart';
 
@@ -15,12 +14,12 @@ class QuestLoading extends QuestState {}
 
 class QuestLoaded extends QuestState {
   final List<Quest> quests;
-  final Wallet wallet;
+  final int currentCoins;
 
-  const QuestLoaded(this.quests, this.wallet);
+  const QuestLoaded(this.quests, this.currentCoins);
 
   @override
-  List<Object> get props => [quests, wallet];
+  List<Object> get props => [quests, currentCoins];
 }
 
 class QuestError extends QuestState {
@@ -34,22 +33,22 @@ class QuestError extends QuestState {
 
 class QuestClaiming extends QuestState {
   final List<Quest> quests;
-  final Wallet wallet;
+  final int currentCoins;
   final String claimingQuestId;
 
-  const QuestClaiming(this.quests, this.wallet, this.claimingQuestId);
+  const QuestClaiming(this.quests, this.currentCoins, this.claimingQuestId);
 
   @override
-  List<Object> get props => [quests, wallet, claimingQuestId];
+  List<Object> get props => [quests, currentCoins, claimingQuestId];
 }
 
 class QuestClaimed extends QuestState {
   final List<Quest> quests;
-  final Wallet wallet;
+  final int newCoins;
   final int coinsAdded;
 
-  const QuestClaimed(this.quests, this.wallet, this.coinsAdded);
+  const QuestClaimed(this.quests, this.newCoins, this.coinsAdded);
 
   @override
-  List<Object> get props => [quests, wallet, coinsAdded];
+  List<Object> get props => [quests, newCoins, coinsAdded];
 }

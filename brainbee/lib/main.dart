@@ -51,7 +51,9 @@ void main(List<String> args) async {
         BlocProvider(create: (context) => StudentBloc()),
         // Quest feature
         BlocProvider(
-          create: (_) => QuestBloc(ApiService(), NotificationService()),
+          create:
+              (_) =>
+                  QuestBloc(ApiService(), NotificationService(), StudentBloc()),
         ),
         // Badge feature
         BlocProvider(

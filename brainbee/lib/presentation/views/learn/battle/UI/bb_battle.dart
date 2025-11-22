@@ -605,7 +605,7 @@ class _BBBattleState extends State<BBBattle> {
                     ),
                   ],
                 ),
-                if (battleHistory.isNotEmpty)
+                if (battleHistory.isNotEmpty || battleHistory != null)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
