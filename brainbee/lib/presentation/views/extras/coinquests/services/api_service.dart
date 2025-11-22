@@ -51,7 +51,7 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       final response = await http.post(
-        Uri.parse('$baseUrl/api/quests/claim'),
+        Uri.parse('$baseUrl/api/student/quests/claim'),
         headers: headers,
         body: json.encode({'questId': questId}),
       );
