@@ -64,3 +64,16 @@ class SettingsStudentLoaded extends SettingsState {
 }
 
 class SettingsStudentCleared extends SettingsState {}
+
+class SettingsPasswordUpdateSuccess extends SettingsState {}
+
+class SettingsPasswordUpdateFailure extends SettingsState {
+  final String error;
+
+  const SettingsPasswordUpdateFailure(this.error);
+
+  @override
+  List<Object> get props => [error];
+}
+
+class SettingsPasswordUpdating extends SettingsState {}

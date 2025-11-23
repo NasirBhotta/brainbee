@@ -152,120 +152,127 @@ class _BBhomeState extends State<BBhome> {
           registeredQuizzes = _getRegisteredQuizzes(state.student.subjects);
         }
 
-        return CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              expandedHeight: 130,
-              pinned: true,
-              floating: false,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              flexibleSpace: ClipRRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                  child: FlexibleSpaceBar(
-                    background: _AppBarBackground(
-                      displayName: _displayName,
-                      initials: _initials,
+        return RefreshIndicator.adaptive(
+          onRefresh: () {
+            return Future.delayed(const Duration(milliseconds: 500), () {
+              context.read<StudentBloc>().add(StudentFetchData());
+            });
+          },
+          child: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 130,
+                pinned: true,
+                floating: false,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                flexibleSpace: ClipRRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                    child: FlexibleSpaceBar(
+                      background: _AppBarBackground(
+                        displayName: _displayName,
+                        initials: _initials,
+                      ),
+                      expandedTitleScale: 1,
+                      title: _ProgressBarRow(
+                        desc: _desc,
+                        onPopupTap: (index) {
+                          if (state is StudentDataLoaded) {
+                            _onPopupTap(index, state);
+                          }
+                        },
+                      ),
+                      centerTitle: true,
                     ),
-                    expandedTitleScale: 1,
-                    title: _ProgressBarRow(
-                      desc: _desc,
-                      onPopupTap: (index) {
-                        if (state is StudentDataLoaded) {
-                          _onPopupTap(index, state);
-                        }
-                      },
-                    ),
-                    centerTitle: true,
                   ),
                 ),
               ),
-            ),
-            SliverList.builder(
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  print("index is $index");
+              SliverList.builder(
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    print("index is $index");
+                    if (state is StudentDataLoaded) {
+                      return _PromotionCard(state);
+                    }
+                    return const SizedBox.shrink();
+                  }
+
+                  final quizIndex = index - 1;
+
                   if (state is StudentDataLoaded) {
-                    return _PromotionCard(state);
-                  }
-                  return const SizedBox.shrink();
-                }
+                    // Check if we have registered quizzes and if the index is valid
+                    if (registeredQuizzes.isNotEmpty &&
+                        quizIndex < registeredQuizzes.length) {
+                      final quiz = registeredQuizzes[quizIndex];
+                      print("Showing registered quiz: ${quiz['title']}");
 
-                final quizIndex = index - 1;
-
-                if (state is StudentDataLoaded) {
-                  // Check if we have registered quizzes and if the index is valid
-                  if (registeredQuizzes.isNotEmpty &&
-                      quizIndex < registeredQuizzes.length) {
-                    final quiz = registeredQuizzes[quizIndex];
-                    print("Showing registered quiz: ${quiz['title']}");
-
-                    return BbQuizzesDisplay(
-                      title: quiz['title']!,
-                      description: quiz['description']!,
-                      imagePath1: quiz['imagePath1']!,
-                      imagePath2: quiz['imagePath2']!,
-                      color: quiz['color']!,
-                    );
-                  }
-                  // Show message if no subjects are registered at all
-                  else if (registeredQuizzes.isEmpty && quizIndex == 0) {
-                    return Container(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 10,
-                      ),
-                      padding: const EdgeInsets.all(30),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15),
-                        color: Colors.blue[50],
-                        border: Border.all(color: Colors.blue[200]!),
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.school_outlined,
-                              size: 64,
-                              color: Colors.blue[400],
-                            ),
-                            const SizedBox(height: 16),
-                            BBText(
-                              data: "No Subjects Registered",
-                              style: Theme.of(
-                                context,
-                              ).textTheme.titleLarge?.copyWith(
-                                color: Colors.blue[700],
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            BBText(
-                              data:
-                                  "Please register your subjects to start taking quizzes",
-                              style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(color: Colors.blue[600]),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                      return BbQuizzesDisplay(
+                        title: quiz['title']!,
+                        description: quiz['description']!,
+                        imagePath1: quiz['imagePath1']!,
+                        imagePath2: quiz['imagePath2']!,
+                        color: quiz['color']!,
+                      );
+                    }
+                    // Show message if no subjects are registered at all
+                    else if (registeredQuizzes.isEmpty && quizIndex == 0) {
+                      return Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 10,
                         ),
-                      ),
-                    );
+                        padding: const EdgeInsets.all(30),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15),
+                          color: Colors.blue[50],
+                          border: Border.all(color: Colors.blue[200]!),
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.school_outlined,
+                                size: 64,
+                                color: Colors.blue[400],
+                              ),
+                              const SizedBox(height: 16),
+                              BBText(
+                                data: "No Subjects Registered",
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.titleLarge?.copyWith(
+                                  color: Colors.blue[700],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              BBText(
+                                data:
+                                    "Please register your subjects to start taking quizzes",
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(color: Colors.blue[600]),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
                   }
-                }
 
-                // Return null for indices beyond registered quizzes
-                return null;
-              },
-              itemCount:
-                  state is StudentDataLoaded
-                      ? registeredQuizzes.length +
-                          1 // +1 for promotion card
-                      : 1, // Only show promotion card if state is not loaded
-            ),
-          ],
+                  // Return null for indices beyond registered quizzes
+                  return null;
+                },
+                itemCount:
+                    state is StudentDataLoaded
+                        ? registeredQuizzes.length +
+                            1 // +1 for promotion card
+                        : 1, // Only show promotion card if state is not loaded
+              ),
+            ],
+          ),
         );
       },
     );

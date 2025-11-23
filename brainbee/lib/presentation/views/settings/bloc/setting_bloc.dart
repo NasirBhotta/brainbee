@@ -18,6 +18,7 @@ class SettingsBloc extends Bloc<SettingEvent, SettingsState> {
     on<SettingsSaveGradeLocal>(_onSaveGradeLocal);
     on<SettingsUpdateGradeAndSubjects>(_onUpdateGradeAndSubjects);
     on<SettingsClearLocalGrade>(_onClearLocalGrade);
+    on<SettingsUpdatePassword>(_onUpdatePassword);
   }
 
   FutureOr<void> _onLoadGradeFromLocal(
@@ -87,5 +88,21 @@ class SettingsBloc extends Bloc<SettingEvent, SettingsState> {
   Future<void> _clearLocalGrade() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_gradeKey);
+  }
+
+  FutureOr<void> _onUpdatePassword(event, Emitter<SettingsState> emit) async {
+    emit(SettingsPasswordUpdating());
+
+    try {
+      await repository.updatePassword(
+        currentPassword: event.currentPassword,
+        newPassword: event.newPassword,
+        confirmPassword: event.confirmPassword,
+      );
+
+      emit(SettingsPasswordUpdateSuccess());
+    } catch (e) {
+      emit(SettingsPasswordUpdateFailure(e.toString()));
+    }
   }
 }

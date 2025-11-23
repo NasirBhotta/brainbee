@@ -49,6 +49,11 @@ class _BBCoinQuestScreenState extends State<BBCoinQuestScreen> {
         backgroundColor: BBColors.secondaryColor,
         iconTheme: const IconThemeData(color: BBColors.white),
         elevation: 0,
+        leading: BackButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: BBColors.white, size: 20),

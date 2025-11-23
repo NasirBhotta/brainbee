@@ -1,7 +1,9 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
+import 'package:brainbee/presentation/views/settings/bloc/setting_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -307,20 +309,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         _isLoading = true;
       });
 
-      // Simulate API call
+      context.read<SettingsBloc>().add(
+        SettingsUpdatePassword(
+          currentPassword: _currentPasswordController.text.trim(),
+          newPassword: _newPasswordController.text.trim(),
+          confirmPassword: _confirmPasswordController.text.trim(),
+        ),
+      );
+
       Future.delayed(const Duration(seconds: 2), () {
         setState(() {
           _isLoading = false;
         });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password updated successfully!'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-
         // Clear fields
         _currentPasswordController.clear();
         _newPasswordController.clear();

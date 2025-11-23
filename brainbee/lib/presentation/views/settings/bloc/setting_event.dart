@@ -42,3 +42,18 @@ class SettingsSaveStudentLocal extends SettingEvent {
 class SettingsLoadStudentFromLocal extends SettingEvent {}
 
 class SettingsClearLocalStudent extends SettingEvent {}
+
+class SettingsUpdatePassword extends SettingEvent {
+  final String currentPassword;
+  final String newPassword;
+  final String confirmPassword;
+
+  const SettingsUpdatePassword({
+    required this.currentPassword,
+    required this.newPassword,
+    required this.confirmPassword,
+  });
+
+  @override
+  List<Object> get props => [currentPassword, newPassword, confirmPassword];
+}

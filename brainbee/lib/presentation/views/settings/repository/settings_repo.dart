@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:brainbee/core/models/token_user.dart';
 import 'package:brainbee/presentation/views/auth/models/user_model.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
@@ -242,6 +241,51 @@ class SettingsRepository {
       final studentData = await fetchStudentData();
 
       return studentData;
+    } catch (e) {
+      if (e.toString().contains('Connection refused')) {
+        throw Exception(
+          "Cannot connect to server. Please check your connection.",
+        );
+      } else if (e.toString().contains('TimeoutException')) {
+        throw Exception(
+          "Request timed out. Please check your internet connection.",
+        );
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> updatePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    final tokenUserData = await getTokenAndUser();
+    final token = tokenUserData.token;
+
+    if (token == null || token.isEmpty) {
+      throw Exception("Authentication token not found");
+    }
+
+    try {
+      final response = await _apiService.updatePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+        token: token,
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update password: ${response.body}');
+      }
+
+      final responseData = jsonDecode(response.body);
+
+      if (responseData['status'] != 'success') {
+        throw Exception(
+          'API Error: ${responseData['message'] ?? 'Unknown error'}',
+        );
+      }
     } catch (e) {
       if (e.toString().contains('Connection refused')) {
         throw Exception(

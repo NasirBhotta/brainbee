@@ -35,4 +35,26 @@ class SettingsApiService {
         )
         .timeout(timeoutDuration);
   }
+
+  Future<http.Response> updatePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+    required String token,
+  }) async {
+    return await http
+        .patch(
+          Uri.parse("$baseUrl/api/auth/change-password"),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+          body: jsonEncode({
+            "currentPassword": currentPassword,
+            "newPassword": newPassword,
+            "confirmPassword": confirmPassword,
+          }),
+        )
+        .timeout(timeoutDuration);
+  }
 }
