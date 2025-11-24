@@ -97,6 +97,8 @@ class StudentRepository {
     }
   }
 
+  // Add this updated method to your StudentRepository class
+
   Map<String, dynamic> _transformUserDataToStudentModel(
     Map<String, dynamic> userData,
     String token,
@@ -105,12 +107,13 @@ class StudentRepository {
       "status": "success",
       "accessToken": token,
       "user": {
+        // ✅ Handle null/missing profileImage
         "profileImage": userData['profileImage'],
         "id": userData['_id'],
         "email": userData['email'],
         "firstName": userData['firstName'],
         "lastName": userData['lastName'],
-        "grade": userData['grade'] ?? 8,
+        "grade": userData['grade'] ?? 0,
         "subjects": userData['subjects'] ?? [],
         "parentId": userData['parentId'],
         "coins": userData['coins'] ?? 0,
@@ -129,10 +132,12 @@ class StudentRepository {
             {"wins": 0, "losses": 0, "totalBattles": 0},
         "enrolledClasses": userData['enrolledClasses'] ?? [],
         "chapter_levels": userData['chapter_levels'] ?? {},
-        "score": userData['performanceSummary']['overallScore'] ?? 0,
+        // ✅ Handle missing performanceSummary for new users
+        "score": userData['performanceSummary']?['overallScore'] ?? 0,
         "topic_performance": userData['topic_performance'] ?? {},
+        // ✅ Handle empty goals array for new users
         "goal": _transformGoal(
-          userData['goals'] != null && userData['goals'].isNotEmpty
+          userData['goals'] != null && (userData['goals'] as List).isNotEmpty
               ? userData['goals'][0]
               : null,
         ),
@@ -153,21 +158,9 @@ class StudentRepository {
     return {"rank": stats['rank'] ?? 0, "points": totalPoints};
   }
 
-  // Map<String, dynamic> _getDefaultGoal() {
-  //   return {
-  //     "title": "Casual",
-  //     "description": "2 Quizzes & Estimate 7 minutes daily",
-  //     "dueDate": DateTime.now().add(Duration(days: 7)).toIso8601String(),
-  //     "reminder": [],
-  //     "value": 2,
-  //     "status": true,
-  //     "noOfAttempts": 0,
-  //   };
-  // }
-
   Map<String, dynamic> _transformGoal(Map<String, dynamic>? goalData) {
-    // If goalData is null or empty, return default goal
-    if (goalData == null) {
+    // ✅ Return default goal structure for new users
+    if (goalData == null || goalData.isEmpty) {
       return {
         "title": "Casual",
         "description": "2 Quizzes & Estimate 7 minutes daily",
@@ -192,6 +185,59 @@ class StudentRepository {
       "noOfAttempts": goalData['noOfAttempts'] ?? 0,
     };
   }
+
+  // Map<String, dynamic> _transformLeaderboardStats(Map<String, dynamic>? stats) {
+  //   if (stats == null) return {"rank": 0, "points": 0};
+
+  //   // Transform API leaderboard format to expected format
+  //   final totalPoints =
+  //       (stats['weeklyScore'] ?? 0) +
+  //       (stats['monthlyScore'] ?? 0) +
+  //       (stats['yearlyScore'] ?? 0) +
+  //       (stats['overallScore'] ?? 0);
+
+  //   return {"rank": stats['rank'] ?? 0, "points": totalPoints};
+  // }
+
+  // Map<String, dynamic> _getDefaultGoal() {
+  //   return {
+  //     "title": "Casual",
+  //     "description": "2 Quizzes & Estimate 7 minutes daily",
+  //     "dueDate": DateTime.now().add(Duration(days: 7)).toIso8601String(),
+  //     "reminder": [],
+  //     "value": 2,
+  //     "status": true,
+  //     "noOfAttempts": 0,
+  //   };
+  // }
+
+  // Map<String, dynamic> _transformGoal(Map<String, dynamic>? goalData) {
+  //   // If goalData is null or empty, return default goal
+  //   if (goalData == null) {
+  //     return {
+  //       "title": "Casual",
+  //       "description": "2 Quizzes & Estimate 7 minutes daily",
+  //       "dueDate": DateTime.now().add(Duration(days: 7)).toIso8601String(),
+  //       "reminder": [],
+  //       "value": 2,
+  //       "status": true,
+  //       "noOfAttempts": 0,
+  //     };
+  //   }
+
+  //   return {
+  //     "title": goalData['title'] ?? 'Casual',
+  //     "description":
+  //         goalData['description'] ?? '2 Quizzes & Estimate 7 minutes daily',
+  //     "dueDate":
+  //         goalData['dueDate'] ??
+  //         DateTime.now().add(Duration(days: 7)).toIso8601String(),
+  //     "reminder": goalData['reminder'] ?? [],
+  //     "value": goalData['value'] ?? 2,
+  //     "status": goalData['status'] ?? true,
+  //     "noOfAttempts": goalData['noOfAttempts'] ?? 0,
+  //   };
+  // }
 
   Future<StudentModel> updateProfile({
     required File image,

@@ -111,7 +111,7 @@ void showScoreGoalsPopup(BuildContext context, StudentModel student) {
                       children: [
                         const BBText(data: "This year's score"),
                         BBText(
-                          data: '10',
+                          data: currentStudent.score.toString(),
                           style: context.textStyle.titleLarge?.copyWith(
                             fontWeight: FontWeight.w600,
                             fontSize: 27,
@@ -124,28 +124,27 @@ void showScoreGoalsPopup(BuildContext context, StudentModel student) {
 
                 const SizedBox(height: 16),
 
-                // Days of the week row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children:
-                      ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
-                          .map(
-                            (day) => Container(
-                              width: 40,
-                              height: 40,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: BBColors.borderGray,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: BBText(data: day),
-                            ),
-                          )
-                          .toList(),
-                ),
+                // // Days of the week row
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                //   children:
+                //       ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+                //           .map(
+                //             (day) => Container(
+                //               width: 40,
+                //               height: 40,
+                //               alignment: Alignment.center,
+                //               decoration: BoxDecoration(
+                //                 color: BBColors.borderGray,
+                //                 borderRadius: BorderRadius.circular(8),
+                //               ),
+                //               child: BBText(data: day),
+                //             ),
+                //           )
+                //           .toList(),
+                // ),
 
-                const SizedBox(height: 20),
-
+                // const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(

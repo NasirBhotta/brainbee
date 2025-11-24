@@ -60,7 +60,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final result = await _authRepository.signup(
         email: event.email,
-        fullName: event.fullName,
         firstName: event.firstName,
         lastName: event.lastName,
         password: event.password,

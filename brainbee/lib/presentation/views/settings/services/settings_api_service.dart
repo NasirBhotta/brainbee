@@ -43,7 +43,7 @@ class SettingsApiService {
     required String token,
   }) async {
     return await http
-        .patch(
+        .post(
           Uri.parse("$baseUrl/api/auth/change-password"),
           headers: {
             "Content-Type": "application/json",

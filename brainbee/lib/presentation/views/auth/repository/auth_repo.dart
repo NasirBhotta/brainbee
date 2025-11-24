@@ -97,7 +97,6 @@ class AuthRepository {
 
   Future<AuthResult> signup({
     required String email,
-    required String fullName,
     required String firstName,
     required String lastName,
     required String password,
@@ -105,7 +104,7 @@ class AuthRepository {
   }) async {
     final result = await _apiService.signup(
       email: email,
-      fullName: fullName,
+
       firstName: firstName,
       lastName: lastName,
       password: password,

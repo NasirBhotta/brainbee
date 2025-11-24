@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:brainbee/presentation/views/auth/models/user_model.dart';
 import 'package:brainbee/presentation/views/extras/achievements/models/bb_achievement_model.dart';
 import 'package:brainbee/presentation/views/extras/leaderboard/models/bb_leaderboard_class.dart';
@@ -22,10 +20,10 @@ class StudentModel extends UserModel {
   final int score;
   final Map<String, String> chapterLevels;
   final Map<String, TopicPerformance>? topicPerformance;
-  final String profileImage;
+  final String? profileImage; // ✅ Made nullable
 
   StudentModel({
-    required this.profileImage,
+    this.profileImage, // ✅ Made optional
     required super.id,
     required super.email,
     required super.firstName,
@@ -55,7 +53,7 @@ class StudentModel extends UserModel {
     final user = json['user'];
     print("The user in the model is $user");
     return StudentModel(
-      profileImage: user["profileImage"],
+      profileImage: user["profileImage"], // ✅ Now handles null
       id: user['id'] ?? user['_id'] ?? '',
       email: user['email'] ?? '',
       firstName: user['firstName'] ?? '',
@@ -85,7 +83,6 @@ class StudentModel extends UserModel {
       battleStatics: BattleStatics.fromJson(user['battleStats'] ?? {}),
       enrolledClasses: List<String>.from(user['enrolledClasses'] ?? []),
       score: user['score'] ?? 0,
-
       chapterLevels: Map<String, String>.from(user['chapter_levels'] ?? {}),
       // topicPerformance: (user['topic_performance'] ?? {}).map<dynamic, dynamic>(
       //   (key, value) => MapEntry(key, TopicPerformance.fromJson(value)),
@@ -126,6 +123,15 @@ class StudentModel extends UserModel {
       },
     };
   }
+
+  // ✅ Helper to get profile image URL with fallback
+  String getProfileImageUrl() {
+    if (profileImage != null && profileImage!.isNotEmpty) {
+      return profileImage!;
+    }
+    // Return default avatar or initials-based avatar
+    return 'https://ui-avatars.com/api/?name=$firstName+$lastName&background=random';
+  }
 }
 
 class Goal {
@@ -160,15 +166,35 @@ class Goal {
   });
 
   factory Goal.fromJson(Map<String, dynamic> json) {
+    // ✅ Handle empty goal data with defaults
+    if (json.isEmpty) {
+      return Goal(
+        title: 'Casual',
+        description: '2 Quizzes & Estimate 7 minutes daily',
+        dueDate: DateTime.now().add(Duration(days: 7)),
+        reminder: [],
+        value: 2,
+        status: true,
+        noOfAttempts: 0,
+      );
+    }
+
     return Goal(
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      dueDate: DateTime.parse(json['dueDate'] ?? DateTime.now().toString()),
-      reminder: List<DateTime>.from(
-        json['reminder']?.map((x) => DateTime.parse(x)) ?? [],
-      ),
-      value: json['value'] ?? 0,
-      status: json['status'] ?? false,
+      title: json['title'] ?? 'Casual',
+      description:
+          json['description'] ?? '2 Quizzes & Estimate 7 minutes daily',
+      dueDate:
+          json['dueDate'] != null
+              ? DateTime.parse(json['dueDate'])
+              : DateTime.now().add(Duration(days: 7)),
+      reminder:
+          json['reminder'] != null
+              ? List<DateTime>.from(
+                json['reminder'].map((x) => DateTime.parse(x)),
+              )
+              : [],
+      value: json['value'] ?? 2,
+      status: json['status'] ?? true,
       noOfAttempts: json['noOfAttempts'] ?? 0,
       parentId: json['parentId'],
       targetScore: json['targetScore'],
@@ -214,6 +240,7 @@ class BattleStatics {
       totalBattles: json['totalBattles'] ?? 0,
     );
   }
+
   Map<String, dynamic> toJson() {
     return {'wins': wins, 'losses': losses, 'totalBattles': totalBattles};
   }
@@ -231,6 +258,7 @@ class TopicPerformance {
       correct: json['correct'] ?? 0,
     );
   }
+
   Map<String, dynamic> toJson() {
     return {'attempts': attempts, 'correct': correct};
   }

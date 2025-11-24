@@ -68,7 +68,7 @@ class AuthApiService {
   // Signup API call
   Future<Map<String, dynamic>> signup({
     required String email,
-    required String fullName,
+
     required String firstName,
     required String lastName,
     required String password,
@@ -81,7 +81,6 @@ class AuthApiService {
             headers: {"Content-Type": "application/json"},
             body: jsonEncode({
               "email": email,
-              "fullName": fullName,
               "firstName": firstName,
               "lastName": lastName,
               "password": password,

@@ -240,7 +240,6 @@ class _BbSignupState extends State<BbSignup> {
                       onPressed: () {
                         context.read<AuthBloc>().add(
                           AuthSignupRequested(
-                            fullName: fullNameController.text,
                             email: emailController.text,
                             password: passwordController.text,
                             firstName: firstName(fullNameController.text)[0],
