@@ -323,7 +323,7 @@ class MCQQuizScreen extends StatefulWidget {
 class _MCQQuizScreenState extends State<MCQQuizScreen>
     with TickerProviderStateMixin {
   late AnimationController _timerController;
-  Map<String, dynamic> answers = {};
+  Map<String, dynamic> answers = {}; // questionId -> selected option index
   Duration remainingTime = Duration.zero;
 
   @override
@@ -488,7 +488,7 @@ class _MCQQuizScreenState extends State<MCQQuizScreen>
     );
   }
 
-  Widget _buildQuestionCard(Question question, int index) {
+  Widget _buildQuestionCard(QuizQuestion question, int index) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
@@ -508,87 +508,134 @@ class _MCQQuizScreenState extends State<MCQQuizScreen>
             const SizedBox(height: 8),
             Text(question.text, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 16),
-            if (question.options != null)
-              ...question.options!.map((option) {
-                bool isSelected =
-                    question.isMultiSelect == true
-                        ? (answers[question.id] as List<String>?)?.contains(
-                              option,
-                            ) ??
-                            false
-                        : answers[question.id] == option;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: InkWell(
-                    onTap: () {
-                      setState(() {
-                        if (question.isMultiSelect == true) {
-                          List<String> current = List<String>.from(
-                            answers[question.id] ?? [],
-                          );
-                          isSelected
-                              ? current.remove(option)
-                              : current.add(option);
-                          answers[question.id!] = current;
-                        } else {
-                          answers[question.id!] = option;
-                        }
-                      });
-                      context.read<ClassQuizBloc>().add(
-                        UpdateAnswerEvent(
-                          questionId: question.id!,
-                          answer: answers[question.id],
-                        ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color:
-                              isSelected
-                                  ? BBColors.primaryColor
-                                  : BBColors.borderGray,
-                          width: isSelected ? 2 : 1,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
+            ...question.options.asMap().entries.map((entry) {
+              final optionIndex = entry.key;
+              final optionText = entry.value;
+
+              // Check if this option is selected
+              final selectedAnswer = answers[question.id];
+              final isSelected = selectedAnswer == optionIndex;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      // Store the option INDEX, not the text
+                      answers[question.id] = optionIndex;
+                    });
+
+                    // Update bloc
+                    context.read<ClassQuizBloc>().add(
+                      UpdateAnswerEvent(
+                        questionId: question.id,
+                        answer: optionIndex,
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(
                         color:
                             isSelected
-                                ? BBColors.primaryColor.withOpacity(0.1)
-                                : null,
+                                ? BBColors.primaryColor
+                                : BBColors.borderGray,
+                        width: isSelected ? 2 : 1,
                       ),
-                      child: Row(
-                        children: [
-                          question.isMultiSelect == true
-                              ? Checkbox(
-                                value: isSelected,
-                                onChanged: (_) {},
-                                activeColor: BBColors.primaryColor,
-                              )
-                              : Radio<String>(
-                                value: option,
-                                groupValue: answers[question.id],
-                                onChanged: (_) {},
-                                activeColor: BBColors.primaryColor,
-                              ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              option,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
+                      borderRadius: BorderRadius.circular(8),
+                      color:
+                          isSelected
+                              ? BBColors.primaryColor.withOpacity(0.1)
+                              : null,
+                    ),
+                    child: Row(
+                      children: [
+                        Radio<int>(
+                          value: optionIndex,
+                          groupValue: answers[question.id],
+                          onChanged: (_) {},
+                          activeColor: BBColors.primaryColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            optionText,
+                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                );
-              }),
+                ),
+              );
+            }),
           ],
         ),
       ),
     );
+  }
+
+  void _submitQuiz({bool autoSubmit = false}) {
+    if (remainingTime.inSeconds <= 0 && !autoSubmit) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Time has expired'),
+          backgroundColor: BBColors.alertRed,
+        ),
+      );
+      return;
+    }
+
+    // Show confirmation dialog unless auto-submit
+    if (!autoSubmit) {
+      showDialog(
+        context: context,
+        builder:
+            (ctx) => AlertDialog(
+              title: const Text('Submit Quiz?'),
+              content: Text(
+                'You have answered ${answers.length} out of ${widget.quiz.questions.length} questions.\n\nAre you sure you want to submit?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    _performSubmit(autoSubmit);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BBColors.primaryColor,
+                  ),
+                  child: const Text('Submit'),
+                ),
+              ],
+            ),
+      );
+    } else {
+      _performSubmit(autoSubmit);
+    }
+  }
+
+  void _performSubmit(bool autoSubmit) {
+    _timerController.stop();
+
+    context.read<ClassQuizBloc>().add(
+      SubmitQuizEvent(
+        quizId: widget.quiz.id,
+        answers: answers,
+        isAutoSubmit: autoSubmit,
+      ),
+    );
+  }
+
+  String _formatDuration(Duration d) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(d.inHours)}:${two(d.inMinutes.remainder(60))}:${two(d.inSeconds.remainder(60))}';
   }
 
   Widget _buildSubmitButton() {
@@ -628,31 +675,6 @@ class _MCQQuizScreenState extends State<MCQQuizScreen>
         );
       },
     );
-  }
-
-  void _submitQuiz({bool autoSubmit = false}) {
-    if (remainingTime.inSeconds <= 0 && !autoSubmit) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Time has expired'),
-          backgroundColor: BBColors.alertRed,
-        ),
-      );
-      return;
-    }
-    _timerController.stop();
-    context.read<ClassQuizBloc>().add(
-      SubmitQuizEvent(
-        quizId: widget.quiz.id,
-        answers: answers,
-        isAutoSubmit: autoSubmit,
-      ),
-    );
-  }
-
-  String _formatDuration(Duration d) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(d.inHours)}:${two(d.inMinutes.remainder(60))}:${two(d.inSeconds.remainder(60))}';
   }
 }
 

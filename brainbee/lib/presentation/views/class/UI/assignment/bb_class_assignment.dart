@@ -1,267 +1,150 @@
+// screens/assignment_list_screen.dart
+
+import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/presentation/views/class/bloc/assignment/bloc/assignment_bloc.dart';
+import 'package:brainbee/presentation/views/class/bloc/assignment/bloc/assignment_state.dart';
+import 'package:brainbee/presentation/views/class/models/assignment_model.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:brainbee/core/constants/bb_colors.dart';
-import 'package:brainbee/presentation/views/class/models/assignment_model.dart';
 
-class ClassAssignmentsScreen extends StatelessWidget {
-  final String classId;
-  final String className;
-  final String teacherName;
-
-  const ClassAssignmentsScreen({
-    super.key,
-    required this.classId,
-    required this.className,
-    required this.teacherName,
-  });
+class BbClassAssignment extends StatefulWidget {
+  final VoidCallback? onAssignmentSubmitted;
+  const BbClassAssignment({super.key, this.onAssignmentSubmitted});
 
   @override
-  Widget build(BuildContext context) {
-    return _AssignmentsView(
-      classId: classId,
-      className: className,
-      teacherName: teacherName,
-    );
-  }
+  State<BbClassAssignment> createState() => _BbClassAssignmentState();
 }
 
-class _AssignmentsView extends StatefulWidget {
-  final String classId;
-  final String className;
-  final String teacherName;
-
-  const _AssignmentsView({
-    required this.classId,
-    required this.className,
-    required this.teacherName,
-  });
-
-  @override
-  State<_AssignmentsView> createState() => _AssignmentsViewState();
-}
-
-class _AssignmentsViewState extends State<_AssignmentsView> {
+class _BbClassAssignmentState extends State<BbClassAssignment> {
   @override
   void initState() {
     super.initState();
-
-    context.read<AssignmentBloc>().add(
-      FetchAssignmentsEvent(classId: widget.classId),
-    );
+    context.read<AssignmentBloc>().add(FetchAssignmentsEvent());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: BBColors.lightGrayBG,
+      backgroundColor: BBColors.background,
       appBar: AppBar(
-        backgroundColor: BBColors.secondaryColor,
+        title: Text('My Assignments'),
+        backgroundColor: BBColors.primary,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Assignments',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              widget.className,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.white70),
-            ),
-          ],
-        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: Icon(Icons.refresh, color: Colors.white),
             onPressed:
                 () => context.read<AssignmentBloc>().add(
-                  RefreshAssignmentsEvent(classId: widget.classId),
+                  RefreshAssignmentsEvent(),
                 ),
           ),
         ],
       ),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<AssignmentBloc, AssignmentState>(
-            listenWhen: (prev, curr) => curr is AssignmentSubmitSuccess,
-            listener: (context, state) {
-              if (state is AssignmentSubmitSuccess) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Assignment submitted successfully!'),
-                    backgroundColor: BBColors.successGreen,
-                    behavior: SnackBarBehavior.floating,
+      body: BlocBuilder<AssignmentBloc, AssignmentState>(
+        builder: (context, state) {
+          if (state is AssignmentLoading) {
+            return Center(
+              child: CircularProgressIndicator(color: BBColors.primary),
+            );
+          }
+
+          if (state is AssignmentError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    state.isNetworkError ? Icons.wifi_off : Icons.error_outline,
+                    size: 64,
+                    color: BBColors.error,
                   ),
-                );
-              }
-            },
-          ),
-          BlocListener<AssignmentBloc, AssignmentState>(
-            listenWhen: (prev, curr) => curr is AssignmentSubmitError,
-            listener: (context, state) {
-              if (state is AssignmentSubmitError) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.message),
-                    backgroundColor: BBColors.alertRed,
-                    behavior: SnackBarBehavior.floating,
+                  SizedBox(height: 16),
+                  Text(
+                    'Failed to load assignments',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                );
-              }
-            },
-          ),
-          BlocListener<AssignmentBloc, AssignmentState>(
-            listenWhen: (prev, curr) => curr is AttachmentDownloadSuccess,
-            listener: (context, state) {
-              if (state is AttachmentDownloadSuccess) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${state.file.name} downloaded'),
-                    backgroundColor: BBColors.successGreen,
-                    behavior: SnackBarBehavior.floating,
+                  SizedBox(height: 8),
+                  Text(
+                    state.message,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
                   ),
+                  SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed:
+                        () => context.read<AssignmentBloc>().add(
+                          FetchAssignmentsEvent(),
+                        ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: BBColors.primary,
+                    ),
+                    child: Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (state is AssignmentEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.assignment_outlined,
+                    size: 64,
+                    color: BBColors.textSecondary,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'No assignments available',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Check back later for new assignments.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (state is AssignmentLoaded) {
+            return RefreshIndicator(
+              onRefresh: () async {
+                context.read<AssignmentBloc>().add(RefreshAssignmentsEvent());
+                await context.read<AssignmentBloc>().stream.firstWhere(
+                  (s) => s is! AssignmentLoading,
                 );
-              }
-            },
-          ),
-        ],
-        child: BlocBuilder<AssignmentBloc, AssignmentState>(
-          buildWhen:
-              (prev, curr) =>
-                  curr is AssignmentLoading ||
-                  curr is AssignmentLoaded ||
-                  curr is AssignmentEmpty ||
-                  curr is AssignmentError,
-          builder: (context, state) {
-            if (state is AssignmentLoading) return _buildLoading();
-            if (state is AssignmentError) return _buildError(context, state);
-            if (state is AssignmentEmpty) return _buildEmpty(context);
-            if (state is AssignmentLoaded) return _buildList(context, state);
-            return const SizedBox.shrink();
-          },
-        ),
-      ),
-    );
-  }
+              },
+              child: ListView.builder(
+                padding: EdgeInsets.all(16),
+                itemCount: state.assignments.length,
+                itemBuilder:
+                    (context, index) =>
+                        _buildAssignmentCard(context, state.assignments[index]),
+              ),
+            );
+          }
 
-  Widget _buildLoading() {
-    return const Center(
-      child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(BBColors.primaryColor),
-      ),
-    );
-  }
-
-  Widget _buildError(BuildContext context, AssignmentError state) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            state.isNetworkError ? Icons.wifi_off : Icons.error_outline,
-            size: 64,
-            color: BBColors.alertRed,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Failed to load assignments',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            state.message,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed:
-                () => context.read<AssignmentBloc>().add(
-                  FetchAssignmentsEvent(classId: widget.classId),
-                ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: BBColors.primaryColor,
-            ),
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmpty(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.assignment_outlined,
-            size: 64,
-            color: BBColors.disabledText,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No assignments available',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Check back later for new assignments.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildList(BuildContext context, AssignmentLoaded state) {
-    return RefreshIndicator(
-      onRefresh: () async {
-        context.read<AssignmentBloc>().add(
-          RefreshAssignmentsEvent(classId: widget.classId),
-        );
-        await context.read<AssignmentBloc>().stream.firstWhere(
-          (s) => s is! AssignmentLoading,
-        );
-      },
-      color: BBColors.primaryColor,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: state.assignments.length,
-        itemBuilder:
-            (context, index) =>
-                _buildAssignmentCard(context, state.assignments[index]),
+          return SizedBox.shrink();
+        },
       ),
     );
   }
 
   Widget _buildAssignmentCard(BuildContext context, Assignment assignment) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side:
             assignment.isOverdue &&
                     assignment.status == AssignmentStatus.pending
-                ? BorderSide(
-                  color: BBColors.alertRed.withOpacity(0.3),
-                  width: 1,
-                )
+                ? BorderSide(color: BBColors.error.withOpacity(0.3), width: 1)
                 : BorderSide.none,
       ),
       child: InkWell(
@@ -275,7 +158,7 @@ class _AssignmentsViewState extends State<_AssignmentsView> {
                         assignment.status == AssignmentStatus.pending
                     ? LinearGradient(
                       colors: [
-                        BBColors.alertRed.withOpacity(0.05),
+                        BBColors.error.withOpacity(0.05),
                         Colors.transparent,
                       ],
                       begin: Alignment.topLeft,
@@ -284,7 +167,7 @@ class _AssignmentsViewState extends State<_AssignmentsView> {
                     : null,
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -296,16 +179,13 @@ class _AssignmentsViewState extends State<_AssignmentsView> {
                         style: Theme.of(
                           context,
                         ).textTheme.titleMedium?.copyWith(
-                          color: BBColors.darkHeading,
+                          color: BBColors.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: assignment.statusColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -320,16 +200,16 @@ class _AssignmentsViewState extends State<_AssignmentsView> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   assignment.description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: BBColors.textSecondary,
+                  ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Row(
                   children: [
                     Icon(
@@ -337,17 +217,17 @@ class _AssignmentsViewState extends State<_AssignmentsView> {
                       size: 16,
                       color:
                           assignment.isOverdue
-                              ? BBColors.alertRed
-                              : BBColors.bodyText,
+                              ? BBColors.error
+                              : BBColors.textSecondary,
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4),
                     Text(
                       'Due: ${_formatDate(assignment.dueDate)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color:
                             assignment.isOverdue
-                                ? BBColors.alertRed
-                                : BBColors.bodyText,
+                                ? BBColors.error
+                                : BBColors.textSecondary,
                         fontWeight:
                             assignment.isOverdue
                                 ? FontWeight.w600
@@ -356,39 +236,52 @@ class _AssignmentsViewState extends State<_AssignmentsView> {
                     ),
                   ],
                 ),
-                if (assignment.attachedFiles.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.class_, size: 16, color: BBColors.textSecondary),
+                    SizedBox(width: 4),
+                    Text(
+                      '${assignment.classInfo.name} (${assignment.classInfo.subject})',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: BBColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                if (assignment.attachedFile != null) ...[
+                  SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.attach_file,
                         size: 16,
-                        color: BBColors.primaryColor,
+                        color: BBColors.primary,
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Text(
-                        '${assignment.attachedFiles.length} file(s) attached',
+                        'Attachment available',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: BBColors.primaryColor,
+                          color: BBColors.primary,
                         ),
                       ),
                     ],
                   ),
                 ],
                 if (assignment.submission != null) ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.check_circle,
                         size: 16,
-                        color: BBColors.successGreen,
+                        color: BBColors.success,
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Text(
-                        'Submitted ${_formatDate(assignment.submission!.submittedDate)}',
+                        'Submitted ${_formatDate(assignment.submission!.submittedAt)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: BBColors.successGreen,
+                          color: BBColors.success,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -408,11 +301,11 @@ class _AssignmentsViewState extends State<_AssignmentsView> {
       context,
       MaterialPageRoute(
         builder:
-            (navContext) => BlocProvider.value(
+            (context) => BlocProvider.value(
               value: context.read<AssignmentBloc>(),
-              child: AssignmentDetailsScreen(
+              child: AssignmentDetailScreen(
                 assignment: assignment,
-                classId: widget.classId,
+                onAssignmentSubmitted: widget.onAssignmentSubmitted,
               ),
             ),
       ),
@@ -420,71 +313,97 @@ class _AssignmentsViewState extends State<_AssignmentsView> {
   }
 
   String _formatDate(DateTime dt) {
-    final diff = dt.difference(DateTime.now());
-    if (diff.inDays > 0) return '${diff.inDays} days';
-    if (diff.inDays == 0) {
+    final now = DateTime.now();
+    final diff = dt.difference(now);
+
+    if (diff.isNegative) {
+      // Date is in the past
+      final pastDiff = now.difference(dt);
+      if (pastDiff.inDays > 0) return '${pastDiff.inDays} days ago';
+      if (pastDiff.inHours > 0) return '${pastDiff.inHours} hours ago';
+      if (pastDiff.inMinutes > 0) return '${pastDiff.inMinutes} minutes ago';
+      return 'Just now';
+    } else {
+      // Date is in the future
+      if (diff.inDays > 0) return '${diff.inDays} days';
       if (diff.inHours > 0) return '${diff.inHours} hours';
       if (diff.inMinutes > 0) return '${diff.inMinutes} minutes';
-      return 'Now';
+      return 'Soon';
     }
-    return '${diff.inDays.abs()} days ago';
   }
 }
 
-// ============================================
-// Assignment Details Screen
-// ============================================
-class AssignmentDetailsScreen extends StatefulWidget {
+class AssignmentDetailScreen extends StatefulWidget {
+  final VoidCallback? onAssignmentSubmitted;
   final Assignment assignment;
-  final String classId;
 
-  const AssignmentDetailsScreen({
+  const AssignmentDetailScreen({
     super.key,
     required this.assignment,
-    required this.classId,
+    this.onAssignmentSubmitted,
   });
 
   @override
-  State<AssignmentDetailsScreen> createState() =>
-      _AssignmentDetailsScreenState();
+  State<AssignmentDetailScreen> createState() => _AssignmentDetailScreenState();
 }
 
-class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
-  List<PlatformFile> _selectedFiles = [];
+class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
+  String? _selectedFilePath;
 
-  Future<void> _pickFiles() async {
+  Future<void> _pickFile() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
-        allowMultiple: true,
+        allowMultiple: false,
         type: FileType.custom,
         allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'png', 'zip'],
       );
-      if (result != null) setState(() => _selectedFiles = result.files);
+
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          _selectedFilePath =
+              result.files.first.path ?? result.files.first.name;
+        });
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to pick files'),
-          backgroundColor: BBColors.alertRed,
+        SnackBar(
+          content: Text('Failed to pick file'),
+          backgroundColor: BBColors.error,
         ),
       );
     }
   }
 
   void _submitAssignment() {
-    if (_selectedFiles.isEmpty) {
+    if (_selectedFilePath == null || _selectedFilePath!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one file'),
-          backgroundColor: BBColors.alertRed,
+        SnackBar(
+          content: Text('Please select a file to submit'),
+          backgroundColor: BBColors.error,
         ),
       );
       return;
     }
-    final filePaths = _selectedFiles.map((f) => f.path ?? f.name).toList();
+
     context.read<AssignmentBloc>().add(
       SubmitAssignmentEvent(
         assignmentId: widget.assignment.id,
-        filePaths: filePaths,
+        filePath: _selectedFilePath!,
+      ),
+    );
+  }
+
+  void _downloadAttachment(String fileUrl) async {
+    // Extract a filename from the URL
+    final uri = Uri.parse(fileUrl);
+    final fileName = uri.pathSegments.last;
+
+    // Call the repository method
+    context.read<AssignmentBloc>().add(
+      DownloadAttachmentEvent(
+        context: context,
+        fileUrl: fileUrl,
+        fileName: fileName,
       ),
     );
   }
@@ -492,48 +411,98 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: BBColors.lightGrayBG,
+      backgroundColor: BBColors.background,
       appBar: AppBar(
-        backgroundColor: BBColors.secondaryColor,
+        backgroundColor: BBColors.primary,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Assignment Details',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: Colors.white),
         ),
       ),
-      body: BlocListener<AssignmentBloc, AssignmentState>(
-        listener: (context, state) {
-          if (state is AssignmentSubmitSuccess &&
-              state.assignmentId == widget.assignment.id) {
-            Navigator.pop(context);
-          }
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<AssignmentBloc, AssignmentState>(
+            listenWhen: (prev, curr) => curr is AssignmentSubmitSuccess,
+            listener: (context, state) {
+              if (state is AssignmentSubmitSuccess) {
+                if (widget.onAssignmentSubmitted != null) {
+                  widget.onAssignmentSubmitted!();
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Assignment submitted successfully!'),
+                    backgroundColor: BBColors.success,
+                  ),
+                );
+                Navigator.pop(context);
+              }
+            },
+          ),
+          BlocListener<AssignmentBloc, AssignmentState>(
+            listenWhen: (prev, curr) => curr is AssignmentSubmitError,
+            listener: (context, state) {
+              if (state is AssignmentSubmitError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: BBColors.error,
+                  ),
+                );
+              }
+            },
+          ),
+          BlocListener<AssignmentBloc, AssignmentState>(
+            listenWhen: (prev, curr) => curr is AttachmentDownloadSuccess,
+            listener: (context, state) {
+              if (state is AttachmentDownloadSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('File downloaded successfully'),
+                    backgroundColor: BBColors.success,
+                  ),
+                );
+              }
+            },
+          ),
+          BlocListener<AssignmentBloc, AssignmentState>(
+            listenWhen: (prev, curr) => curr is AttachmentDownloadError,
+            listener: (context, state) {
+              if (state is AttachmentDownloadError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: BBColors.error,
+                  ),
+                );
+              }
+            },
+          ),
+        ],
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               _buildDetails(),
-              const SizedBox(height: 20),
-              if (widget.assignment.attachedFiles.isNotEmpty) ...[
-                _buildAttachedFiles(),
-                const SizedBox(height: 20),
-              ],
-              if (widget.assignment.submission != null)
-                _buildSubmissionStatus()
-              else if (widget.assignment.canSubmit)
-                _buildSubmissionSection()
-              else
+              SizedBox(height: 20),
+              if (widget.assignment.attachedFile != null) _buildAttachment(),
+              if (widget.assignment.submission != null) ...[
+                SizedBox(height: 20),
+                _buildSubmissionStatus(),
+              ] else if (widget.assignment.canSubmit) ...[
+                SizedBox(height: 20),
+                _buildSubmissionSection(),
+              ] else ...[
+                SizedBox(height: 20),
                 _buildCannotSubmit(),
+              ],
             ],
           ),
         ),
@@ -546,7 +515,7 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
@@ -567,16 +536,13 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
                   child: Text(
                     widget.assignment.title,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: BBColors.darkHeading,
+                      color: BBColors.textPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: widget.assignment.statusColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(16),
@@ -591,7 +557,7 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Row(
               children: [
                 Icon(
@@ -599,31 +565,57 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
                   size: 18,
                   color:
                       widget.assignment.isOverdue
-                          ? BBColors.alertRed
-                          : BBColors.bodyText,
+                          ? BBColors.error
+                          : BBColors.textSecondary,
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Text(
-                  'Due: ${widget.assignment.dueDate.toString().substring(0, 16)}',
+                  'Due: ${_formatDate(widget.assignment.dueDate)}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color:
                         widget.assignment.isOverdue
-                            ? BBColors.alertRed
-                            : BBColors.bodyText,
+                            ? BBColors.error
+                            : BBColors.textSecondary,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.person, size: 18, color: BBColors.bodyText),
-                const SizedBox(width: 6),
+                Icon(Icons.person, size: 18, color: BBColors.textSecondary),
+                SizedBox(width: 6),
                 Text(
-                  'Assigned by: ${widget.assignment.teacherName}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
+                  'Assigned by: ${widget.assignment.teacherInfo.email}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: BBColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.class_, size: 18, color: BBColors.textSecondary),
+                SizedBox(width: 6),
+                Text(
+                  '${widget.assignment.classInfo.name} (${widget.assignment.classInfo.subject})',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: BBColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.grade, size: 18, color: BBColors.textSecondary),
+                SizedBox(width: 6),
+                Text(
+                  'Total Points: ${widget.assignment.totalPoints}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: BBColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -638,118 +630,95 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Instructions',
+              'Description',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: BBColors.darkHeading,
+                color: BBColors.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               widget.assignment.description,
               style: Theme.of(
                 context,
-              ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
+              ).textTheme.bodyMedium?.copyWith(color: BBColors.textSecondary),
             ),
-            if (widget.assignment.submissionType != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Submission Type',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: BBColors.darkHeading,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(widget.assignment.submissionType!),
-            ],
-            if (widget.assignment.evaluationCriteria != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Evaluation Criteria',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: BBColors.darkHeading,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(widget.assignment.evaluationCriteria!),
-            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAttachedFiles() {
+  Widget _buildAttachment() {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Attached Files',
+              'Attachment',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: BBColors.darkHeading,
+                color: BBColors.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 12),
-            ...widget.assignment.attachedFiles.map(
-              (file) => Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: BBColors.lightGrayBG,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: BBColors.borderGray),
-                ),
-                child: Row(
-                  children: [
-                    Icon(file.typeIcon, color: BBColors.primaryColor, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            file.name,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyMedium?.copyWith(
-                              color: BBColors.darkHeading,
-                              fontWeight: FontWeight.w500,
-                            ),
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: BBColors.background,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: BBColors.border),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    widget.assignment.attachedFile!.typeIcon,
+                    color: BBColors.primary,
+                    size: 20,
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Attachment file',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
+                            color: BBColors.textPrimary,
+                            fontWeight: FontWeight.w500,
                           ),
-                          Text(
-                            file.formattedSize,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: BBColors.bodyText),
-                          ),
-                        ],
-                      ),
+                        ),
+                        Text(
+                          widget.assignment.attachedFile!.type,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: BBColors.textSecondary),
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      onPressed:
-                          () => context.read<AssignmentBloc>().add(
-                            DownloadAttachmentEvent(file: file),
-                          ),
-                      icon: const Icon(
-                        Icons.download,
-                        color: BBColors.primaryColor,
-                        size: 20,
-                      ),
+                  ),
+                  IconButton(
+                    onPressed:
+                        () => _downloadAttachment(
+                          widget.assignment.attachedFile!.url,
+                        ),
+                    icon: Icon(
+                      Icons.download,
+                      color: BBColors.primary,
+                      size: 20,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -764,14 +733,11 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
-            colors: [
-              BBColors.successGreen.withOpacity(0.1),
-              Colors.transparent,
-            ],
+            colors: [BBColors.success.withOpacity(0.1), Colors.transparent],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -779,13 +745,9 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(
-                  Icons.check_circle,
-                  color: BBColors.successGreen,
-                  size: 24,
-                ),
+                Icon(Icons.check_circle, color: BBColors.success, size: 24),
                 SizedBox(width: 8),
                 Text(
                   'Assignment Submitted',
@@ -793,23 +755,27 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
-              'Submitted: ${submission.submittedDate.toString().substring(0, 16)}',
+              'Submitted: ${_formatDate(submission.submittedAt)}',
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             if (submission.grade != null) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 'Grade: ${submission.grade}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: BBColors.primaryBlue,
+                  color: BBColors.primary,
                 ),
               ),
             ],
             if (submission.feedback != null) ...[
-              const SizedBox(height: 8),
-              Text('Feedback: ${submission.feedback}'),
+              SizedBox(height: 8),
+              Text(
+                'Feedback: ${submission.feedback}',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
             ],
           ],
         ),
@@ -824,104 +790,108 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
             state is AssignmentLoaded &&
             state.isSubmitting &&
             state.submittingId == widget.assignment.id;
+
         return Card(
           elevation: 2,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Submit Assignment',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: BBColors.darkHeading,
+                    color: BBColors.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 12),
-                if (_selectedFiles.isEmpty)
+                SizedBox(height: 12),
+                if (_selectedFilePath == null || _selectedFilePath!.isEmpty)
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(24),
+                    padding: EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: BBColors.lightGrayBG,
+                      color: BBColors.background,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: BBColors.borderGray),
+                      border: Border.all(color: BBColors.border),
                     ),
-                    child: const Column(
+                    child: Column(
                       children: [
                         Icon(
                           Icons.cloud_upload_outlined,
                           size: 48,
-                          color: BBColors.disabledText,
+                          color: BBColors.textSecondary,
                         ),
                         SizedBox(height: 12),
-                        Text('No files selected'),
+                        Text('No file selected'),
                       ],
                     ),
                   )
                 else
-                  ..._selectedFiles.map(
-                    (file) => Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: BBColors.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.insert_drive_file,
-                            color: BBColors.primaryColor,
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: BBColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.insert_drive_file,
+                          color: BBColors.primary,
+                          size: 20,
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _selectedFilePath!.split('/').last,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed:
+                              () => setState(() => _selectedFilePath = null),
+                          icon: Icon(
+                            Icons.close,
+                            color: BBColors.error,
                             size: 20,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(child: Text(file.name)),
-                          IconButton(
-                            onPressed:
-                                () =>
-                                    setState(() => _selectedFiles.remove(file)),
-                            icon: const Icon(
-                              Icons.close,
-                              color: BBColors.alertRed,
-                              size: 20,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: isSubmitting ? null : _pickFiles,
-                        icon: const Icon(Icons.attach_file),
+                        onPressed: isSubmitting ? null : _pickFile,
+                        icon: Icon(Icons.attach_file),
                         label: Text(
-                          _selectedFiles.isEmpty ? 'Select Files' : 'Add More',
+                          _selectedFilePath == null
+                              ? 'Select File'
+                              : 'Change File',
                         ),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: BBColors.primaryColor,
-                          side: const BorderSide(color: BBColors.primaryColor),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          foregroundColor: BBColors.primary,
+                          side: BorderSide(color: BBColors.primary),
+                          padding: EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed:
-                            (_selectedFiles.isNotEmpty && !isSubmitting)
+                            (_selectedFilePath != null && !isSubmitting)
                                 ? _submitAssignment
                                 : null,
                         icon:
                             isSubmitting
-                                ? const SizedBox(
+                                ? SizedBox(
                                   width: 16,
                                   height: 16,
                                   child: CircularProgressIndicator(
@@ -931,11 +901,11 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
                                     ),
                                   ),
                                 )
-                                : const Icon(Icons.send),
+                                : Icon(Icons.send),
                         label: Text(isSubmitting ? 'Submitting...' : 'Submit'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: BBColors.primaryColor,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: BBColors.primary,
+                          padding: EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
@@ -954,35 +924,40 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
-            colors: [BBColors.alertRed.withOpacity(0.1), Colors.transparent],
+            colors: [BBColors.error.withOpacity(0.1), Colors.transparent],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
         child: Column(
           children: [
-            const Icon(Icons.block, size: 48, color: BBColors.alertRed),
-            const SizedBox(height: 12),
+            Icon(Icons.block, size: 48, color: BBColors.error),
+            SizedBox(height: 12),
             Text(
               'Submission Not Available',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               widget.assignment.isOverdue
                   ? 'This assignment is overdue. Submission is no longer allowed.'
                   : 'Submission is not available for this assignment.',
               textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime dt) {
+    return '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }

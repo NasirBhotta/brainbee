@@ -24,7 +24,6 @@ class _ClassMaterialsScreenState extends State<ClassMaterialsScreen> {
   @override
   void initState() {
     super.initState();
-
     context.read<ClassMaterialBloc>().add(
       FetchMaterialsEvent(classId: widget.classId),
     );
@@ -98,9 +97,18 @@ class _MaterialsView extends StatelessWidget {
               if (state is MaterialDownloadSuccess) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('${state.material.name} downloaded'),
+                    content: Text(
+                      '${state.material.title} downloaded successfully',
+                    ),
                     backgroundColor: BBColors.successGreen,
                     behavior: SnackBarBehavior.floating,
+                    action: SnackBarAction(
+                      label: 'VIEW',
+                      textColor: Colors.white,
+                      onPressed: () {
+                        // File is automatically opened by FileDownloader
+                      },
+                    ),
                   ),
                 );
               }
@@ -146,79 +154,100 @@ class _MaterialsView extends StatelessWidget {
 
   Widget _buildError(BuildContext context, MaterialError state) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            state.isNetworkError ? Icons.wifi_off : Icons.error_outline,
-            size: 64,
-            color: BBColors.alertRed,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            state.isNetworkError
-                ? 'No Internet Connection'
-                : 'Failed to load materials',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: BBColors.darkHeading),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            state.message,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed:
-                () => context.read<ClassMaterialBloc>().add(
-                  FetchMaterialsEvent(classId: classId),
-                ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: BBColors.primaryColor,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              state.isNetworkError ? Icons.wifi_off : Icons.error_outline,
+              size: 64,
+              color: BBColors.alertRed,
             ),
-            child: const Text('Retry'),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              state.isNetworkError
+                  ? 'No Internet Connection'
+                  : 'Failed to Load Materials',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: BBColors.darkHeading),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              state.message,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed:
+                  () => context.read<ClassMaterialBloc>().add(
+                    FetchMaterialsEvent(classId: classId),
+                  ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: BBColors.primaryColor,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmpty(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.folder_open, size: 64, color: BBColors.disabledText),
-          const SizedBox(height: 16),
-          Text(
-            'No materials available',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: BBColors.darkHeading),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Your teacher will upload resources here.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed:
-                () => context.read<ClassMaterialBloc>().add(
-                  RefreshMaterialsEvent(classId: classId),
-                ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: BBColors.primaryColor,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.folder_open,
+              size: 64,
+              color: BBColors.disabledText,
             ),
-            child: const Text('Refresh'),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              'No Materials Available',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: BBColors.darkHeading),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your teacher hasn\'t uploaded any resources yet.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: BBColors.bodyText),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed:
+                  () => context.read<ClassMaterialBloc>().add(
+                    RefreshMaterialsEvent(classId: classId),
+                  ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: BBColors.primaryColor,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -285,23 +314,19 @@ class _MaterialsView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          material.name,
+                          material.title,
                           style: Theme.of(
                             context,
                           ).textTheme.titleSmall?.copyWith(
                             color: BBColors.darkHeading,
                             fontWeight: FontWeight.w600,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Text(
-                              material.formattedSize,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: BBColors.bodyText),
-                            ),
-                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 6,
@@ -312,7 +337,7 @@ class _MaterialsView extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                material.type.toUpperCase(),
+                                material.type,
                                 style: Theme.of(
                                   context,
                                 ).textTheme.bodySmall?.copyWith(
@@ -347,7 +372,8 @@ class _MaterialsView extends StatelessWidget {
                     ),
                 ],
               ),
-              if (material.description != null) ...[
+              if (material.description != null &&
+                  material.description!.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
                   material.description!,
@@ -355,6 +381,8 @@ class _MaterialsView extends StatelessWidget {
                     color: BBColors.bodyText,
                     fontStyle: FontStyle.italic,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
               const SizedBox(height: 12),
@@ -362,13 +390,16 @@ class _MaterialsView extends StatelessWidget {
                 children: [
                   const Icon(Icons.person, size: 14, color: BBColors.bodyText),
                   const SizedBox(width: 4),
-                  Text(
-                    'Uploaded by ${material.uploadedBy}',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: BBColors.bodyText),
+                  Expanded(
+                    child: Text(
+                      'Uploaded by ${material.uploadedBy}',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: BBColors.bodyText),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   const Icon(
                     Icons.access_time,
                     size: 14,
@@ -376,7 +407,7 @@ class _MaterialsView extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    _formatTime(material.uploadedDate),
+                    _formatTime(material.uploadedAt),
                     style: Theme.of(
                       context,
                     ).textTheme.bodySmall?.copyWith(color: BBColors.bodyText),
@@ -385,11 +416,15 @@ class _MaterialsView extends StatelessWidget {
               ),
               if (isDownloading) ...[
                 const SizedBox(height: 12),
-                LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: BBColors.borderGray,
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    BBColors.primaryColor,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: BBColors.borderGray,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      BBColors.primaryColor,
+                    ),
+                    minHeight: 6,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -415,16 +450,47 @@ class _MaterialsView extends StatelessWidget {
           (dialogContext) => AlertDialog(
             title: Row(
               children: [
-                const Icon(
-                  Icons.download,
-                  color: BBColors.primaryColor,
-                  size: 24,
-                ),
+                Icon(material.typeIcon, color: material.typeColor, size: 24),
                 const SizedBox(width: 8),
                 const Expanded(child: Text('Download Material')),
               ],
             ),
-            content: Text('Download ${material.name}?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Do you want to download this file?',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: BBColors.lightGrayBG,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        material.typeIcon,
+                        color: material.typeColor,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          material.fileName,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
@@ -433,17 +499,18 @@ class _MaterialsView extends StatelessWidget {
                   style: TextStyle(color: BBColors.disabledText),
                 ),
               ),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: () {
                   Navigator.pop(dialogContext);
                   context.read<ClassMaterialBloc>().add(
-                    DownloadMaterialEvent(material: material),
+                    DownloadMaterialEvent(material: material, context: context),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: BBColors.primaryColor,
                 ),
-                child: const Text('Download'),
+                icon: const Icon(Icons.download, size: 18),
+                label: const Text('Download'),
               ),
             ],
           ),
@@ -475,17 +542,18 @@ class _MaterialsView extends StatelessWidget {
                   style: TextStyle(color: BBColors.disabledText),
                 ),
               ),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: () {
                   Navigator.pop(dialogContext);
                   context.read<ClassMaterialBloc>().add(
-                    DownloadMaterialEvent(material: material),
+                    DownloadMaterialEvent(material: material, context: context),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: BBColors.alertRed,
                 ),
-                child: const Text('Retry'),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Retry'),
               ),
             ],
           ),
@@ -494,6 +562,8 @@ class _MaterialsView extends StatelessWidget {
 
   String _formatTime(DateTime dt) {
     final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 365) return '${(diff.inDays / 365).floor()} years ago';
+    if (diff.inDays > 30) return '${(diff.inDays / 30).floor()} months ago';
     if (diff.inDays > 0) return '${diff.inDays} days ago';
     if (diff.inHours > 0) return '${diff.inHours} hours ago';
     if (diff.inMinutes > 0) return '${diff.inMinutes} minutes ago';

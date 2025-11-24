@@ -39,7 +39,7 @@ void showLivesPopup(BuildContext context, String lives) {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     BBText(
-                      data: '$lives Lives',
+                      data: '∞ Lives',
                       style: context.textStyle.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 22,

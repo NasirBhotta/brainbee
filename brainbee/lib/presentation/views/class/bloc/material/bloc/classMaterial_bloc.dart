@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:brainbee/presentation/views/class/models/material.dart';
 import 'package:brainbee/presentation/views/class/repo/material_repo.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
 part 'classMaterial_event.dart';
 part 'classMaterial_state.dart';
@@ -70,6 +71,7 @@ class ClassMaterialBloc extends Bloc<ClassMaterialEvent, ClassMaterialState> {
     final currentState = state;
     if (currentState is! MaterialLoaded) return;
 
+    // Add material to downloading list
     final newDownloading = Set<String>.from(currentState.downloadingIds)
       ..add(event.material.id);
     final newProgress = Map<String, double>.from(currentState.downloadProgress);
@@ -83,37 +85,43 @@ class ClassMaterialBloc extends Bloc<ClassMaterialEvent, ClassMaterialState> {
     );
 
     try {
-      // Simulate download progress
-      for (int i = 0; i <= 100; i += 10) {
-        await Future.delayed(const Duration(milliseconds: 150));
-        newProgress[event.material.id] = i / 100.0;
-        emit(
-          currentState.copyWith(
-            downloadProgress: Map.from(newProgress),
-            downloadingIds: newDownloading,
-          ),
-        );
-      }
+      // Perform actual download with progress tracking
+      final downloadPath = await repository.downloadMaterial(
+        event.material,
+        context: event.context,
+        onProgress: (progress) {
+          newProgress[event.material.id] = progress;
+          emit(
+            currentState.copyWith(
+              downloadProgress: Map.from(newProgress),
+              downloadingIds: newDownloading,
+            ),
+          );
+        },
+      );
 
-      final downloadPath = await repository.downloadMaterial(event.material);
-
+      // Remove from downloading list
       final finalDownloading = Set<String>.from(newDownloading)
         ..remove(event.material.id);
       final finalProgress = Map<String, double>.from(newProgress)
         ..remove(event.material.id);
 
+      // Emit success state
       emit(
         currentState.copyWith(
           downloadingIds: finalDownloading,
           downloadProgress: finalProgress,
         ),
       );
+
       emit(
         MaterialDownloadSuccess(
           material: event.material,
           downloadPath: downloadPath,
         ),
       );
+
+      // Return to loaded state
       emit(
         currentState.copyWith(
           downloadingIds: finalDownloading,
@@ -121,6 +129,7 @@ class ClassMaterialBloc extends Bloc<ClassMaterialEvent, ClassMaterialState> {
         ),
       );
     } catch (e) {
+      // Remove from downloading list on error
       final finalDownloading = Set<String>.from(newDownloading)
         ..remove(event.material.id);
       final finalProgress = Map<String, double>.from(newProgress)
@@ -132,12 +141,15 @@ class ClassMaterialBloc extends Bloc<ClassMaterialEvent, ClassMaterialState> {
           downloadProgress: finalProgress,
         ),
       );
+
       emit(
         MaterialDownloadError(
           material: event.material,
           message: _getErrorMessage(e),
         ),
       );
+
+      // Return to loaded state
       emit(
         currentState.copyWith(
           downloadingIds: finalDownloading,
@@ -149,10 +161,18 @@ class ClassMaterialBloc extends Bloc<ClassMaterialEvent, ClassMaterialState> {
 
   String _getErrorMessage(dynamic e) {
     final str = e.toString().toLowerCase();
-    if (str.contains('no internet') || str.contains('network'))
+    if (str.contains('no internet') || str.contains('network')) {
       return 'No internet connection';
-    if (str.contains('unauthorized') || str.contains('401'))
+    }
+    if (str.contains('unauthorized') || str.contains('401')) {
       return 'Please login again';
+    }
+    if (str.contains('permission')) {
+      return 'Storage permission required';
+    }
+    if (str.contains('cancelled')) {
+      return 'Download cancelled';
+    }
     return 'An error occurred. Please try again.';
   }
 

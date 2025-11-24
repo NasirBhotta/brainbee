@@ -104,6 +104,37 @@ class ClassApiService {
     }
   }
 
+  Future<http.Response> uploadFile(
+    String endpoint,
+    String filePath, {
+    Map<String, String>? fields,
+  }) async {
+    try {
+      final uri = Uri.parse('$_baseUrl$endpoint');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add headers
+      request.headers.addAll(await _headers);
+
+      // IMPORTANT: This field name MUST match what your backend expects.
+      // We are changing it from 'file' to 'solution'.
+      final file = await http.MultipartFile.fromPath('solution', filePath);
+      request.files.add(file);
+
+      // Add any additional fields if your backend needs them
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+
+      final streamedResponse = await request.send().timeout(timeout);
+      final response = await http.Response.fromStream(streamedResponse);
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   // Handle response and check for errors
   http.Response _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {

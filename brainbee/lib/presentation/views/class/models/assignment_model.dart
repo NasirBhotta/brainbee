@@ -1,48 +1,34 @@
+// models/assignment_model.dart
+
 import 'package:flutter/material.dart';
 
 enum AssignmentStatus { pending, submitted, graded }
 
 class AssignmentFile {
   final String id;
-  final String name;
-  final String type;
   final String url;
-  final int size;
+  final String name = 'attachment';
+  final String type;
 
-  AssignmentFile({
-    required this.id,
-    required this.name,
-    required this.type,
-    required this.url,
-    required this.size,
-  });
+  AssignmentFile({required this.id, required this.url, required this.type});
 
   factory AssignmentFile.fromJson(Map<String, dynamic> json) {
     return AssignmentFile(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      type: json['type'] as String,
-      url: json['url'] as String,
-      size: json['size'] as int,
+      id: json['_id'] as String? ?? '',
+      url: json['fileUrl'] as String? ?? '',
+      type: json['fileType'] as String? ?? '',
     );
-  }
-
-  String get formattedSize {
-    if (size < 1024) return '${size}B';
-    if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)}KB';
-    return '${(size / (1024 * 1024)).toStringAsFixed(1)}MB';
   }
 
   IconData get typeIcon {
     switch (type.toLowerCase()) {
-      case 'pdf':
+      case 'application/pdf':
         return Icons.picture_as_pdf;
-      case 'doc':
-      case 'docx':
+      case 'application/msword':
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
         return Icons.description;
-      case 'image':
-      case 'jpg':
-      case 'png':
+      case 'image/jpeg':
+      case 'image/png':
         return Icons.image;
       default:
         return Icons.insert_drive_file;
@@ -52,30 +38,68 @@ class AssignmentFile {
 
 class AssignmentSubmission {
   final String id;
-  final DateTime submittedDate;
-  final List<AssignmentFile> submittedFiles;
+  final DateTime submittedAt;
+  final String fileUrl;
+  final String fileType;
   final String? grade;
   final String? feedback;
 
   AssignmentSubmission({
     required this.id,
-    required this.submittedDate,
-    required this.submittedFiles,
+    required this.submittedAt,
+    required this.fileUrl,
+    required this.fileType,
     this.grade,
     this.feedback,
   });
 
   factory AssignmentSubmission.fromJson(Map<String, dynamic> json) {
     return AssignmentSubmission(
-      id: json['id'] as String,
-      submittedDate: DateTime.parse(json['submittedDate'] as String),
-      submittedFiles:
-          (json['submittedFiles'] as List?)
-              ?.map((f) => AssignmentFile.fromJson(f))
-              .toList() ??
-          [],
+      id: json['_id'] as String? ?? '',
+      submittedAt: DateTime.parse(json['submittedAt'] as String),
+      fileUrl: json['fileUrl'] as String? ?? '',
+      fileType: json['fileType'] as String? ?? '',
       grade: json['grade'] as String?,
       feedback: json['feedback'] as String?,
+    );
+  }
+}
+
+class ClassInfo {
+  final String id;
+  final String name;
+  final int grade;
+  final String subject;
+
+  ClassInfo({
+    required this.id,
+    required this.name,
+    required this.grade,
+    required this.subject,
+  });
+
+  factory ClassInfo.fromJson(Map<String, dynamic> json) {
+    return ClassInfo(
+      id: json['_id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      grade: json['grade'] as int? ?? 0,
+      subject: json['subject'] as String? ?? '',
+    );
+  }
+}
+
+class TeacherInfo {
+  final String id;
+  final String email;
+  final String role;
+
+  TeacherInfo({required this.id, required this.email, required this.role});
+
+  factory TeacherInfo.fromJson(Map<String, dynamic> json) {
+    return TeacherInfo(
+      id: json['_id'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      role: json['role'] as String? ?? '',
     );
   }
 }
@@ -85,12 +109,13 @@ class Assignment {
   final String title;
   final String description;
   final DateTime dueDate;
+  final int totalPoints;
   final AssignmentStatus status;
-  final String teacherName;
-  final List<AssignmentFile> attachedFiles;
-  final String? submissionType;
-  final String? evaluationCriteria;
-  final DateTime createdDate;
+  final ClassInfo classInfo;
+  final TeacherInfo teacherInfo;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final AssignmentFile? attachedFile;
   final AssignmentSubmission? submission;
 
   Assignment({
@@ -98,43 +123,65 @@ class Assignment {
     required this.title,
     required this.description,
     required this.dueDate,
+    required this.totalPoints,
     required this.status,
-    required this.teacherName,
-    required this.attachedFiles,
-    this.submissionType,
-    this.evaluationCriteria,
-    required this.createdDate,
+    required this.classInfo,
+    required this.teacherInfo,
+    required this.createdAt,
+    required this.updatedAt,
+    this.attachedFile,
     this.submission,
   });
 
   factory Assignment.fromJson(Map<String, dynamic> json) {
+    // Determine status from submissionStatus field
+    AssignmentStatus status;
+    final submissionStatus = json['submissionStatus'] as String?;
+    if (submissionStatus == 'submitted') {
+      status = AssignmentStatus.submitted;
+    } else if (submissionStatus == 'graded') {
+      status = AssignmentStatus.graded;
+    } else {
+      status = AssignmentStatus.pending;
+    }
+
+    // Parse submission if exists
+    AssignmentSubmission? submission;
+    if (json['submission'] != null) {
+      submission = AssignmentSubmission.fromJson(json['submission']);
+    }
+
+    // Parse attached file if exists
+    AssignmentFile? attachedFile;
+    if (json['fileUrl'] != null) {
+      attachedFile = AssignmentFile(
+        id: json['_id'] as String,
+        url: json['fileUrl'] as String,
+        type: json['fileType'] as String,
+      );
+    }
+
     return Assignment(
-      id: json['id'] as String,
+      id: json['_id'] as String,
       title: json['title'] as String,
-      description: json['description'] as String,
+      description: json['description'] as String? ?? '',
       dueDate: DateTime.parse(json['dueDate'] as String),
-      status: AssignmentStatus.values.firstWhere(
-        (e) => e.name == json['status'],
-        orElse: () => AssignmentStatus.pending,
+      totalPoints: json['totalPoints'] as int? ?? 0,
+      status: status,
+      classInfo: ClassInfo.fromJson(json['classId'] as Map<String, dynamic>),
+      teacherInfo: TeacherInfo.fromJson(
+        json['createdBy'] as Map<String, dynamic>,
       ),
-      teacherName: json['teacherName'] as String,
-      attachedFiles:
-          (json['attachedFiles'] as List?)
-              ?.map((f) => AssignmentFile.fromJson(f))
-              .toList() ??
-          [],
-      submissionType: json['submissionType'] as String?,
-      evaluationCriteria: json['evaluationCriteria'] as String?,
-      createdDate: DateTime.parse(json['createdDate'] as String),
-      submission:
-          json['submission'] != null
-              ? AssignmentSubmission.fromJson(json['submission'])
-              : null,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      attachedFile: attachedFile,
+      submission: submission,
     );
   }
 
   bool get isOverdue =>
       DateTime.now().isAfter(dueDate) && status != AssignmentStatus.submitted;
+
   bool get canSubmit => !isOverdue && status != AssignmentStatus.submitted;
 
   String get statusText {

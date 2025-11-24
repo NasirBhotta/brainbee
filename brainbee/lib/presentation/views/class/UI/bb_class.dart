@@ -8,9 +8,14 @@ import 'package:brainbee/presentation/views/class/bloc/class_bloc.dart';
 import 'package:brainbee/presentation/views/class/models/class_models.dart';
 
 /// Entry point widget - wraps with dependency provider
-class BBClassPage extends StatelessWidget {
+class BBClassPage extends StatefulWidget {
   const BBClassPage({super.key});
 
+  @override
+  State<BBClassPage> createState() => _BBClassPageState();
+}
+
+class _BBClassPageState extends State<BBClassPage> {
   @override
   Widget build(BuildContext context) {
     return const BBClass();
@@ -26,6 +31,7 @@ class BBClass extends StatefulWidget {
 }
 
 class _BBClassState extends State<BBClass> {
+  int noOfSubmittedAssignments = 0;
   @override
   void initState() {
     super.initState();
@@ -142,6 +148,10 @@ class _BBClassState extends State<BBClass> {
                 (context) => ClassDetailScreen(
                   classItem: classItem.toEnrolledClass(),
                   classId: classItem.id,
+                  onAssignmentSubmitted:
+                      () => setState(() {
+                        noOfSubmittedAssignments += 1;
+                      }),
                 ),
           ),
         );
@@ -222,13 +232,13 @@ class _BBClassState extends State<BBClass> {
                       Row(
                         children: [
                           _buildProgressIndicator(
-                            classItem.completedAssignments,
+                            noOfSubmittedAssignments,
                             classItem.totalAssignments,
                           ),
                           const SizedBox(width: 10),
                           BBText(
                             data:
-                                '${classItem.completedAssignments}/${classItem.totalAssignments}',
+                                '$noOfSubmittedAssignments/${classItem.totalAssignments}',
                             style: context.textStyle.bodySmall?.copyWith(
                               color: BBColors.white,
                               fontWeight: FontWeight.w500,

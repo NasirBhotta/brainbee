@@ -32,28 +32,38 @@ class QuizInProgress extends ClassQuizState {
   final Map<String, dynamic> answers;
   final Duration remainingTime;
   final bool isSubmitting;
+  final DateTime startTime;
 
   const QuizInProgress({
     required this.quiz,
     required this.answers,
     required this.remainingTime,
     this.isSubmitting = false,
+    required this.startTime,
   });
 
   @override
-  List<Object?> get props => [quiz, answers, remainingTime, isSubmitting];
+  List<Object?> get props => [
+    quiz,
+    answers,
+    remainingTime,
+    isSubmitting,
+    startTime,
+  ];
 
   QuizInProgress copyWith({
     ClassQuiz? quiz,
     Map<String, dynamic>? answers,
     Duration? remainingTime,
     bool? isSubmitting,
+    DateTime? startTime,
   }) {
     return QuizInProgress(
       quiz: quiz ?? this.quiz,
       answers: answers ?? this.answers,
       remainingTime: remainingTime ?? this.remainingTime,
       isSubmitting: isSubmitting ?? this.isSubmitting,
+      startTime: startTime ?? this.startTime,
     );
   }
 }

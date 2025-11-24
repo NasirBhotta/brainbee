@@ -1,17 +1,20 @@
+// bloc/assignment_bloc.dart
+
 import 'package:bloc/bloc.dart';
-import 'package:brainbee/presentation/views/class/UI/assignment/bb_class_assignment.dart';
-import 'package:brainbee/presentation/views/class/models/assignment_model.dart';
-import 'package:brainbee/presentation/views/class/repo/assign_repo.dart';
+import 'package:brainbee/presentation/views/class/bloc/assignment/bloc/assignment_state.dart';
+import 'package:brainbee/presentation/views/class/repo/asign_repo_impl.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
 part 'assignment_event.dart';
-part 'assignment_state.dart';
 
 class AssignmentBloc extends Bloc<AssignmentEvent, AssignmentState> {
   final AssignmentRepository repository;
-  String? _currentClassId;
+  // Callback to notify parent when assignment is submitted
+  final Function()? onAssignmentSubmitted;
 
-  AssignmentBloc({required this.repository}) : super(AssignmentInitial()) {
+  AssignmentBloc({required this.repository, this.onAssignmentSubmitted})
+    : super(AssignmentInitial()) {
     on<FetchAssignmentsEvent>(_onFetchAssignments);
     on<RefreshAssignmentsEvent>(_onRefreshAssignments);
     on<SubmitAssignmentEvent>(_onSubmitAssignment);
@@ -23,10 +26,9 @@ class AssignmentBloc extends Bloc<AssignmentEvent, AssignmentState> {
     Emitter<AssignmentState> emit,
   ) async {
     emit(AssignmentLoading());
-    _currentClassId = event.classId;
 
     try {
-      final assignments = await repository.getAssignments(event.classId);
+      final assignments = await repository.getStudentAssignments();
       if (assignments.isEmpty) {
         emit(AssignmentEmpty());
       } else {
@@ -48,7 +50,7 @@ class AssignmentBloc extends Bloc<AssignmentEvent, AssignmentState> {
   ) async {
     final currentState = state;
     try {
-      final assignments = await repository.getAssignments(event.classId);
+      final assignments = await repository.getStudentAssignments();
       if (assignments.isEmpty) {
         emit(AssignmentEmpty());
       } else {
@@ -83,7 +85,9 @@ class AssignmentBloc extends Bloc<AssignmentEvent, AssignmentState> {
     );
 
     try {
-      await repository.submitAssignment(event.assignmentId, event.filePaths);
+      await repository.submitAssignment(event.assignmentId, event.filePath);
+
+      // Emit success state
       emit(
         AssignmentSubmitSuccess(
           assignmentId: event.assignmentId,
@@ -92,10 +96,11 @@ class AssignmentBloc extends Bloc<AssignmentEvent, AssignmentState> {
       );
 
       // Refresh assignments to get updated status
-      if (_currentClassId != null) {
-        final assignments = await repository.getAssignments(_currentClassId!);
-        emit(AssignmentLoaded(assignments: assignments));
-      }
+      final assignments = await repository.getStudentAssignments();
+      emit(AssignmentLoaded(assignments: assignments));
+
+      // Notify parent (ClassBloc) to refresh class data
+      onAssignmentSubmitted?.call();
     } catch (e) {
       emit(currentState.copyWith(isSubmitting: false));
       emit(
@@ -113,15 +118,66 @@ class AssignmentBloc extends Bloc<AssignmentEvent, AssignmentState> {
     Emitter<AssignmentState> emit,
   ) async {
     final currentState = state;
+    if (currentState is! AssignmentLoaded) return;
+
+    emit(
+      currentState.copyWith(
+        isDownloading: true,
+        downloadingFileName: event.fileName,
+        downloadProgress: 0.0,
+      ),
+    );
+
     try {
-      final path = await repository.downloadAttachment(event.file);
-      emit(AttachmentDownloadSuccess(file: event.file, path: path));
-      if (currentState is AssignmentLoaded) emit(currentState);
+      final filePath = await repository.downloadAttachment(
+        fileUrl: event.fileUrl,
+        context: event.context,
+        fileName: event.fileName,
+        onProgress: (progress) {
+          emit(
+            currentState.copyWith(
+              isDownloading: true,
+              downloadingFileName: event.fileName,
+              downloadProgress: progress,
+            ),
+          );
+        },
+      );
+
+      if (filePath != null) {
+        emit(
+          AttachmentDownloadSuccess(fileUrl: event.fileUrl, filePath: filePath),
+        );
+      } else {
+        emit(
+          AttachmentDownloadError(
+            fileUrl: event.fileUrl,
+            message: 'Failed to download file',
+          ),
+        );
+      }
+
+      emit(
+        currentState.copyWith(
+          isDownloading: false,
+          downloadingFileName: null,
+          downloadProgress: 0.0,
+        ),
+      );
     } catch (e) {
       emit(
-        AttachmentDownloadError(file: event.file, message: _getErrorMessage(e)),
+        currentState.copyWith(
+          isDownloading: false,
+          downloadingFileName: null,
+          downloadProgress: 0.0,
+        ),
       );
-      if (currentState is AssignmentLoaded) emit(currentState);
+
+      emit(
+        AttachmentDownloadError(fileUrl: event.fileUrl, message: e.toString()),
+      );
+
+      emit(currentState);
     }
   }
 

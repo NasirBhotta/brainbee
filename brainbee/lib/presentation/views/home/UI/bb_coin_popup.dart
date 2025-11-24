@@ -1,6 +1,7 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
+import 'package:brainbee/presentation/views/extras/coinquests/UI/bb_coin_quests.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 import 'package:flutter/material.dart';
 
@@ -65,7 +66,14 @@ void showCoinsPopup(BuildContext context, StudentModel student) {
 
             // Claim More Coins Button
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BBCoinQuestScreen(userId: student.id),
+                  ),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 side: const BorderSide(color: Colors.green),

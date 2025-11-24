@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class BBColors {
+  // Original colors
   static const primaryColor = Color.fromRGBO(135, 219, 139, 1);
   static const secondaryColor = Color.fromRGBO(75, 182, 154, 1);
 
@@ -24,4 +25,13 @@ class BBColors {
   static const progressColor4 = Color.fromRGBO(255, 147, 181, 1);
   static const podiumColor1 = Color.fromRGBO(106, 250, 205, 1);
   static const podiumColor2 = Color.fromRGBO(8, 206, 145, 1);
+
+  // Aliases for easier reference in the code
+  static Color get background => lightGrayBG;
+  static Color get primary => primaryColor;
+  static Color get error => alertRed;
+  static Color get textPrimary => darkHeading;
+  static Color get textSecondary => bodyText;
+  static Color get success => successGreen;
+  static Color get border => borderGray;
 }

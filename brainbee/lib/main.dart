@@ -16,6 +16,7 @@ import 'package:brainbee/presentation/views/class/repo/class_repo_impl.dart';
 import 'package:brainbee/presentation/views/class/repo/disscussion_repo_impl.dart';
 import 'package:brainbee/presentation/views/class/repo/material_repo_impl.dart';
 import 'package:brainbee/presentation/views/class/services/class_api_service.dart';
+import 'package:brainbee/presentation/views/class/services/quiz_service.dart';
 import 'package:brainbee/presentation/views/extras/Rewards/bloc/reward_bloc.dart';
 import 'package:brainbee/presentation/views/extras/Rewards/repo/reward_repo.dart';
 import 'package:brainbee/presentation/views/extras/achievements/badges/bloc/badge_bloc.dart';
@@ -41,6 +42,7 @@ import 'package:brainbee/services/bb_notifications.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -167,7 +169,16 @@ void main(List<String> args) async {
         BlocProvider(
           create:
               (context) => ClassQuizBloc(
-                repository: ClassQuizRepositoryImpl(
+                repository: ClassQuizRepositoryRepoImpl(
+                  quizService: QuizService(apiService: ClassApiService()),
+                ),
+              ),
+        ),
+
+        BlocProvider(
+          create:
+              (context) => AssignmentBloc(
+                repository: AssignmentRepositoryImpl(
                   apiService: ClassApiService(),
                 ),
               ),

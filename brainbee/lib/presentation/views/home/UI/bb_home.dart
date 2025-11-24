@@ -145,7 +145,7 @@ class _BBhomeState extends State<BBhome> {
             state.student.score.toString(),
             state.student.coins.toString(),
             state.student.streakScore.toString(),
-            '${state.student.dailyLives}/10',
+            '∞/∞',
           ];
 
           // Get only the quizzes for registered subjects

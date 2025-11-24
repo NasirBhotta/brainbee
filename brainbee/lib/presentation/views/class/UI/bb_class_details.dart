@@ -9,20 +9,32 @@ import 'package:brainbee/presentation/views/class/UI/quiz/bb_class_quiz.dart';
 import 'package:brainbee/presentation/views/class/models/class_models.dart';
 import 'package:flutter/material.dart';
 
-class ClassDetailScreen extends StatelessWidget {
+class ClassDetailScreen extends StatefulWidget {
   final EnrolledClass classItem;
   final String? classId;
-  const ClassDetailScreen({super.key, required this.classItem, this.classId});
+  final VoidCallback? onAssignmentSubmitted;
+  const ClassDetailScreen({
+    super.key,
+    required this.classItem,
+    this.classId,
+    this.onAssignmentSubmitted,
+  });
 
+  @override
+  State<ClassDetailScreen> createState() => _ClassDetailScreenState();
+}
+
+class _ClassDetailScreenState extends State<ClassDetailScreen> {
+  int noOfSubmittedAssignments = 0;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: _getSubjectColor(classItem.subject),
+        backgroundColor: _getSubjectColor(widget.classItem.subject),
         elevation: 0,
         title: BBText(
-          data: classItem.name,
+          data: widget.classItem.name,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.w600,
@@ -45,11 +57,15 @@ class ClassDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildInfoSection(context, 'Details'),
-                  _buildInfoItem(context, 'Schedule', classItem.schedule),
+                  _buildInfoItem(
+                    context,
+                    'Schedule',
+                    widget.classItem.schedule,
+                  ),
                   _buildInfoItem(
                     context,
                     'Students',
-                    classItem.totalStudents.toString(),
+                    widget.classItem.totalStudents.toString(),
                   ),
                   const SizedBox(height: 24),
                   _buildInfoSection(context, 'Progress'),
@@ -111,7 +127,7 @@ class ClassDetailScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _getSubjectColor(classItem.subject),
+        color: _getSubjectColor(widget.classItem.subject),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
@@ -123,7 +139,7 @@ class ClassDetailScreen extends StatelessWidget {
       child: Column(
         children: [
           BBText(
-            data: 'Teacher: ${classItem.teacher}',
+            data: 'Teacher: ${widget.classItem.teacher}',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.white.withValues(alpha: 0.85),
             ),
@@ -183,13 +199,13 @@ class ClassDetailScreen extends StatelessWidget {
     return Row(
       children: [
         _buildProgressIndicator(
-          classItem.completedAssignments,
-          classItem.totalAssignments,
+          noOfSubmittedAssignments,
+          widget.classItem.totalAssignments,
         ),
         const SizedBox(width: 12),
         BBText(
           data:
-              '${classItem.completedAssignments}/${classItem.totalAssignments} Assignments',
+              '$noOfSubmittedAssignments/${widget.classItem.totalAssignments} Assignments',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Colors.grey[800],
             fontWeight: FontWeight.w500,
@@ -267,7 +283,7 @@ class ClassDetailScreen extends StatelessWidget {
         strokeWidth: 3,
         backgroundColor: BBColors.borderGray,
         valueColor: AlwaysStoppedAnimation<Color>(
-          _getSubjectColor(classItem.subject),
+          _getSubjectColor(widget.classItem.subject),
         ),
       ),
     );
@@ -300,9 +316,9 @@ class ClassDetailScreen extends StatelessWidget {
       MaterialPageRoute(
         builder:
             (context) => ClassMaterialsScreen(
-              classId: classId ?? classItem.id.toString(),
-              className: classItem.name,
-              teacherName: classItem.teacher,
+              classId: widget.classId ?? widget.classItem.id.toString(),
+              className: widget.classItem.name,
+              teacherName: widget.classItem.teacher,
             ),
       ),
     );
@@ -313,10 +329,15 @@ class ClassDetailScreen extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder:
-            (context) => ClassAssignmentsScreen(
-              classId: classId ?? classItem.id.toString(),
-              className: classItem.name,
-              teacherName: classItem.teacher,
+            (context) => BbClassAssignment(
+              onAssignmentSubmitted: () {
+                setState(() {
+                  noOfSubmittedAssignments += 1;
+                });
+                if (widget.onAssignmentSubmitted != null) {
+                  widget.onAssignmentSubmitted!();
+                }
+              },
             ),
       ),
     );
@@ -328,9 +349,9 @@ class ClassDetailScreen extends StatelessWidget {
       MaterialPageRoute(
         builder:
             (context) => ClassForumScreen(
-              classId: classId ?? classItem.id.toString(),
-              className: classItem.name,
-              teacherName: classItem.teacher,
+              classId: widget.classId ?? widget.classItem.id.toString(),
+              className: widget.classItem.name,
+              teacherName: widget.classItem.teacher,
             ),
       ),
     );
@@ -342,8 +363,8 @@ class ClassDetailScreen extends StatelessWidget {
       MaterialPageRoute(
         builder:
             (context) => QuizListScreen(
-              classId: classId ?? classItem.id.toString(),
-              className: classItem.name,
+              classId: widget.classId ?? widget.classItem.id.toString(),
+              className: widget.classItem.name,
             ),
       ),
     );
@@ -353,7 +374,7 @@ class ClassDetailScreen extends StatelessWidget {
     // TODO: Implement contact teacher functionality
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Contact ${classItem.teacher}'),
+        content: Text('Contact ${widget.classItem.teacher}'),
         action: SnackBarAction(
           label: 'Email',
           onPressed: () {

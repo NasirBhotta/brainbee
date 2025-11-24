@@ -1,60 +1,80 @@
+// lib/presentation/views/class/repo/assignment_repo.dart
+
 import 'dart:convert';
+import 'package:brainbee/core/utils/file_downloader.dart';
 import 'package:brainbee/presentation/views/class/models/assignment_model.dart';
-import 'package:brainbee/presentation/views/class/repo/assign_repo.dart';
 import 'package:brainbee/presentation/views/class/services/class_api_service.dart';
+import 'package:flutter/material.dart'; // Corrected import path
+
+abstract class AssignmentRepository {
+  Future<List<Assignment>> getStudentAssignments({String? classId});
+  Future<void> submitAssignment(String assignmentId, String filePath);
+  Future<String?> downloadAttachment({
+    required String fileUrl,
+    required BuildContext context,
+    required String fileName,
+    Function(double)? onProgress,
+  });
+}
 
 class AssignmentRepositoryImpl implements AssignmentRepository {
-  final ClassApiService apiService;
+  final ClassApiService apiService; // Use ClassApiService
+
   AssignmentRepositoryImpl({required this.apiService});
 
   @override
-  Future<List<Assignment>> getAssignments(String classId) async {
+  Future<List<Assignment>> getStudentAssignments({String? classId}) async {
     try {
+      // The endpoint for student assignments doesn't take a classId in the path,
+      // but the backend supports it as a query parameter.
+      final queryParams = classId != null ? {'classId': classId} : null;
+
       final response = await apiService.get(
-        '/api/classes/$classId/assignments',
+        '/api/assignments/student/my-assignments',
+        queryParams: queryParams,
       );
+
       final data = jsonDecode(response.body);
-      final list = data['data']['assignments'] as List? ?? [];
-      return list.map((a) => Assignment.fromJson(a)).toList();
+      if (data['status'] != 'success') {
+        throw Exception(data['message'] ?? 'Failed to load assignments');
+      }
+
+      final List<dynamic> assignmentsList = data['data']['assignments'] as List;
+      return assignmentsList.map((json) => Assignment.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to load assignments: $e');
     }
   }
 
   @override
-  Future<Assignment> getAssignmentDetail(String assignmentId) async {
+  Future<void> submitAssignment(String assignmentId, String filePath) async {
     try {
-      final response = await apiService.get('/api/assignments/$assignmentId');
-      final data = jsonDecode(response.body);
-      return Assignment.fromJson(data['data']['assignment']);
-    } catch (e) {
-      throw Exception('Failed to load assignment: $e');
-    }
-  }
-
-  @override
-  Future<void> submitAssignment(
-    String assignmentId,
-    List<String> filePaths,
-  ) async {
-    try {
-      // In real impl, upload files first then submit URLs
-      await apiService.post(
+      // Use the new uploadFile method from ClassApiService
+      // The backend expects the file field to be named 'file'
+      await apiService.uploadFile(
         '/api/assignments/$assignmentId/submit',
-        data: {'files': filePaths},
+        filePath,
       );
     } catch (e) {
-      throw Exception('Failed to submit: $e');
+      throw Exception('Failed to submit assignment: $e');
     }
   }
 
   @override
-  Future<String> downloadAttachment(AssignmentFile file) async {
+  Future<String?> downloadAttachment({
+    required String fileUrl,
+    required BuildContext context,
+    required String fileName,
+    Function(double)? onProgress,
+  }) async {
     try {
-      await Future.delayed(const Duration(seconds: 1));
-      return '/downloads/${file.name}';
+      return await FileDownloader.downloadWithPermissionCheck(
+        url: fileUrl,
+        context: context,
+        fileName: fileName,
+      );
     } catch (e) {
-      throw Exception('Failed to download: $e');
+      throw Exception('Failed to download file: $e');
     }
   }
 }
