@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
+import 'recommendation_screen.dart';
+
 class BBOverallScoreScreen extends StatelessWidget {
   const BBOverallScoreScreen({super.key});
 
@@ -107,7 +109,6 @@ class _BBOverallScoreScreenContentState
     return RefreshIndicator(
       onRefresh: () async {
         context.read<BookScoreBloc>().add(RefreshOverallScore());
-        // Wait for the state to update
         await context.read<BookScoreBloc>().stream.firstWhere(
           (state) => state is! OverallScoreLoading,
         );
@@ -122,7 +123,7 @@ class _BBOverallScoreScreenContentState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildOverallScoreCard(data),
+              _buildOverallScoreCard(context, data),
               const SizedBox(height: 24),
               _buildTabBar(),
               const SizedBox(height: 16),
@@ -228,9 +229,9 @@ class _BBOverallScoreScreenContentState
     );
   }
 
-  Widget _buildOverallScoreCard(OverallScoreData data) {
+  Widget _buildOverallScoreCard(BuildContext context, OverallScoreData data) {
     final String grade = _getGradeFromScore(data.averageScore);
-    print("The data of overall score is ${data.subjectScores}");
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -373,6 +374,30 @@ class _BBOverallScoreScreenContentState
                       value: "${data.totalStudyHours}",
                     ),
                   ],
+                ),
+
+                // ✅ NEW: Add Recommendations Button
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BBRecommendationScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.auto_awesome, size: 18),
+                  label: const Text("Get AI Recommendations"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: _getScoreColor(data.averageScore),
+                    minimumSize: const Size(double.infinity, 44),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                  ),
                 ),
               ],
             ),
@@ -806,7 +831,6 @@ class _BBOverallScoreScreenContentState
   }
 
   IconData _getSubjectIcon(String subject) {
-    // Extract the main subject name (e.g., "Biology" from "Biology 9th Class")
     final subjectLower = subject.toLowerCase();
 
     if (subjectLower.contains('math')) {

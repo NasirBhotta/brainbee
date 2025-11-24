@@ -6,6 +6,7 @@ import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/presentation/views/extras/score_&_reportcard/scorecard/bloc/book_score_bloc.dart';
 import 'package:brainbee/presentation/views/extras/score_&_reportcard/scorecard/model/bb_spefic_book_score_model.dart';
+import 'package:brainbee/presentation/views/extras/score_&_reportcard/scorecard/recommendation_screen.dart';
 import 'package:brainbee/presentation/views/extras/score_&_reportcard/scorecard/repo/score_repo_impl.dart';
 import 'package:brainbee/presentation/views/extras/score_&_reportcard/scorecard/services/score_api_service.dart';
 import 'package:flutter/material.dart';
@@ -732,74 +733,197 @@ class _BBBookScoreScreenContent extends StatelessWidget {
     BuildContext context,
     BookScoreData data,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: BBColors.lightGrayBG,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.lightbulb_outline, color: BBColors.primaryBlue),
-              const SizedBox(width: 8),
-              BBText(
-                data: "Personalized Recommendations",
-                style: context.textStyle.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                BBColors.primaryBlue.withOpacity(0.1),
+                BBColors.primaryBlue.withOpacity(0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: BBColors.primaryBlue.withOpacity(0.2)),
           ),
-          const SizedBox(height: 16),
-          if (data.recommendations.isEmpty)
-            BBText(
-              data:
-                  "Keep up the great work! Complete more activities to get personalized recommendations.",
-              style: context.textStyle.bodyMedium?.copyWith(
-                color: BBColors.disabledText,
-              ),
-            )
-          else
-            ...List.generate(
-              data.recommendations.length,
-              (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: BBColors.primaryBlue.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          "${index + 1}",
-                          style: const TextStyle(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: BBColors.primaryBlue.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome,
+                      color: BBColors.primaryBlue,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        BBText(
+                          data: "AI-Powered Recommendations",
+                          style: context.textStyle.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: BBColors.primaryBlue,
                           ),
                         ),
+                        const SizedBox(height: 4),
+                        BBText(
+                          data: "Get personalized study materials",
+                          style: context.textStyle.bodySmall?.copyWith(
+                            color: BBColors.disabledText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Quick Recommendations Preview
+              if (data.recommendations.isNotEmpty) ...[
+                BBText(
+                  data: "Quick Tips:",
+                  style: context.textStyle.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...data.recommendations.take(2).map((recommendation) {
+                  final index = data.recommendations.indexOf(recommendation);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: BBColors.primaryBlue.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              "${index + 1}",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: BBColors.primaryBlue,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: BBText(
+                            data: recommendation,
+                            style: context.textStyle.bodyMedium,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                if (data.recommendations.length > 2)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: BBText(
+                      data:
+                          "+${data.recommendations.length - 2} more recommendations",
+                      style: context.textStyle.bodySmall?.copyWith(
+                        color: BBColors.disabledText,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: BBText(
-                        data: data.recommendations[index],
-                        style: context.textStyle.bodyMedium,
+                  ),
+                const SizedBox(height: 16),
+              ] else ...[
+                BBText(
+                  data:
+                      "Complete more activities to unlock personalized recommendations",
+                  style: context.textStyle.bodyMedium?.copyWith(
+                    color: BBColors.disabledText,
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Main Recommendation Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BBRecommendationScreen(),
                       ),
+                    );
+                  },
+                  icon: const Icon(Icons.psychology_outlined, size: 20),
+                  label: const Text("View All Recommendations"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BBColors.primaryBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ],
+                    elevation: 0,
+                  ),
                 ),
               ),
-            ),
-        ],
-      ),
+
+              const SizedBox(height: 12),
+
+              // Features Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildFeatureItem(context, Icons.topic_outlined, "Topics"),
+                  _buildFeatureItem(
+                    context,
+                    Icons.style_outlined,
+                    "Flashcards",
+                  ),
+                  _buildFeatureItem(context, Icons.quiz_outlined, "Quizzes"),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Add this helper method to bb_bookscorescreen.dart
+  Widget _buildFeatureItem(BuildContext context, IconData icon, String label) {
+    return Column(
+      children: [
+        Icon(icon, size: 24, color: BBColors.primaryBlue.withOpacity(0.7)),
+        const SizedBox(height: 4),
+        BBText(
+          data: label,
+          style: context.textStyle.bodySmall?.copyWith(
+            color: BBColors.disabledText,
+            fontSize: 11,
+          ),
+        ),
+      ],
     );
   }
 

@@ -137,10 +137,11 @@ class ClassQuizBloc extends Bloc<ClassQuizEvent, ClassQuizState> {
               ? DateTime.now().difference(_quizStartTime!).inSeconds
               : 0;
 
-      await repository.submitQuiz(event.quizId, {
-        'answers': orderedAnswers,
-        'timeSpent': timeSpent,
-      });
+      print(
+        "the payload of the quiz submitted is $orderedAnswers and $timeSpent",
+      );
+
+      await repository.submitQuiz(event.quizId, orderedAnswers, timeSpent);
 
       emit(
         QuizSubmitSuccess(

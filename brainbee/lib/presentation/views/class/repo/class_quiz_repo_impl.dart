@@ -43,28 +43,25 @@ class ClassQuizRepositoryRepoImpl implements ClassQuizRepository {
   @override
   Future<Map<String, dynamic>> submitQuiz(
     String quizId,
-    Map<String, dynamic> answers,
+    List<int> answers,
+    int timeSpent,
   ) async {
     try {
-      // Convert answers map to list of indices in order
-      // Assuming questions are in order and answers contains indices
-      final answersList =
-          answers.values.map((value) {
-            if (value is List) {
-              // For multi-select, take first option for now
-              return value.isNotEmpty ? value[0] as int : 0;
-            }
-            return value as int;
-          }).toList();
+      print("Submitting quiz with answers: $answers");
 
-      // Calculate time spent (you might want to track this properly)
-      final timeSpent = 0; // This should be calculated based on actual time
+      // final answersList =
+      //     answers.values.map((value) {
+      //       if (value is List) {
+      //         // For multi-select, take first option for now
+      //         return value.isNotEmpty ? value[0] as int : 0;
+      //       }
+      //       return value as int;
+      //     }).toList();
 
-      final result = await quizService.submitQuiz(
-        quizId,
-        answersList,
-        timeSpent,
-      );
+      // // Calculate time spent (you might want to track this properly)
+      // final timeSpent = 0; // This should be calculated based on actual time
+
+      final result = await quizService.submitQuiz(quizId, answers, timeSpent);
 
       return result;
     } catch (e) {

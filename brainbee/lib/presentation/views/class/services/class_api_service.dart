@@ -64,6 +64,8 @@ class ClassApiService {
       final uri = Uri.parse('$_baseUrl$endpoint');
       final body = data != null ? jsonEncode(data) : null;
 
+      print("POST request to $endpoint with body: $body");
+
       final response = await _client
           .post(uri, headers: await _headers, body: body)
           .timeout(timeout);

@@ -45,13 +45,13 @@ class _BBhomeState extends State<BBhome> {
   ];
 
   static const List<Map<String, dynamic>> _quizzes = [
-    // {
-    //   'title': 'Mathematics',
-    //   'description': 'Quiz level 1 - Basic and Mixed Operations',
-    //   'imagePath1': 'assets/bg1.png',
-    //   'imagePath2': 'assets/quiz1.png',
-    //   'color': BBColors.progressColor1,
-    // },
+    {
+      'title': 'Mathematics',
+      'description': 'Quiz level 1 - Basic and Mixed Operations',
+      'imagePath1': 'assets/bg1.png',
+      'imagePath2': 'assets/quiz1.png',
+      'color': BBColors.progressColor1,
+    },
     {
       'title': 'Physics',
       'description': 'Quiz level 1 - Science Process Skills',
