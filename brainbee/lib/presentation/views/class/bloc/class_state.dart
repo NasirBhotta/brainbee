@@ -19,18 +19,25 @@ class ClassLoading extends ClassState {
 
 class ClassRefreshing extends ClassState {
   final List<ClassModel> previousClasses;
+  final Map<String, int> submittedAssignmentCounts;
 
-  const ClassRefreshing({required this.previousClasses});
+  const ClassRefreshing({
+    required this.previousClasses,
+    required this.submittedAssignmentCounts,
+  });
 
   @override
-  List<Object?> get props => [previousClasses];
+  List<Object?> get props => [previousClasses, submittedAssignmentCounts];
 }
 
 // Success States
 class ClassLoadSuccess extends ClassState {
   final List<ClassModel> classes;
-
-  const ClassLoadSuccess({required this.classes});
+  final Map<String, int> submittedAssignmentCounts;
+  const ClassLoadSuccess({
+    required this.classes,
+    required this.submittedAssignmentCounts,
+  });
 
   @override
   List<Object?> get props => [classes];
@@ -47,7 +54,6 @@ class ClassDetailLoading extends ClassState {
 
 class ClassDetailLoadSuccess extends ClassState {
   final ClassModel classData;
-
   const ClassDetailLoadSuccess({required this.classData});
 
   @override

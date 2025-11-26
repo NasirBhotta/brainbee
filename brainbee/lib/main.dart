@@ -135,6 +135,9 @@ void main(List<String> args) async {
                 classRepository: ClassRepositoryImpl(
                   apiService: ClassApiService(),
                 ),
+                assignmentRepository: AssignmentRepositoryImpl(
+                  apiService: ClassApiService(),
+                ),
               ),
           child: Container(),
         ),

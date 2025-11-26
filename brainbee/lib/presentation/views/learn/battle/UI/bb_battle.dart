@@ -35,10 +35,11 @@ class _BBBattleState extends State<BBBattle> {
   dynamic battleStats;
   List<dynamic> battleHistory = [];
   bool _isLoading = false;
-
+  late StudentState student;
   @override
   void initState() {
     super.initState();
+    student = context.read<StudentBloc>().state;
     _loadData();
   }
 
@@ -47,6 +48,7 @@ class _BBBattleState extends State<BBBattle> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<BattleBloc>().add(const FetchBattleStatsEvent());
+        context.read<BattleBloc>().add(const FetchBattleHistoryEvent());
       }
     });
   }
@@ -297,8 +299,8 @@ class _BBBattleState extends State<BBBattle> {
     String playerName = "Guest Player";
     String playerInitial = "G";
 
-    if (widget.state != null && widget.state is StudentDataLoaded) {
-      final user = (widget.state as StudentDataLoaded).student;
+    if (student is StudentDataLoaded) {
+      final user = (student as StudentDataLoaded).student;
       playerName = "${user.firstName} ${user.lastName}";
       playerInitial =
           user.firstName.isNotEmpty
@@ -356,12 +358,12 @@ class _BBBattleState extends State<BBBattle> {
     String playerName = "Guest";
     String playerInitial = "G";
 
-    if (widget.state != null && widget.state is StudentDataLoaded) {
-      final student = (widget.state as StudentDataLoaded).student;
-      playerName = "${student.firstName} ${student.lastName}";
+    if (student is StudentDataLoaded) {
+      final studentData = (student as StudentDataLoaded).student;
+      playerName = "${studentData.firstName} ${studentData.lastName}";
       playerInitial =
-          student.firstName.isNotEmpty
-              ? student.firstName.substring(0, 1).toUpperCase()
+          studentData.firstName.isNotEmpty
+              ? studentData.firstName.substring(0, 1).toUpperCase()
               : "G";
     }
 
@@ -428,7 +430,7 @@ class _BBBattleState extends State<BBBattle> {
                     backgroundColor:
                         battleStats?.avatarColor ?? Colors.green[700],
                     child: BBText(
-                      data: battleStats?.initial ?? playerInitial,
+                      data: playerInitial,
                       style: Theme.of(
                         context,
                       ).textTheme.headlineSmall?.copyWith(
@@ -444,7 +446,11 @@ class _BBBattleState extends State<BBBattle> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       BBText(
-                        data: playerName,
+                        data:
+                            widget.state != null &&
+                                    widget.state is StudentDataLoaded
+                                ? "${(widget.state as StudentDataLoaded).student.firstName} ${(widget.state as StudentDataLoaded).student.lastName}"
+                                : playerName,
                         style: context.textStyle.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -500,16 +506,16 @@ class _BBBattleState extends State<BBBattle> {
                     color: Colors.blue,
                   ),
                 ),
-                Container(width: 1, height: 50, color: Colors.grey[300]),
-                Expanded(
-                  child: _buildStatItem(
-                    context,
-                    icon: Icons.monetization_on,
-                    label: "Coins",
-                    value: battleStats?.coinsCollected?.toString() ?? "0",
-                    color: Colors.orange,
-                  ),
-                ),
+                // Container(width: 1, height: 50, color: Colors.grey[300]),
+                // Expanded(
+                //   child: _buildStatItem(
+                //     context,
+                //     icon: Icons.monetization_on,
+                //     label: "Coins",
+                //     value: battleStats?.coinsCollected?.toString() ?? "0",
+                //     color: Colors.orange,
+                //   ),
+                // ),
               ],
             ),
           ),
@@ -605,7 +611,7 @@ class _BBBattleState extends State<BBBattle> {
                     ),
                   ],
                 ),
-                if (battleHistory.isNotEmpty || battleHistory != null)
+                if (battleHistory.isNotEmpty || battleHistory.isEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,

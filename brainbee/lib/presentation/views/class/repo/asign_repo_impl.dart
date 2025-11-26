@@ -15,6 +15,17 @@ abstract class AssignmentRepository {
     required String fileName,
     Function(double)? onProgress,
   });
+
+  // Helper method with default implementation
+  int getSubmittedAssignmentsCount(List<Assignment> assignments) {
+    return assignments
+        .where(
+          (assignment) =>
+              assignment.status == AssignmentStatus.submitted ||
+              assignment.status == AssignmentStatus.graded,
+        )
+        .length;
+  }
 }
 
 class AssignmentRepositoryImpl implements AssignmentRepository {
@@ -76,5 +87,17 @@ class AssignmentRepositoryImpl implements AssignmentRepository {
     } catch (e) {
       throw Exception('Failed to download file: $e');
     }
+  }
+
+  @override
+  // Helper method with default implementation
+  int getSubmittedAssignmentsCount(List<Assignment> assignments) {
+    return assignments
+        .where(
+          (assignment) =>
+              assignment.status == AssignmentStatus.submitted ||
+              assignment.status == AssignmentStatus.graded,
+        )
+        .length;
   }
 }

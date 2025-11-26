@@ -244,33 +244,33 @@ class _BbLoginState extends State<BbLogin> {
                     ],
                   ),
 
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BBColors.primaryBlue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset('assets/google.png', height: 25, width: 25),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Login with Google',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: BBColors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // const SizedBox(height: 10),
+                  // ElevatedButton(
+                  //   onPressed: () {},
+                  //   style: ElevatedButton.styleFrom(
+                  //     backgroundColor: BBColors.primaryBlue,
+                  //     shape: RoundedRectangleBorder(
+                  //       borderRadius: BorderRadius.circular(8),
+                  //     ),
+                  //   ),
+                  //   child: Row(
+                  //     mainAxisAlignment: MainAxisAlignment.center,
+                  //     children: [
+                  //       Image.asset('assets/google.png', height: 25, width: 25),
+                  //       const SizedBox(width: 10),
+                  //       Text(
+                  //         'Login with Google',
+                  //         style: Theme.of(
+                  //           context,
+                  //         ).textTheme.bodyMedium?.copyWith(
+                  //           fontSize: 14,
+                  //           fontWeight: FontWeight.w600,
+                  //           color: BBColors.white,
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
                   const SizedBox(height: 15),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,

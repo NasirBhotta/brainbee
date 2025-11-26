@@ -198,7 +198,7 @@ class _BBBookSelectionForBattleState extends State<BBBookSelectionForBattle> {
     Color playerColor = const Color(0xFF8CAA56);
 
     if (studentState is StudentDataLoaded) {
-      playerName = studentState.student.firstName ?? 'Player';
+      playerName = studentState.student.firstName;
       playerInitial =
           playerName.isNotEmpty
               ? playerName.substring(0, 1).toUpperCase()
@@ -511,7 +511,7 @@ class _BBChapterSelectionScreenState extends State<BBChapterSelectionScreen> {
             Color playerColor = const Color(0xFF8CAA56);
 
             if (studentState is StudentDataLoaded) {
-              playerName = studentState.student.firstName ?? 'Player';
+              playerName = studentState.student.firstName;
               playerInitial =
                   playerName.isNotEmpty
                       ? playerName.substring(0, 1).toUpperCase()

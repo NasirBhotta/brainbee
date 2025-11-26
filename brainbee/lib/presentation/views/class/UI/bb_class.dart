@@ -31,11 +31,9 @@ class BBClass extends StatefulWidget {
 }
 
 class _BBClassState extends State<BBClass> {
-  int noOfSubmittedAssignments = 0;
   @override
   void initState() {
     super.initState();
-    // Dispatch event after frame is built to ensure bloc is available
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ClassBloc>().add(const FetchMyClassesEvent());
     });
@@ -68,6 +66,7 @@ class _BBClassState extends State<BBClass> {
             return _buildClassList(
               context,
               state.previousClasses,
+              state.submittedAssignmentCounts,
               isRefreshing: true,
             );
           }
@@ -81,7 +80,11 @@ class _BBClassState extends State<BBClass> {
           }
 
           if (state is ClassLoadSuccess) {
-            return _buildClassList(context, state.classes);
+            return _buildClassList(
+              context,
+              state.classes,
+              state.submittedAssignmentCounts,
+            );
           }
 
           return const SizedBox.shrink();
@@ -92,7 +95,8 @@ class _BBClassState extends State<BBClass> {
 
   Widget _buildClassList(
     BuildContext context,
-    List<ClassModel> classes, {
+    List<ClassModel> classes,
+    Map<String, int> submittedCounts, {
     bool isRefreshing = false,
   }) {
     return RefreshIndicator(
@@ -114,7 +118,11 @@ class _BBClassState extends State<BBClass> {
               ),
               const SizedBox(height: 16),
               ...classes.map(
-                (classItem) => _buildClassCard(context, classItem),
+                (classItem) => _buildClassCard(
+                  context,
+                  classItem,
+                  submittedCounts[classItem.id] ?? 0,
+                ),
               ),
             ],
           ),
@@ -138,20 +146,26 @@ class _BBClassState extends State<BBClass> {
     );
   }
 
-  Widget _buildClassCard(BuildContext context, ClassModel classItem) {
+  Widget _buildClassCard(
+    BuildContext context,
+    ClassModel classItem,
+    int submittedCount,
+  ) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder:
                 (context) => ClassDetailScreen(
                   classItem: classItem.toEnrolledClass(),
                   classId: classItem.id,
-                  onAssignmentSubmitted:
-                      () => setState(() {
-                        noOfSubmittedAssignments += 1;
-                      }),
+                  submittedAssignmentsCount: submittedCount,
+                  onAssignmentSubmitted: () {
+                    context.read<ClassBloc>().add(
+                      const RefreshMyClassesEvent(),
+                    );
+                  },
                 ),
           ),
         );
@@ -232,13 +246,13 @@ class _BBClassState extends State<BBClass> {
                       Row(
                         children: [
                           _buildProgressIndicator(
-                            noOfSubmittedAssignments,
+                            submittedCount,
                             classItem.totalAssignments,
                           ),
                           const SizedBox(width: 10),
                           BBText(
                             data:
-                                '$noOfSubmittedAssignments/${classItem.totalAssignments}',
+                                '$submittedCount/${classItem.totalAssignments}',
                             style: context.textStyle.bodySmall?.copyWith(
                               color: BBColors.white,
                               fontWeight: FontWeight.w500,
@@ -273,6 +287,187 @@ class _BBClassState extends State<BBClass> {
       ),
     );
   }
+
+  // Widget _buildClassList(
+  //   BuildContext context,
+  //   List<ClassModel> classes, {
+  //   bool isRefreshing = false,
+  // }) {
+  //   return RefreshIndicator(
+  //     onRefresh: () async {
+  //       context.read<ClassBloc>().add(const RefreshMyClassesEvent());
+  //       await context.read<ClassBloc>().stream.firstWhere(
+  //         (state) => state is! ClassRefreshing,
+  //       );
+  //     },
+  //     color: BBColors.secondaryColor,
+  //     child: Stack(
+  //       children: [
+  //         ListView(
+  //           padding: const EdgeInsets.all(16),
+  //           children: [
+  //             BBText(
+  //               data: 'Enrolled Classes',
+  //               style: context.textStyle.titleMedium?.copyWith(fontSize: 16),
+  //             ),
+  //             const SizedBox(height: 16),
+  //             ...classes.map(
+  //               (classItem) => _buildClassCard(context, classItem),
+  //             ),
+  //           ],
+  //         ),
+  //         if (isRefreshing)
+  //           const Positioned(
+  //             top: 0,
+  //             left: 0,
+  //             right: 0,
+  //             child: SizedBox(
+  //               height: 2,
+  //               child: LinearProgressIndicator(
+  //                 valueColor: AlwaysStoppedAnimation<Color>(
+  //                   BBColors.secondaryColor,
+  //                 ),
+  //                 backgroundColor: Colors.transparent,
+  //               ),
+  //             ),
+  //           ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildClassCard(BuildContext context, ClassModel classItem) {
+  //   return GestureDetector(
+  //     onTap: () {
+  //       Navigator.push(
+  //         context,
+  //         MaterialPageRoute(
+  //           builder:
+  //               (context) => ClassDetailScreen(
+  //                 classItem: classItem.toEnrolledClass(),
+  //                 classId: classItem.id,
+  //                 onAssignmentSubmitted: () => setState(() {}),
+  //               ),
+  //         ),
+  //       );
+  //     },
+  //     child: Container(
+  //       margin: const EdgeInsets.only(bottom: 20),
+  //       decoration: BoxDecoration(
+  //         color: _getSubjectColor(classItem.subject),
+  //         borderRadius: BorderRadius.circular(16),
+  //         boxShadow: [
+  //           BoxShadow(
+  //             color: Colors.black.withOpacity(0.15),
+  //             blurRadius: 8,
+  //             offset: const Offset(0, 3),
+  //           ),
+  //         ],
+  //       ),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Container(
+  //             height: 80,
+  //             decoration: BoxDecoration(
+  //               borderRadius: const BorderRadius.only(
+  //                 topLeft: Radius.circular(16),
+  //                 topRight: Radius.circular(16),
+  //               ),
+  //               color: Colors.white.withOpacity(0.1),
+  //             ),
+  //             child: Center(
+  //               child: BBText(
+  //                 data: classItem.subject.toUpperCase(),
+  //                 style: context.textStyle.titleSmall?.copyWith(
+  //                   color: BBColors.white,
+  //                   fontWeight: FontWeight.bold,
+  //                   letterSpacing: 6,
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //           Padding(
+  //             padding: const EdgeInsets.all(16),
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 BBText(
+  //                   data: classItem.name,
+  //                   style: context.textStyle.titleMedium?.copyWith(
+  //                     color: BBColors.white,
+  //                     fontWeight: FontWeight.w600,
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 6),
+  //                 BBText(
+  //                   data: 'Teacher: ${classItem.teacher.fullName}',
+  //                   style: context.textStyle.bodyMedium?.copyWith(
+  //                     color: BBColors.white.withOpacity(0.85),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 4),
+  //                 BBText(
+  //                   data: classItem.schedule,
+  //                   style: context.textStyle.bodySmall?.copyWith(
+  //                     color: BBColors.white.withOpacity(0.85),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 4),
+  //                 BBText(
+  //                   data: 'Grade ${classItem.grade}',
+  //                   style: context.textStyle.bodySmall?.copyWith(
+  //                     color: BBColors.white.withOpacity(0.75),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 12),
+  //                 Row(
+  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //                   children: [
+  //                     Row(
+  //                       children: [
+  //                         _buildProgressIndicator(
+  //                           classItem.completedAssignments,
+  //                           classItem.totalAssignments,
+  //                         ),
+  //                         const SizedBox(width: 10),
+  //                         BBText(
+  //                           data:
+  //                               '${classItem.completedAssignments}/${classItem.totalAssignments}',
+  //                           style: context.textStyle.bodySmall?.copyWith(
+  //                             color: BBColors.white,
+  //                             fontWeight: FontWeight.w500,
+  //                           ),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                     Container(
+  //                       padding: const EdgeInsets.symmetric(
+  //                         horizontal: 10,
+  //                         vertical: 5,
+  //                       ),
+  //                       decoration: BoxDecoration(
+  //                         color: BBColors.white.withOpacity(0.15),
+  //                         borderRadius: BorderRadius.circular(10),
+  //                       ),
+  //                       child: BBText(
+  //                         data: 'View',
+  //                         style: context.textStyle.bodySmall?.copyWith(
+  //                           color: BBColors.white,
+  //                           fontWeight: FontWeight.w600,
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildProgressIndicator(int completed, int total) {
     double progress = total > 0 ? completed / total : 0;

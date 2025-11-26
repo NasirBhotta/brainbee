@@ -3,7 +3,7 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/presentation/views/class/UI/assignment/bb_class_assignment.dart';
-import 'package:brainbee/presentation/views/class/UI/discussion/bb_discussion.dart';
+// import 'package:brainbee/presentation/views/class/UI/discussion/bb_discussion.dart';
 import 'package:brainbee/presentation/views/class/UI/material/bb_class_material.dart';
 import 'package:brainbee/presentation/views/class/UI/quiz/bb_class_quiz.dart';
 import 'package:brainbee/presentation/views/class/models/class_models.dart';
@@ -12,12 +12,14 @@ import 'package:flutter/material.dart';
 class ClassDetailScreen extends StatefulWidget {
   final EnrolledClass classItem;
   final String? classId;
+  final int submittedAssignmentsCount; //
   final VoidCallback? onAssignmentSubmitted;
   const ClassDetailScreen({
     super.key,
     required this.classItem,
     this.classId,
     this.onAssignmentSubmitted,
+    required this.submittedAssignmentsCount,
   });
 
   @override
@@ -25,7 +27,6 @@ class ClassDetailScreen extends StatefulWidget {
 }
 
 class _ClassDetailScreenState extends State<ClassDetailScreen> {
-  int noOfSubmittedAssignments = 0;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,14 +90,14 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
                     Colors.orangeAccent,
                     () => _navigateToAssignments(context),
                   ),
-                  const SizedBox(height: 12),
-                  _buildActionButton(
-                    context,
-                    'Forum',
-                    Icons.forum,
-                    Colors.purpleAccent,
-                    () => _navigateToForum(context),
-                  ),
+                  // const SizedBox(height: 12),
+                  // _buildActionButton(
+                  //   context,
+                  //   'Forum',
+                  //   Icons.forum,
+                  //   Colors.purpleAccent,
+                  //   () => _navigateToForum(context),
+                  // ),
                   const SizedBox(height: 12),
                   _buildActionButton(
                     context,
@@ -199,13 +200,13 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
     return Row(
       children: [
         _buildProgressIndicator(
-          noOfSubmittedAssignments,
+          widget.submittedAssignmentsCount,
           widget.classItem.totalAssignments,
         ),
         const SizedBox(width: 12),
         BBText(
           data:
-              '$noOfSubmittedAssignments/${widget.classItem.totalAssignments} Assignments',
+              '${widget.submittedAssignmentsCount}/${widget.classItem.totalAssignments} Assignments',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Colors.grey[800],
             fontWeight: FontWeight.w500,
@@ -331,9 +332,6 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
         builder:
             (context) => BbClassAssignment(
               onAssignmentSubmitted: () {
-                setState(() {
-                  noOfSubmittedAssignments += 1;
-                });
                 if (widget.onAssignmentSubmitted != null) {
                   widget.onAssignmentSubmitted!();
                 }
@@ -343,19 +341,19 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
     );
   }
 
-  void _navigateToForum(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => ClassForumScreen(
-              classId: widget.classId ?? widget.classItem.id.toString(),
-              className: widget.classItem.name,
-              teacherName: widget.classItem.teacher,
-            ),
-      ),
-    );
-  }
+  // void _navigateToForum(BuildContext context) {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder:
+  //           (context) => ClassForumScreen(
+  //             classId: widget.classId ?? widget.classItem.id.toString(),
+  //             className: widget.classItem.name,
+  //             teacherName: widget.classItem.teacher,
+  //           ),
+  //     ),
+  //   );
+  // }
 
   void _navigateToQuizzes(BuildContext context) {
     Navigator.push(

@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:brainbee/presentation/views/class/models/class_models.dart';
+import 'package:brainbee/presentation/views/class/repo/asign_repo_impl.dart';
 import 'package:brainbee/presentation/views/class/repo/class_repo.dart';
 import 'package:equatable/equatable.dart';
 
@@ -8,8 +9,10 @@ part 'class_state.dart';
 
 class ClassBloc extends Bloc<ClassEvent, ClassState> {
   final ClassRepository classRepository;
+  final AssignmentRepository assignmentRepository;
 
-  ClassBloc({required this.classRepository}) : super(ClassInitial()) {
+  ClassBloc({required this.classRepository, required this.assignmentRepository})
+    : super(ClassInitial()) {
     on<FetchMyClassesEvent>(_onFetchMyClasses);
     on<RefreshMyClassesEvent>(_onRefreshMyClasses);
     on<FetchClassDetailEvent>(_onFetchClassDetail);
@@ -27,7 +30,30 @@ class ClassBloc extends Bloc<ClassEvent, ClassState> {
       if (classes.isEmpty) {
         emit(const ClassEmpty());
       } else {
-        emit(ClassLoadSuccess(classes: classes));
+        final allAssignments =
+            await assignmentRepository.getStudentAssignments();
+
+        // Calculate submitted assignments per class
+        final submittedCounts = <String, int>{};
+        for (var classItem in classes) {
+          final classAssignments =
+              allAssignments
+                  .where(
+                    (assignment) => assignment.classInfo.id == classItem.id,
+                  )
+                  .toList();
+
+          // Call the method directly on assignmentRepository
+          submittedCounts[classItem.id] = assignmentRepository
+              .getSubmittedAssignmentsCount(classAssignments);
+        }
+
+        emit(
+          ClassLoadSuccess(
+            classes: classes,
+            submittedAssignmentCounts: submittedCounts,
+          ),
+        );
       }
     } catch (e) {
       emit(
@@ -44,27 +70,51 @@ class ClassBloc extends Bloc<ClassEvent, ClassState> {
     Emitter<ClassState> emit,
   ) async {
     // If we have previous classes, show them while refreshing
-    if (state is ClassLoadSuccess) {
-      final currentClasses = (state as ClassLoadSuccess).classes;
-      emit(ClassRefreshing(previousClasses: currentClasses));
+    final currentState = state;
+
+    if (currentState is ClassLoadSuccess) {
+      emit(
+        ClassRefreshing(
+          previousClasses: currentState.classes,
+          submittedAssignmentCounts: currentState.submittedAssignmentCounts,
+        ),
+      );
     } else {
       emit(const ClassLoading());
     }
 
     try {
+      // Fetch classes
       final classes = await classRepository.getMyClasses();
 
       if (classes.isEmpty) {
-        emit(const ClassEmpty());
-      } else {
-        emit(ClassLoadSuccess(classes: classes));
+        emit(ClassEmpty());
+        return;
       }
+
+      // Fetch all assignments to calculate submitted counts
+      final allAssignments = await assignmentRepository.getStudentAssignments();
+
+      // Calculate submitted assignments per class
+      final submittedCounts = <String, int>{};
+      for (var classItem in classes) {
+        final classAssignments =
+            allAssignments
+                .where((assignment) => assignment.classInfo.id == classItem.id)
+                .toList();
+        submittedCounts[classItem.id] = assignmentRepository
+            .getSubmittedAssignmentsCount(classAssignments);
+      }
+
+      emit(
+        ClassLoadSuccess(
+          classes: classes,
+          submittedAssignmentCounts: submittedCounts,
+        ),
+      );
     } catch (e) {
-      // If refresh fails but we had previous data, restore it
-      if (state is ClassRefreshing) {
-        final previousClasses = (state as ClassRefreshing).previousClasses;
-        emit(ClassLoadSuccess(classes: previousClasses));
-        // Optionally show a snackbar or toast for the error
+      if (currentState is ClassLoadSuccess) {
+        emit(currentState);
       } else {
         emit(
           ClassError(

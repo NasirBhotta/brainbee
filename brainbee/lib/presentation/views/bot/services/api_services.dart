@@ -6,9 +6,12 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/chat_session.dart';
 
+import 'package:brainbee/config/api_config.dart';
+
 class BotApiService {
-  final String sendUrl = "http://10.0.2.2:5000/api/openai/chatbot";
-  final String historyUrl = "http://10.0.2.2:5000/api/openai/chatbot/sessions";
+  final String sendUrl = "${BBApiConfig.baseUrl}/api/openai/chatbot";
+  final String historyUrl =
+      "${BBApiConfig.baseUrl}/api/openai/chatbot/sessions";
 
   /// Send a message to chatbot and get AI response
   Future<TokenUserData> getTokenAndUser() async {

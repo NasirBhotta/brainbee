@@ -21,7 +21,7 @@ class ParentGoalsApiService {
   /// Mark a parent goal as complete
   Future<http.Response> markGoalComplete(String goalId, String token) async {
     return await http
-        .patch(
+        .put(
           Uri.parse("$baseUrl/api/parentGoals/$goalId/complete"),
           headers: {
             "Content-Type": "application/json",
