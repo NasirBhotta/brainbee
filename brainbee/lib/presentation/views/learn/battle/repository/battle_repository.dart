@@ -260,8 +260,8 @@ class BattleRepositoryImpl implements BattleRepository {
         return 'random';
       case BattleMode.invitation:
         return 'invitation';
-      case BattleMode.wholeBook:
-        return 'wholeBook';
+      case BattleMode.byTopic:
+        return 'byTopic';
       case BattleMode.byChapter:
         return 'byChapter';
     }

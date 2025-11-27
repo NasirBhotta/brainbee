@@ -249,6 +249,10 @@ class _BbSearchingPlayersState extends State<BbSearchingPlayers>
 
   void _navigateToBattleScreen(BuildContext context, BattleInProgress state) {
     if (ModalRoute.of(context)?.isCurrent ?? false) {
+      print(
+        "Data in frontend is ${state.quizData.questions.map((q) => print(q))}",
+      );
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

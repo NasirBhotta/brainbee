@@ -34,11 +34,16 @@ class JoinBattleRoomEvent extends BattleEvent {
 class FindRandomOpponentEvent extends BattleEvent {
   final String subject;
   final List<String>? chapters;
+  final List<String>? topics;
 
-  const FindRandomOpponentEvent({required this.subject, this.chapters});
+  const FindRandomOpponentEvent({
+    required this.subject,
+    this.chapters,
+    this.topics,
+  });
 
   @override
-  List<Object?> get props => [subject, chapters];
+  List<Object?> get props => [subject, chapters, topics];
 }
 
 class CancelBattleSearchEvent extends BattleEvent {

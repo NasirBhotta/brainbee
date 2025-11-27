@@ -79,9 +79,11 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       emit(const QuizSubmitting());
 
       final result = await quizRepository.submitQuizPerformance(
+        bookId: event.bookId,
         studentId: event.studentId,
         quizId: event.quizId,
         answers: event.answers,
+        timeSpentSeconds: event.timeSpentSeconds,
       );
 
       emit(QuizSubmitted(result: result));

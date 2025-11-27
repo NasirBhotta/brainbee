@@ -77,3 +77,12 @@ class SettingsPasswordUpdateFailure extends SettingsState {
 }
 
 class SettingsPasswordUpdating extends SettingsState {}
+
+class SettingsAvailableBooksLoaded extends SettingsState {
+  final GradeBooksResponse booksResponse;
+
+  const SettingsAvailableBooksLoaded(this.booksResponse);
+
+  @override
+  List<Object> get props => [booksResponse];
+}

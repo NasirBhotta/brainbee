@@ -57,3 +57,25 @@ class SettingsUpdatePassword extends SettingEvent {
   @override
   List<Object> get props => [currentPassword, newPassword, confirmPassword];
 }
+
+class SettingsLoadAvailableBooks extends SettingEvent {
+  final int grade;
+  const SettingsLoadAvailableBooks(this.grade);
+
+  @override
+  List<Object> get props => [grade];
+}
+
+/// NEW PREFERRED: Update grade and books using book IDs
+class SettingsUpdateGradeAndBooks extends SettingEvent {
+  final int grade;
+  final List<String> bookIds;
+
+  const SettingsUpdateGradeAndBooks({
+    required this.grade,
+    required this.bookIds,
+  });
+
+  @override
+  List<Object> get props => [grade, bookIds];
+}

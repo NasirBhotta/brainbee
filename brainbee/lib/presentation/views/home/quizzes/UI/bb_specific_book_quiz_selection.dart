@@ -15,10 +15,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class BbSpecificBookQuizSelection extends StatefulWidget {
+  final String bookId;
   final String subject;
   final StudentModel student;
 
   const BbSpecificBookQuizSelection({
+    required this.bookId,
     super.key,
     required this.subject,
     required this.student,
@@ -37,7 +39,13 @@ class _BbSpecificBookQuizSelectionState
   @override
   void initState() {
     super.initState();
-    _displaySubject = widget.subject;
+
+    print(
+      "Selected subject in BbSpecificBookQuizSelection: ${widget.subject.split(" ")}",
+    );
+
+    final subject = widget.subject.split(" ").first;
+    _displaySubject = subject;
 
     _desc = [
       widget.student.score.toString(),
@@ -55,7 +63,7 @@ class _BbSpecificBookQuizSelectionState
     Navigator.pushNamed(
       context,
       AppRoutes.quizzesList,
-      arguments: [topic, widget.student],
+      arguments: [topic, widget.student, widget.bookId],
     );
   }
 

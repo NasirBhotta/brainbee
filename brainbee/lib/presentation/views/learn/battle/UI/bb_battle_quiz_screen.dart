@@ -3,6 +3,7 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/utils/helper/bb_confirmation_dialog.dart';
+import 'package:brainbee/presentation/views/home/quizzes/bloc/quiz_bloc.dart';
 import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle_report_card.dart';
 import 'package:brainbee/presentation/views/learn/battle/bloc/battle_bloc.dart';
 import 'package:brainbee/presentation/views/learn/battle/models/battle_models.dart';
@@ -275,6 +276,24 @@ class _BBBattleQuizScreenState extends State<BBBattleQuizScreen> {
         isWinner ? result.winnerScore : result.loserScore;
     final int finalOpponentScore =
         isWinner ? result.loserScore : result.winnerScore;
+
+    final List<Map<String, dynamic>> formattedAnswers = List.generate(
+      widget.quizData.questions.length,
+      (i) => {
+        'questionIndex': i,
+        'selectedOptionIndex': i < answers.length ? answers[i] : null,
+      },
+    );
+
+    context.read<QuizBloc>().add(
+      SubmitQuizPerformance(
+        studentId: selfUserId,
+        quizId: widget.quizData.quizId,
+        answers: formattedAnswers,
+        bookId: '',
+        timeSpentSeconds: timeSpent,
+      ),
+    );
 
     Navigator.pushReplacement(
       context,

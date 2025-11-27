@@ -23,8 +23,10 @@ abstract class QuizRepository {
   });
 
   Future<Map<String, dynamic>> submitQuizPerformance({
+    required String bookId,
     required String studentId,
     required String quizId,
     required List<Map<String, dynamic>> answers,
+    required int timeSpentSeconds,
   });
 }

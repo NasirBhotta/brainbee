@@ -15,6 +15,7 @@ import 'package:brainbee/presentation/views/home/UI/bb_streak_popup.dart';
 import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 import 'package:brainbee/presentation/views/settings/UI/bb_settings.dart';
+import 'package:brainbee/presentation/views/settings/model/book_model.dart';
 import 'package:brainbee/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -83,6 +84,11 @@ class _BBhomeState extends State<BBhome> {
   @override
   void initState() {
     super.initState();
+
+    print(
+      "the subjects in student model are ${widget.student.selectedBooks.first.bookTitle}",
+    );
+
     _desc = [
       widget.student.score.toString(),
       widget.student.coins.toString(),
@@ -120,10 +126,14 @@ class _BBhomeState extends State<BBhome> {
 
   // Helper method to get registered quizzes only
   List<Map<String, dynamic>> _getRegisteredQuizzes(
-    List<String> registeredSubjects,
+    List<BookModel> registeredSubjects,
   ) {
+    print("Registered subjects are $registeredSubjects");
     return _quizzes.where((quiz) {
-      return registeredSubjects.contains(quiz['title']);
+      return registeredSubjects.any(
+        (book) =>
+            book.bookTitle.toLowerCase().contains(quiz['title']!.toLowerCase()),
+      );
     }).toList();
   }
 
@@ -149,7 +159,9 @@ class _BBhomeState extends State<BBhome> {
           ];
 
           // Get only the quizzes for registered subjects
-          registeredQuizzes = _getRegisteredQuizzes(state.student.subjects);
+          registeredQuizzes = _getRegisteredQuizzes(
+            state.student.selectedBooks,
+          );
         }
 
         return RefreshIndicator.adaptive(
@@ -208,6 +220,14 @@ class _BBhomeState extends State<BBhome> {
                       print("Showing registered quiz: ${quiz['title']}");
 
                       return BbQuizzesDisplay(
+                        bookId:
+                            state.student.selectedBooks
+                                .firstWhere(
+                                  (book) => book.bookTitle
+                                      .toLowerCase()
+                                      .contains(quiz['title']!.toLowerCase()),
+                                )
+                                .id,
                         title: quiz['title']!,
                         description: quiz['description']!,
                         imagePath1: quiz['imagePath1']!,

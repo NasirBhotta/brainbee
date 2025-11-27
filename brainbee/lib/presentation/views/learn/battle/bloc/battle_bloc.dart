@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:bloc/bloc.dart';
 import 'package:brainbee/presentation/views/learn/battle/models/battle_models.dart';
 import 'package:brainbee/presentation/views/learn/battle/models/battle_stat_model.dart';
@@ -52,7 +51,7 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         chapters: event.chapters,
       );
       _currentUserId = room.host.id;
-      print('🆔 Set currentUserId (host/create): $_currentUserId');
+
       await _connectToRoom(room.roomId);
 
       if (event.mode == BattleMode.random) {
@@ -79,7 +78,7 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         invitationCode: event.invitationCode,
       );
       _currentUserId = room.opponent?.id;
-      print('🆔 Set currentUserId (opponent/join): $_currentUserId');
+
       await _connectToRoom(room.roomId);
 
       if (room.opponent != null) {
@@ -98,6 +97,10 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
   ) async {
     emit(BattleLoading());
     try {
+      print(
+        "Data coming to bloc: ${event.subject}, ${event.chapters}, ${event.topics}",
+      );
+
       final room = await repository.findRandomOpponent(
         subject: event.subject,
         chapters: event.chapters,
@@ -105,10 +108,8 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
 
       if (room.opponent != null && room.status == BattleStatus.matched) {
         _currentUserId = room.opponent!.id;
-        print('🆔 Set currentUserId (opponent/random-join): $_currentUserId');
       } else {
         _currentUserId = room.host.id;
-        print('🆔 Set currentUserId (host/random-create): $_currentUserId');
       }
 
       await _connectToRoom(room.roomId);
@@ -195,7 +196,7 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
     Emitter<BattleState> emit,
   ) async {
     final update = event.update;
-    print('✅ WebSocket Update: $update');
+
     final type = update['type'] as String?;
 
     switch (type) {
@@ -259,9 +260,48 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         }
         break;
 
+      // In your battle_bloc.dart, replace the 'battle_data_ready' case in _onRoomUpdateReceived:
+
       case 'battle_data_ready':
-        if (state is BattleReady && update.containsKey('data')) {
-          final quizData = BattleQuizData.fromJson(update['data']);
+
+        // Check current state
+        if (state is! BattleReady) {
+          break;
+        }
+
+        if (!update.containsKey('data')) {
+          emit(
+            BattleError(
+              message: 'Invalid battle data received (no data field)',
+            ),
+          );
+          break;
+        }
+
+        try {
+          final rawData = update['data'];
+
+          // Convert to proper Map<String, dynamic>
+          if (rawData is! Map) {
+            throw Exception('Data is not a Map, got: ${rawData.runtimeType}');
+          }
+
+          final dataJson = Map<String, dynamic>.from(rawData);
+
+          // Check if questions exist
+          if (!dataJson.containsKey('questions')) {
+            throw Exception('No questions field in data');
+          }
+
+          final questionsData = dataJson['questions'];
+
+          if (questionsData is List) {
+            if (questionsData.isNotEmpty) {}
+          }
+
+          final quizData = BattleQuizData.fromJson(dataJson);
+
+          // Emit the new state
           emit(
             BattleInProgress(
               room: (state as BattleReady).room,
@@ -271,6 +311,8 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
               opponentScore: 0,
             ),
           );
+        } catch (e) {
+          emit(BattleError(message: 'Failed to load quiz: ${e.toString()}'));
         }
         break;
 
@@ -284,7 +326,6 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
 
           // Only update if it's the opponent's answer, not our own
           if (answeringPlayerId != _currentUserId) {
-            print('📊 Opponent score update: $newScore');
             add(
               OpponentAnsweredEvent(
                 questionIndex: update['questionIndex'] ?? 0,
@@ -299,7 +340,7 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         // FIX: Add delay before fetching results to avoid race condition
         if (update.containsKey('roomId')) {
           final roomId = update['roomId'] as String;
-          print('🏁 Battle completed event received for room: $roomId');
+
           // Delay to ensure backend has saved the results
           await Future.delayed(const Duration(milliseconds: 500));
           add(GetBattleResultEvent(roomId: roomId));
@@ -312,7 +353,6 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
         break;
 
       case 'joined_room':
-        print('✅ Joined room: ${update['roomId']}');
         break;
 
       case 'error':
@@ -351,7 +391,7 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
       } catch (e) {
         lastError = e as Exception;
         retries--;
-        print('⚠️ Failed to get battle result, retries left: $retries');
+
         if (retries > 0) {
           await Future.delayed(const Duration(seconds: 1));
         }
@@ -404,6 +444,7 @@ class BattleBloc extends Bloc<BattleEvent, BattleState> {
               .where((room) => room.status == BattleStatus.completed)
               .map((room) => _convertRoomToHistoryItem(room))
               .toList();
+
       emit(BattleHistoryItemsLoaded(history: history));
     } catch (e) {
       emit(BattleError(message: 'Error loading battle history: $e'));

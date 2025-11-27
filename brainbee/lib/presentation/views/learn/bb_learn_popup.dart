@@ -169,7 +169,7 @@ Widget _buildEnhancedItem(
             MaterialPageRoute(
               builder: (context) {
                 if (item['navigateTo'] == BBBattle) {
-                  return BBBattle(state: state);
+                  return BBBattle();
                 } else {
                   return item['navigateTo'];
                 }

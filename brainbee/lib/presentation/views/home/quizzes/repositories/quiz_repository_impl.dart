@@ -99,18 +99,20 @@ class QuizRepositoryImpl implements QuizRepository {
 
   @override
   Future<Map<String, dynamic>> submitQuizPerformance({
+    required String bookId,
     required String studentId,
     required String quizId,
     required List<Map<String, dynamic>> answers,
+    required int timeSpentSeconds,
   }) async {
     try {
       final response = await apiService.post(
         '/api/student/quiz/submit-quiz',
         data: {
-          'bookId': "6891ad05a45067414d66897a",
+          'bookId': bookId,
           'quiz_id': quizId,
           'answers': answers,
-          'timeSpentSeconds': 50,
+          'timeSpentSeconds': timeSpentSeconds,
         },
       );
 

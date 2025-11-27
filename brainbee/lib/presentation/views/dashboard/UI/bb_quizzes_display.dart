@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class BbQuizzesDisplay extends StatefulWidget {
+  final String bookId;
   final String title;
   final String description;
   final String imagePath1;
@@ -16,6 +17,7 @@ class BbQuizzesDisplay extends StatefulWidget {
 
   const BbQuizzesDisplay({
     super.key,
+    required this.bookId,
     required this.title,
     required this.description,
     required this.imagePath1,
@@ -125,7 +127,7 @@ class _BbQuizzesDisplayState extends State<BbQuizzesDisplay> {
                               Navigator.pushNamed(
                                 context,
                                 AppRoutes.quizTaking,
-                                arguments: student,
+                                arguments: [student, widget.bookId],
                               );
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(

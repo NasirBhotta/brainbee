@@ -2,6 +2,7 @@ import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/models/subject_model.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/widgets/popups/bb_model_button.dart';
+import 'package:brainbee/presentation/views/home/quizzes/models/book_model.dart';
 import 'package:brainbee/presentation/views/learn/battle/bloc/battle_bloc.dart';
 import 'package:brainbee/presentation/views/learn/battle/models/battle_models.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ void showInvitationPopUp({
   String? button2Label,
   required Subject subject,
   List<String>? chapters,
+  List<String>? topics,
   required VoidCallback onButton1Pressed,
   required VoidCallback onButton2Pressed,
 }) {
@@ -398,11 +400,63 @@ class _InvitationPopupContentState extends State<_InvitationPopupContent> {
     widget.onButton2Pressed();
   }
 
-  void _showQuizSettingsPopup(
+  // void _showQuizSettingsPopup(
+  //   BuildContext context,
+  //   Subject subject, {
+  //   List<String>? chapters,
+  // }) {
+  //   showInvitationPopUp(
+  //     context: context,
+  //     title: "Invite Friends",
+  //     desc: "Are you ready?",
+  //     button1Label: "Share invitation code",
+  //     button2Label: "Random Match",
+  //     subject: subject,
+  //     chapters: chapters,
+  //     onButton1Pressed: () {
+  //       // Create invitation room
+  //       print('Creating invitation room...');
+  //       context.read<BattleBloc>().add(
+  //         CreateBattleRoomEvent(
+  //           subject: subject.name,
+  //           mode:
+  //               chapters == null ? BattleMode.wholeBook : BattleMode.byChapter,
+  //           chapters: chapters,
+  //         ),
+  //       );
+  //     },
+  //     onButton2Pressed: () {
+  //       // Find random opponent
+  //       print('Finding random opponent...');
+  //       context.read<BattleBloc>().add(
+  //         FindRandomOpponentEvent(subject: subject.name, chapters: chapters),
+  //       );
+  //     },
+  //   );
+  // }
+
+  void showQuizSettingsPopup(
     BuildContext context,
     Subject subject, {
-    List<String>? chapters,
+    List<String>? chapters, // Can be ["1"] or ["1::Topic A", "1::Topic B"]
   }) {
+    // Determine the battle mode based on the content of the chapters array
+    BattleMode mode;
+    if (chapters!.length == 1 && !chapters[0].contains('::')) {
+      // This case handles the 'Whole Chapter' selection, e.g., ["1"]
+      mode = BattleMode.byChapter;
+    } else {
+      // This case handles the 'Specific Topics' selection, e.g., ["1::Topic A", "1::Topic B"]
+      mode =
+          BattleMode
+              .byTopic; // Assuming the BattleMode enum supports 'byTopic' if needed, otherwise use 'byChapter'
+    }
+
+    // NOTE: For simplicity and based on your original BattleMode enum,
+    // we'll primarily use BattleMode.random/invitation in the event,
+    // and let the backend infer the type from the `chapters` array structure.
+    // The 'mode' in the event is often just 'random' or 'invitation'.
+
     showInvitationPopUp(
       context: context,
       title: "Invite Friends",
@@ -410,16 +464,15 @@ class _InvitationPopupContentState extends State<_InvitationPopupContent> {
       button1Label: "Share invitation code",
       button2Label: "Random Match",
       subject: subject,
-      chapters: chapters,
+      chapters: chapters, // Pass the chapters array
       onButton1Pressed: () {
         // Create invitation room
         print('Creating invitation room...');
         context.read<BattleBloc>().add(
           CreateBattleRoomEvent(
             subject: subject.name,
-            mode:
-                chapters == null ? BattleMode.wholeBook : BattleMode.byChapter,
-            chapters: chapters,
+            mode: mode, // Use the inferred mode
+            chapters: chapters, // Pass the critical chapters array
           ),
         );
       },
@@ -427,7 +480,10 @@ class _InvitationPopupContentState extends State<_InvitationPopupContent> {
         // Find random opponent
         print('Finding random opponent...');
         context.read<BattleBloc>().add(
-          FindRandomOpponentEvent(subject: subject.name, chapters: chapters),
+          FindRandomOpponentEvent(
+            subject: subject.name,
+            chapters: chapters, // Pass the critical chapters array
+          ),
         );
       },
     );
@@ -470,7 +526,7 @@ class _InvitationPopupContentState extends State<_InvitationPopupContent> {
             subject: widget.subject.name,
             mode:
                 widget.chapters == null
-                    ? BattleMode.wholeBook
+                    ? BattleMode.byTopic
                     : BattleMode.byChapter,
             chapters: widget.chapters,
           ),
@@ -546,6 +602,7 @@ void showQuizSettingsPopup(
   BuildContext context,
   Subject subject, {
   List<String>? chapters,
+  List<String>? topics,
 }) {
   showInvitationPopUp(
     context: context,
@@ -561,7 +618,7 @@ void showQuizSettingsPopup(
       context.read<BattleBloc>().add(
         CreateBattleRoomEvent(
           subject: subject.name,
-          mode: chapters == null ? BattleMode.wholeBook : BattleMode.byChapter,
+          mode: chapters == null ? BattleMode.byTopic : BattleMode.byChapter,
           chapters: chapters,
         ),
       );
@@ -570,7 +627,11 @@ void showQuizSettingsPopup(
       // Find random opponent
       print('Finding random opponent...');
       context.read<BattleBloc>().add(
-        FindRandomOpponentEvent(subject: subject.name, chapters: chapters),
+        FindRandomOpponentEvent(
+          subject: subject.name,
+          chapters: chapters,
+          topics: topics,
+        ),
       );
     },
   );

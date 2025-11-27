@@ -6,10 +6,12 @@ import 'package:brainbee/presentation/views/home/quizzes/models/book_model.dart'
 import 'package:flutter/material.dart';
 
 class BbQuizzesListScreen extends StatefulWidget {
+  final String bookId;
   final Topic topic;
   final StudentModel student;
   const BbQuizzesListScreen({
     super.key,
+    required this.bookId,
     required this.topic,
     required this.student,
   });
@@ -66,6 +68,7 @@ class _BbQuizzesListScreenState extends State<BbQuizzesListScreen> {
                       MaterialPageRoute(
                         builder:
                             (context) => BBInAppQuizScreen(
+                              bookId: widget.bookId,
                               quizId: widget.topic.quizzes[index].id,
                               studentId: widget.student.id,
                             ),

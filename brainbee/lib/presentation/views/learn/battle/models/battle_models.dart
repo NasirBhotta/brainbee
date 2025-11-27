@@ -9,7 +9,7 @@ enum BattleStatus {
   cancelled,
 }
 
-enum BattleMode { random, invitation, wholeBook, byChapter }
+enum BattleMode { random, invitation, byChapter, byTopic }
 
 class BattleRoom {
   final String roomId;
@@ -81,8 +81,8 @@ class BattleRoom {
         return BattleMode.random;
       case 'invitation':
         return BattleMode.invitation;
-      case 'wholebook':
-        return BattleMode.wholeBook;
+      case 'byTopic':
+        return BattleMode.byTopic;
       case 'bychapter':
         return BattleMode.byChapter;
       default:
@@ -237,16 +237,57 @@ class BattleQuizData {
       startTime = null;
 
   factory BattleQuizData.fromJson(Map<String, dynamic> json) {
+    print('🔍 Parsing BattleQuizData from: $json');
+
+    // Safely handle the questions array
+    final questionsData = json['questions'];
+    print('🔍 Questions data type: ${questionsData.runtimeType}');
+    print('🔍 Questions data: $questionsData');
+
+    List<Question> parsedQuestions = [];
+
+    if (questionsData != null && questionsData is List) {
+      for (var i = 0; i < questionsData.length; i++) {
+        try {
+          final questionJson = questionsData[i];
+          print('🔍 Parsing question $i: ${questionJson.runtimeType}');
+
+          // Ensure it's a Map
+          if (questionJson is Map) {
+            final questionMap = Map<String, dynamic>.from(questionJson);
+            final question = Question.fromJson(questionMap);
+            parsedQuestions.add(question);
+            print('✅ Successfully parsed question $i: ${question.text}');
+          } else {
+            print('❌ Question $i is not a Map: $questionJson');
+          }
+        } catch (e, stackTrace) {
+          print('❌ Error parsing question $i: $e');
+          print('❌ Stack trace: $stackTrace');
+        }
+      }
+    } else {
+      print('❌ Questions is not a List or is null');
+    }
+
+    // Parse startTime safely
+    DateTime? parsedStartTime;
+    try {
+      if (json['startTime'] != null) {
+        parsedStartTime = DateTime.parse(json['startTime'].toString());
+      }
+    } catch (e) {
+      print('⚠️ Could not parse startTime: $e');
+      parsedStartTime = DateTime.now();
+    }
+
     return BattleQuizData(
-      quizId: json['quizId'] ?? '',
-      roomId: json['roomId'] ?? '',
-      questions:
-          (json['questions'] as List)
-              .map((q) => Question.fromJson(q))
-              .toList(), // getting error here
-      totalQuestions: json['totalQuestions'] ?? 0,
-      timePerQuestion: json['timePerQuestion'] ?? 15,
-      startTime: DateTime.parse(json['startTime']),
+      quizId: json['quizId']?.toString() ?? '',
+      roomId: json['roomId']?.toString() ?? '',
+      questions: parsedQuestions,
+      totalQuestions: json['totalQuestions'] as int? ?? parsedQuestions.length,
+      timePerQuestion: json['timePerQuestion'] as int? ?? 15,
+      startTime: parsedStartTime,
     );
   }
 

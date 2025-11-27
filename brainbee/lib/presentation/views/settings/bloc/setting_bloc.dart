@@ -1,7 +1,7 @@
 import 'dart:async';
-
 import 'package:bloc/bloc.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
+import 'package:brainbee/presentation/views/settings/model/book_model.dart';
 import 'package:brainbee/presentation/views/settings/repository/settings_repo.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,6 +16,8 @@ class SettingsBloc extends Bloc<SettingEvent, SettingsState> {
   SettingsBloc({required this.repository}) : super(SettingsInitial()) {
     on<SettingsLoadGradeFromLocal>(_onLoadGradeFromLocal);
     on<SettingsSaveGradeLocal>(_onSaveGradeLocal);
+    on<SettingsLoadAvailableBooks>(_onLoadAvailableBooks);
+    on<SettingsUpdateGradeAndBooks>(_onUpdateGradeAndBooks);
     on<SettingsUpdateGradeAndSubjects>(_onUpdateGradeAndSubjects);
     on<SettingsClearLocalGrade>(_onClearLocalGrade);
     on<SettingsUpdatePassword>(_onUpdatePassword);
@@ -51,6 +53,42 @@ class SettingsBloc extends Bloc<SettingEvent, SettingsState> {
     }
   }
 
+  /// NEW: Load available books for a grade
+  FutureOr<void> _onLoadAvailableBooks(
+    SettingsLoadAvailableBooks event,
+    Emitter<SettingsState> emit,
+  ) async {
+    emit(SettingsLoading());
+    try {
+      final booksResponse = await repository.fetchAvailableBooksForGrade(
+        event.grade,
+      );
+      emit(SettingsAvailableBooksLoaded(booksResponse));
+    } catch (e) {
+      emit(SettingsUpdateFailure('Failed to load books: ${e.toString()}'));
+    }
+  }
+
+  /// NEW PREFERRED: Update grade and books using book IDs
+  FutureOr<void> _onUpdateGradeAndBooks(
+    SettingsUpdateGradeAndBooks event,
+    Emitter<SettingsState> emit,
+  ) async {
+    emit(SettingsLoading());
+
+    try {
+      final studentData = await repository.updateGradeAndBooks(
+        grade: event.grade,
+        bookIds: event.bookIds,
+      );
+
+      emit(SettingsUpdateSuccess(studentData));
+    } catch (e) {
+      emit(SettingsUpdateFailure(e.toString()));
+    }
+  }
+
+  /// LEGACY: Update grade and subjects (for backward compatibility)
   FutureOr<void> _onUpdateGradeAndSubjects(
     SettingsUpdateGradeAndSubjects event,
     Emitter<SettingsState> emit,
@@ -58,14 +96,10 @@ class SettingsBloc extends Bloc<SettingEvent, SettingsState> {
     emit(SettingsLoading());
 
     try {
-      // Update grade and subjects via API
       final studentData = await repository.updateGradeAndSubjects(
         grade: event.grade,
         subjects: event.subjects,
       );
-
-      // Clear local grade since it's now synced with backend
-      // await _clearLocalGrade();
 
       emit(SettingsUpdateSuccess(studentData));
     } catch (e) {
@@ -90,7 +124,10 @@ class SettingsBloc extends Bloc<SettingEvent, SettingsState> {
     await prefs.remove(_gradeKey);
   }
 
-  FutureOr<void> _onUpdatePassword(event, Emitter<SettingsState> emit) async {
+  FutureOr<void> _onUpdatePassword(
+    SettingsUpdatePassword event,
+    Emitter<SettingsState> emit,
+  ) async {
     emit(SettingsPasswordUpdating());
 
     try {

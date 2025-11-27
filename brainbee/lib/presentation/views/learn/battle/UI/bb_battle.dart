@@ -7,6 +7,7 @@ import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/learn/battle/UI/bb_book_selection.dart';
 import 'package:brainbee/presentation/views/learn/battle/UI/bb_searching_players.dart';
 import 'package:brainbee/presentation/views/learn/battle/bloc/battle_bloc.dart';
+import 'package:brainbee/presentation/views/learn/battle/models/battle_stat_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -24,8 +25,7 @@ class _PendingInvitationData {
 }
 
 class BBBattle extends StatefulWidget {
-  final StudentState? state;
-  const BBBattle({super.key, this.state});
+  const BBBattle({super.key});
 
   @override
   State<BBBattle> createState() => _BBBattleState();
@@ -33,13 +33,22 @@ class BBBattle extends StatefulWidget {
 
 class _BBBattleState extends State<BBBattle> {
   dynamic battleStats;
-  List<dynamic> battleHistory = [];
+  late StudentState studentState;
+  List<BattleHistoryItem> battleHistory = [];
   bool _isLoading = false;
-  late StudentState student;
+
   @override
   void initState() {
     super.initState();
-    student = context.read<StudentBloc>().state;
+    studentState = context.read<StudentBloc>().state;
+    context.read<BattleBloc>().add(
+      SetCurrentUserIdEvent(
+        userId:
+            studentState is StudentDataLoaded
+                ? (studentState as StudentDataLoaded).student.id
+                : '',
+      ),
+    );
     _loadData();
   }
 
@@ -122,6 +131,10 @@ class _BBBattleState extends State<BBBattle> {
           }
           if (state is BattleHistoryItemsLoaded) {
             battleHistory = state.history;
+
+            print(
+              'current user id is ${studentState is StudentDataLoaded ? (studentState as StudentDataLoaded).student.id : 'unknown'} with history length ${battleHistory.length}',
+            );
           }
 
           _isLoading = state is BattleLoading;
@@ -299,8 +312,8 @@ class _BBBattleState extends State<BBBattle> {
     String playerName = "Guest Player";
     String playerInitial = "G";
 
-    if (student is StudentDataLoaded) {
-      final user = (student as StudentDataLoaded).student;
+    if (studentState is StudentDataLoaded) {
+      final user = (studentState as StudentDataLoaded).student;
       playerName = "${user.firstName} ${user.lastName}";
       playerInitial =
           user.firstName.isNotEmpty
@@ -358,12 +371,12 @@ class _BBBattleState extends State<BBBattle> {
     String playerName = "Guest";
     String playerInitial = "G";
 
-    if (student is StudentDataLoaded) {
-      final studentData = (student as StudentDataLoaded).student;
-      playerName = "${studentData.firstName} ${studentData.lastName}";
+    if (studentState is StudentDataLoaded) {
+      final student = (studentState as StudentDataLoaded).student;
+      playerName = "${student.firstName} ${student.lastName}";
       playerInitial =
-          studentData.firstName.isNotEmpty
-              ? studentData.firstName.substring(0, 1).toUpperCase()
+          student.firstName.isNotEmpty
+              ? student.firstName.substring(0, 1).toUpperCase()
               : "G";
     }
 
@@ -430,7 +443,14 @@ class _BBBattleState extends State<BBBattle> {
                     backgroundColor:
                         battleStats?.avatarColor ?? Colors.green[700],
                     child: BBText(
-                      data: playerInitial,
+                      data:
+                          studentState is StudentDataLoaded
+                              ? (studentState as StudentDataLoaded)
+                                  .student
+                                  .firstName
+                                  .substring(0, 1)
+                                  .toUpperCase()
+                              : "G",
                       style: Theme.of(
                         context,
                       ).textTheme.headlineSmall?.copyWith(
@@ -447,10 +467,9 @@ class _BBBattleState extends State<BBBattle> {
                     children: [
                       BBText(
                         data:
-                            widget.state != null &&
-                                    widget.state is StudentDataLoaded
-                                ? "${(widget.state as StudentDataLoaded).student.firstName} ${(widget.state as StudentDataLoaded).student.lastName}"
-                                : playerName,
+                            studentState is StudentDataLoaded
+                                ? "${(studentState as StudentDataLoaded).student.firstName} ${(studentState as StudentDataLoaded).student.lastName}"
+                                : "Guest Player",
                         style: context.textStyle.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -611,7 +630,7 @@ class _BBBattleState extends State<BBBattle> {
                     ),
                   ],
                 ),
-                if (battleHistory.isNotEmpty || battleHistory.isEmpty)
+                if (battleHistory.isNotEmpty || battleHistory != null)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,

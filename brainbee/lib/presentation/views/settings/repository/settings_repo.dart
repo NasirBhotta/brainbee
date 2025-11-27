@@ -1,7 +1,9 @@
+// repository/settings_repository.dart
 import 'dart:convert';
 import 'package:brainbee/core/models/token_user.dart';
 import 'package:brainbee/presentation/views/auth/models/user_model.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
+import 'package:brainbee/presentation/views/settings/model/book_model.dart';
 import 'package:brainbee/presentation/views/settings/services/settings_api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -39,7 +41,6 @@ class SettingsRepository {
     }
   }
 
-  // Mock response data (keeping the same structure from your BLoC)
   Future<TokenUserData> getTokenAndUser() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -72,11 +73,45 @@ class SettingsRepository {
     }
   }
 
+  /// NEW: Fetch available books for a specific grade
+  Future<GradeBooksResponse> fetchAvailableBooksForGrade(int grade) async {
+    try {
+      final response = await _apiService.getAvailableBooksForGrade(grade);
+
+      print("Available books response: ${response.body}");
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch books: ${response.body}');
+      }
+
+      final responseData = jsonDecode(response.body);
+
+      if (responseData['status'] != 'success') {
+        throw Exception(
+          'API Error: ${responseData['message'] ?? 'Unknown error'}',
+        );
+      }
+
+      return GradeBooksResponse.fromJson(responseData);
+    } catch (e) {
+      if (e.toString().contains('Connection refused')) {
+        throw Exception(
+          "Cannot connect to server. Please check your connection.",
+        );
+      } else if (e.toString().contains('TimeoutException')) {
+        throw Exception(
+          "Request timed out. Please check your internet connection.",
+        );
+      }
+      rethrow;
+    }
+  }
+
   Future<StudentModel> fetchStudentData() async {
     final tokenUserData = await getTokenAndUser();
     final token = tokenUserData.token;
 
-    print("tokem is $token");
+    print("token is $token");
     if (token == null || token.isEmpty) {
       throw Exception("Authentication token not found");
     }
@@ -98,7 +133,6 @@ class SettingsRepository {
         );
       }
 
-      // Transform API response to match StudentModel structure
       final userData = responseData['data']['user'];
       final transformedResponse = _transformUserDataToStudentModel(
         userData,
@@ -123,90 +157,59 @@ class SettingsRepository {
     }
   }
 
-  Map<String, dynamic> _transformUserDataToStudentModel(
-    Map<String, dynamic> userData,
-    String token,
-  ) {
-    return {
-      "status": "success",
-      "accessToken": token,
-      "user": {
-        "profileImage": userData['profileImage'],
-        "id": userData['_id'],
-        "email": userData['email'],
-        "firstName": userData['firstName'],
-        "lastName": userData['lastName'],
-        "grade": userData['grade'] ?? 8,
-        "subjects": userData['subjects'] ?? [],
-        "parentId": userData['parentId'],
-        "coins": userData['coins'] ?? 0,
-        "streakScore": userData['streakScore'] ?? 0,
-        "lastStreakDate": userData['lastStreakDate'],
-        "dailyLives": userData['dailyLives'] ?? 5,
-        "livesResetTime": userData['livesResetTime'],
-        "friends": userData['friends'] ?? [],
-        "achievements":
-            userData['achievements'] ?? {"badges": [], "certificates": []},
-        "leaderboardStats": _transformLeaderboardStats(
-          userData['leaderboardStats'],
-        ),
-        "battleStats":
-            userData['battleStats'] ??
-            {"wins": 0, "losses": 0, "totalBattles": 0},
-        "enrolledClasses": userData['enrolledClasses'] ?? [],
-        "chapter_levels": userData['chapter_levels'] ?? {},
-        "score": userData['score'] ?? 0,
-        "topic_performance": userData['topic_performance'] ?? {},
-        "goal": _transformGoal(
-          userData['goals'] != null && userData['goals'].isNotEmpty
-              ? userData['goals'][0]
-              : null,
-        ),
-      },
-    };
-  }
+  /// NEW PREFERRED METHOD: Update grade and selected books using book IDs
+  Future<StudentModel> updateGradeAndBooks({
+    required int grade,
+    required List<String> bookIds,
+  }) async {
+    final tokenUserData = await getTokenAndUser();
+    final token = tokenUserData.token;
 
-  Map<String, dynamic> _transformLeaderboardStats(Map<String, dynamic>? stats) {
-    if (stats == null) return {"rank": 0, "points": 0};
-
-    // Transform API leaderboard format to expected format
-    final totalPoints =
-        (stats['weeklyScore'] ?? 0) +
-        (stats['monthlyScore'] ?? 0) +
-        (stats['yearlyScore'] ?? 0) +
-        (stats['overallScore'] ?? 0);
-
-    return {"rank": stats['rank'] ?? 0, "points": totalPoints};
-  }
-
-  Map<String, dynamic> _transformGoal(Map<String, dynamic>? goalData) {
-    // If goalData is null or empty, return default goal
-    if (goalData == null) {
-      return {
-        "title": "Casual",
-        "description": "2 Quizzes & Estimate 7 minutes daily",
-        "dueDate": DateTime.now().add(Duration(days: 7)).toIso8601String(),
-        "reminder": [],
-        "value": 2,
-        "status": true,
-        "noOfAttempts": 0,
-      };
+    if (token == null || token.isEmpty) {
+      throw Exception("Authentication token not found");
     }
 
-    return {
-      "title": goalData['title'] ?? 'Casual',
-      "description":
-          goalData['description'] ?? '2 Quizzes & Estimate 7 minutes daily',
-      "dueDate":
-          goalData['dueDate'] ??
-          DateTime.now().add(Duration(days: 7)).toIso8601String(),
-      "reminder": goalData['reminder'] ?? [],
-      "value": goalData['value'] ?? 2,
-      "status": goalData['status'] ?? true,
-      "noOfAttempts": goalData['noOfAttempts'] ?? 0,
-    };
+    try {
+      final response = await _apiService.updateGradeAndBooks(
+        grade: grade,
+        bookIds: bookIds,
+        token: token,
+      );
+
+      print("Update grade and books response: ${response.body}");
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update grade and books: ${response.body}');
+      }
+
+      final responseData = jsonDecode(response.body);
+
+      if (responseData['status'] != 'success') {
+        throw Exception(
+          'API Error: ${responseData['message'] ?? 'Unknown error'}',
+        );
+      }
+
+      // Fetch fresh student data after update
+      final studentData = await fetchStudentData();
+
+      return studentData;
+    } catch (e) {
+      if (e.toString().contains('Connection refused')) {
+        throw Exception(
+          "Cannot connect to server. Please check your connection.",
+        );
+      } else if (e.toString().contains('TimeoutException')) {
+        throw Exception(
+          "Request timed out. Please check your internet connection.",
+        );
+      }
+      rethrow;
+    }
   }
 
+  /// LEGACY METHOD: Update grade and subjects using subject names
+  /// Kept for backward compatibility
   Future<StudentModel> updateGradeAndSubjects({
     required int grade,
     required List<String> subjects,
@@ -238,6 +241,7 @@ class SettingsRepository {
           'API Error: ${responseData['message'] ?? 'Unknown error'}',
         );
       }
+
       final studentData = await fetchStudentData();
 
       return studentData;
@@ -298,5 +302,88 @@ class SettingsRepository {
       }
       rethrow;
     }
+  }
+
+  Map<String, dynamic> _transformUserDataToStudentModel(
+    Map<String, dynamic> userData,
+    String token,
+  ) {
+    return {
+      "status": "success",
+      "accessToken": token,
+      "user": {
+        "profileImage": userData['profileImage'],
+        "id": userData['_id'],
+        "email": userData['email'],
+        "firstName": userData['firstName'],
+        "lastName": userData['lastName'],
+        "grade": userData['grade'] ?? 8,
+        "subjects": userData['subjects'] ?? [],
+        "selectedBooks": userData['selectedBooks'] ?? [], // NEW field
+        "parentId": userData['parentId'],
+        "coins": userData['coins'] ?? 0,
+        "streakScore": userData['streakScore'] ?? 0,
+        "lastStreakDate": userData['lastStreakDate'],
+        "dailyLives": userData['dailyLives'] ?? 5,
+        "livesResetTime": userData['livesResetTime'],
+        "friends": userData['friends'] ?? [],
+        "achievements":
+            userData['achievements'] ?? {"badges": [], "certificates": []},
+        "leaderboardStats": _transformLeaderboardStats(
+          userData['leaderboardStats'],
+        ),
+        "battleStats":
+            userData['battleStats'] ??
+            {"wins": 0, "losses": 0, "totalBattles": 0},
+        "enrolledClasses": userData['enrolledClasses'] ?? [],
+        "chapter_levels": userData['chapter_levels'] ?? {},
+        "score": userData['score'] ?? 0,
+        "topic_performance": userData['topic_performance'] ?? {},
+        "goal": _transformGoal(
+          userData['goals'] != null && userData['goals'].isNotEmpty
+              ? userData['goals'][0]
+              : null,
+        ),
+      },
+    };
+  }
+
+  Map<String, dynamic> _transformLeaderboardStats(Map<String, dynamic>? stats) {
+    if (stats == null) return {"rank": 0, "points": 0};
+
+    final totalPoints =
+        (stats['weeklyScore'] ?? 0) +
+        (stats['monthlyScore'] ?? 0) +
+        (stats['yearlyScore'] ?? 0) +
+        (stats['overallScore'] ?? 0);
+
+    return {"rank": stats['rank'] ?? 0, "points": totalPoints};
+  }
+
+  Map<String, dynamic> _transformGoal(Map<String, dynamic>? goalData) {
+    if (goalData == null) {
+      return {
+        "title": "Casual",
+        "description": "2 Quizzes & Estimate 7 minutes daily",
+        "dueDate": DateTime.now().add(Duration(days: 7)).toIso8601String(),
+        "reminder": [],
+        "value": 2,
+        "status": true,
+        "noOfAttempts": 0,
+      };
+    }
+
+    return {
+      "title": goalData['title'] ?? 'Casual',
+      "description":
+          goalData['description'] ?? '2 Quizzes & Estimate 7 minutes daily',
+      "dueDate":
+          goalData['dueDate'] ??
+          DateTime.now().add(Duration(days: 7)).toIso8601String(),
+      "reminder": goalData['reminder'] ?? [],
+      "value": goalData['value'] ?? 2,
+      "status": goalData['status'] ?? true,
+      "noOfAttempts": goalData['noOfAttempts'] ?? 0,
+    };
   }
 }

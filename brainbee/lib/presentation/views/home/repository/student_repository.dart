@@ -4,6 +4,7 @@ import 'package:brainbee/core/models/token_user.dart';
 import 'package:brainbee/presentation/views/auth/models/user_model.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 import 'package:brainbee/presentation/views/home/services/student_api_service.dart';
+import 'package:brainbee/presentation/views/settings/model/book_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentRepository {
@@ -72,6 +73,8 @@ class StudentRepository {
       final userData = responseData['data']['user'];
 
       print("The user data is $userData");
+
+      print("book data is ${userData['selectedBooks']}");
       final transformedResponse = _transformUserDataToStudentModel(
         userData,
         token,
@@ -141,6 +144,10 @@ class StudentRepository {
               ? userData['goals'][0]
               : null,
         ),
+
+        // ✅ Handle selectedBooks
+        "selectedBooks": userData['selectedBooks'] ?? [],
+        // 4. Default to an empty list if data is null or fails
       },
     };
   }

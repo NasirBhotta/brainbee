@@ -54,11 +54,17 @@ class AppRoutes {
       },
 
       quizTaking: (context) {
-        final student =
-            ModalRoute.of(context)!.settings.arguments as StudentModel;
+        final args = ModalRoute.of(context)!.settings.arguments as List;
+        final StudentModel student = args[0];
+        final String bookId = args[1];
+        final selectedSubject =
+            student.selectedBooks
+                .firstWhere((book) => book.id == bookId)
+                .bookTitle;
         return BbSpecificBookQuizSelection(
+          bookId: bookId,
           student: student,
-          subject: 'Biology',
+          subject: selectedSubject,
         );
       },
 
@@ -66,7 +72,12 @@ class AppRoutes {
         final args = ModalRoute.of(context)!.settings.arguments as List;
         final topic = args[0] as Topic;
         final student = args[1] as StudentModel;
-        return BbQuizzesListScreen(topic: topic, student: student);
+        final String bookId = args[2] as String;
+        return BbQuizzesListScreen(
+          topic: topic,
+          student: student,
+          bookId: bookId,
+        );
       },
 
       chapterSelection: (context) {

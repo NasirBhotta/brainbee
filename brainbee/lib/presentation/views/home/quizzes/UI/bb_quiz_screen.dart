@@ -12,6 +12,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class BBInAppQuizScreen extends StatefulWidget {
+  final String bookId;
   final String quizTitle;
   final String quizId;
   final String studentId;
@@ -20,6 +21,7 @@ class BBInAppQuizScreen extends StatefulWidget {
     this.quizTitle = "Topic Quiz",
     required this.quizId,
     required this.studentId,
+    required this.bookId,
   });
 
   @override
@@ -166,9 +168,11 @@ class _BBInAppQuizScreenState extends State<BBInAppQuizScreen> {
     // Submit to backend
     context.read<QuizBloc>().add(
       SubmitQuizPerformance(
+        bookId: widget.bookId,
         studentId: widget.studentId,
         quizId: widget.quizId,
         answers: answersPayload,
+        timeSpentSeconds: totalQuizTime,
       ),
     );
 
