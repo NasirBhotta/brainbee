@@ -1,6 +1,5 @@
 import 'package:brainbee/core/constants/bb_colors.dart';
 import 'package:brainbee/core/widgets/quiz%20generation/bb_chapter_card.dart';
-
 import 'package:brainbee/presentation/views/dashboard/UI/bb_progress_bar.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_coin_popup.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_lives_popup.dart';

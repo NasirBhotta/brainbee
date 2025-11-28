@@ -85,10 +85,6 @@ class _BBhomeState extends State<BBhome> {
   void initState() {
     super.initState();
 
-    print(
-      "the subjects in student model are ${widget.student.selectedBooks.first.bookTitle}",
-    );
-
     _desc = [
       widget.student.score.toString(),
       widget.student.coins.toString(),
@@ -493,3 +489,14 @@ class _PromotionCard extends StatelessWidget {
     );
   }
 }
+
+// import 'package:flutter/material.dart';
+
+// class BbHome extends StatelessWidget {
+//   const BbHome({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(child: Center(child: Text("home")));
+//   }
+// }

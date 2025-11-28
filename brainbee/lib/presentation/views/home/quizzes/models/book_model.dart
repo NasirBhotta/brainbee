@@ -1,3 +1,5 @@
+import 'package:brainbee/presentation/views/settings/model/book_model.dart';
+
 class BookData {
   final String book;
   final String grade;
@@ -96,4 +98,11 @@ class Quiz {
       "generated_at": generatedAt.toIso8601String(),
     };
   }
+}
+
+class QuizBookPair {
+  final Map<String, dynamic> quiz;
+  final BookModel book;
+
+  QuizBookPair({required this.quiz, required this.book});
 }

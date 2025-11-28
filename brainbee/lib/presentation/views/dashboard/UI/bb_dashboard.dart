@@ -384,14 +384,34 @@ class _BBDashboardState extends State<BBDashboard>
   }
 
   Widget _buildActualDashboard(StudentDataLoaded state) {
+    print(
+      "the current selected screen is ${selectedScreen < dashBoardScreens.length ? dashBoardScreens[selectedScreen] : 'Invalid index'}",
+    );
+
+    // Determine which screen to display
+    Widget currentWidget;
+
+    // Only show actual screens for valid indices (0, 2, 3)
+    // For popups (1, 4), show the previous screen
+    if (selectedScreen == 0 || selectedScreen == 2 || selectedScreen == 3) {
+      currentWidget = dashBoardScreens[selectedScreen];
+    } else {
+      // For Learn (1) and Extras (4), show the last valid screen
+      // Default to home if previousScreen is invalid
+      if (previousScreen >= 0 &&
+          previousScreen < dashBoardScreens.length &&
+          (previousScreen == 0 || previousScreen == 2 || previousScreen == 3)) {
+        currentWidget = dashBoardScreens[previousScreen];
+      } else {
+        currentWidget = dashBoardScreens[0]; // Default to home
+      }
+    }
+
     return Stack(
       children: [
         Positioned.fill(
           bottom: kBottomNavigationBarHeight,
-          child:
-              selectedScreen == 0 || selectedScreen == 3 || selectedScreen == 2
-                  ? dashBoardScreens[selectedScreen]
-                  : dashBoardScreens[previousScreen],
+          child: currentWidget,
         ),
 
         Positioned(
@@ -404,9 +424,15 @@ class _BBDashboardState extends State<BBDashboard>
             elevation: 0,
             onTap: (value) {
               setState(() {
-                previousScreen = selectedScreen;
+                // Only update previousScreen if current selectedScreen is a valid screen (not a popup)
+                if (selectedScreen == 0 ||
+                    selectedScreen == 2 ||
+                    selectedScreen == 3) {
+                  previousScreen = selectedScreen;
+                }
                 selectedScreen = value;
               });
+
               if (value == 1) {
                 showSlidingPopup(
                   state,
@@ -499,7 +525,12 @@ class _BBDashboardState extends State<BBDashboard>
           child: GestureDetector(
             onTap: () {
               setState(() {
-                previousScreen = selectedScreen;
+                // Only update previousScreen if current selectedScreen is a valid screen
+                if (selectedScreen == 0 ||
+                    selectedScreen == 2 ||
+                    selectedScreen == 3) {
+                  previousScreen = selectedScreen;
+                }
                 selectedScreen = 2;
               });
             },
