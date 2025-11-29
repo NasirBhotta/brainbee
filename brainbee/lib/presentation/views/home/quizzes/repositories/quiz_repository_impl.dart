@@ -29,6 +29,60 @@ class QuizRepositoryImpl implements QuizRepository {
   }
 
   @override
+  @override
+  Future<List<Topic>> getTopicsWithStatus({
+    required String bookTitle,
+    required int chapterNumber,
+    required String bookId,
+  }) async {
+    try {
+      print("=== REPO: Fetching topics ===");
+      print("Book Title: $bookTitle");
+      print("Chapter Number: $chapterNumber");
+
+      final response = await apiService.post(
+        "/api/student/topic-check/chapters/topics/status",
+        data: {
+          "bookTitle": bookTitle,
+          "chapterNum": chapterNumber,
+          "bookId": bookId,
+        },
+      );
+
+      print("=== REPO: Topics response status: ${response.statusCode} ===");
+      print("=== REPO: Raw response body ===");
+      print(response.body);
+
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final topicsJson = data['data']['topics'] as List;
+
+      print("=== REPO: Topics JSON ===");
+      print(topicsJson);
+      print("=== REPO: Topics count: ${topicsJson.length} ===");
+
+      // Parse each topic individually to catch which one fails
+      final topics = <Topic>[];
+      for (var i = 0; i < topicsJson.length; i++) {
+        try {
+          print("Parsing topic $i: ${topicsJson[i]}");
+          final topic = Topic.fromJson(topicsJson[i]);
+          topics.add(topic);
+        } catch (e) {
+          print("ERROR parsing topic $i: $e");
+          print("Topic data: ${topicsJson[i]}");
+          rethrow;
+        }
+      }
+
+      return topics;
+    } catch (e) {
+      print("=== REPO TOPICS ERROR: $e ===");
+      print("Stack trace: ${StackTrace.current}");
+      throw Exception('Failed to load topics with status: $e');
+    }
+  }
+
+  @override
   Future<QuizData> generateQuiz({
     required String topicKey,
     required String bookName,

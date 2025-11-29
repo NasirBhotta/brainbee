@@ -5,6 +5,7 @@ import 'package:brainbee/core/utils/bb_screen_extension.dart';
 import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/utils/helper/bb_getinitials.dart';
+import 'package:brainbee/core/utils/helper/bb_time_greeting.dart';
 import 'package:brainbee/presentation/views/dashboard/UI/bb_progress_bar.dart';
 import 'package:brainbee/presentation/views/dashboard/UI/bb_quizzes_display.dart';
 import 'package:brainbee/presentation/views/home/UI/bb_coin_popup.dart';
@@ -16,6 +17,9 @@ import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/home/models/bb_student_model.dart';
 import 'package:brainbee/presentation/views/settings/UI/bb_settings.dart';
 import 'package:brainbee/presentation/views/settings/model/book_model.dart';
+import 'package:brainbee/presentation/views/extras/score_&_reportcard/scorecard/bloc/book_score_bloc.dart';
+import 'package:brainbee/presentation/views/extras/score_&_reportcard/scorecard/repo/score_repo_impl.dart';
+import 'package:brainbee/presentation/views/extras/score_&_reportcard/scorecard/services/score_api_service.dart';
 import 'package:brainbee/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,7 +33,31 @@ class BBhome extends StatefulWidget {
 }
 
 class _BBhomeState extends State<BBhome> {
-  // Static data - moved to class level for better performance
+  late String _greeting;
+
+  // Static data for visual assets mapping
+  static const Map<String, Map<String, dynamic>> _subjectAssets = {
+    'mathematics': {
+      'imagePath1': 'assets/bg1.png',
+      'imagePath2': 'assets/quiz1.png',
+      'color': BBColors.progressColor1,
+    },
+    'physics': {
+      'imagePath1': 'assets/bg2.png',
+      'imagePath2': 'assets/quiz2.png',
+      'color': BBColors.progressColor2,
+    },
+    'chemistry': {
+      'imagePath1': 'assets/bg4.png',
+      'imagePath2': 'assets/quiz4.png',
+      'color': BBColors.progressColor4,
+    },
+    'biology': {
+      'imagePath1': 'assets/bg3.png',
+      'imagePath2': 'assets/quiz3.png',
+      'color': BBColors.progressColor3,
+    },
+  };
 
   static const List<String> _imgPath = [
     'assets/trophy.png',
@@ -45,38 +73,6 @@ class _BBhomeState extends State<BBhome> {
     BBColors.alertRed,
   ];
 
-  static const List<Map<String, dynamic>> _quizzes = [
-    {
-      'title': 'Mathematics',
-      'description': 'Quiz level 1 - Basic and Mixed Operations',
-      'imagePath1': 'assets/bg1.png',
-      'imagePath2': 'assets/quiz1.png',
-      'color': BBColors.progressColor1,
-    },
-    {
-      'title': 'Physics',
-      'description': 'Quiz level 1 - Science Process Skills',
-      'imagePath1': 'assets/bg2.png',
-      'imagePath2': 'assets/quiz2.png',
-      'color': BBColors.progressColor2,
-    },
-    {
-      'title': 'Chemistry',
-      'description': 'Quiz level 1 - Introduction to Chemistry',
-      'imagePath1': 'assets/bg4.png',
-      'imagePath2': 'assets/quiz4.png',
-      'color': BBColors.progressColor4,
-    },
-    {
-      'title': 'Biology',
-      'description': 'Quiz level 1 - Introduction to Biology',
-      'imagePath1': 'assets/bg3.png',
-      'imagePath2': 'assets/quiz3.png',
-      'color': BBColors.progressColor3,
-    },
-  ];
-
-  // Cache these values to avoid recalculating on every build
   late List<String> _desc;
   late final String _displayName;
   late final String _initials;
@@ -101,6 +97,25 @@ class _BBhomeState extends State<BBhome> {
         widget.student.firstName != ''
             ? getIntials(widget.student.firstName)
             : 'U';
+
+    // ✅ Set initial greeting based on current time
+    _greeting = TimeGreeting.getGreeting();
+
+    // ✅ Optional: Update greeting every minute
+    _startGreetingTimer();
+  }
+
+  // ✅ Timer to update greeting automatically
+  void _startGreetingTimer() {
+    // Update greeting every minute to catch time changes
+    Future.delayed(const Duration(minutes: 1), () {
+      if (mounted) {
+        setState(() {
+          _greeting = TimeGreeting.getGreeting();
+        });
+        _startGreetingTimer(); // Restart timer
+      }
+    });
   }
 
   void _onPopupTap(int index, StudentDataLoaded state) {
@@ -120,175 +135,163 @@ class _BBhomeState extends State<BBhome> {
     }
   }
 
-  // Helper method to get registered quizzes only
-  List<Map<String, dynamic>> _getRegisteredQuizzes(
-    List<BookModel> registeredSubjects,
-  ) {
-    print("Registered subjects are $registeredSubjects");
-    return _quizzes.where((quiz) {
-      return registeredSubjects.any(
-        (book) =>
-            book.bookTitle.toLowerCase().contains(quiz['title']!.toLowerCase()),
-      );
-    }).toList();
+  // Helper method to get asset mapping for a subject
+  Map<String, dynamic> _getSubjectAssets(String bookTitle) {
+    final titleLower = bookTitle.toLowerCase();
+
+    // Check each subject keyword
+    for (var entry in _subjectAssets.entries) {
+      if (titleLower.contains(entry.key)) {
+        return entry.value;
+      }
+    }
+
+    // Default fallback
+    return {
+      'imagePath1': 'assets/bg1.png',
+      'imagePath2': 'assets/quiz1.png',
+      'color': BBColors.progressColor1,
+    };
   }
+
+  // Helper method to calculate quiz completion percentage
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<StudentBloc, StudentState>(
-      listener: (context, state) {
-        if (state is StudentDataError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.message)));
-        }
-      },
-      builder: (context, state) {
-        List<Map<String, dynamic>> registeredQuizzes = [];
+    return BlocProvider(
+      create:
+          (context) => BookScoreBloc(
+            repository: ScoreRepositoryImpl(apiService: ScoreApiService()),
+          )..add(LoadOverallScore()),
+      child: BlocConsumer<StudentBloc, StudentState>(
+        listener: (context, state) {
+          if (state is StudentDataError) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.message)));
+          }
+        },
+        builder: (context, studentState) {
+          if (studentState is StudentDataLoaded) {
+            _desc = [
+              studentState.student.score.toString(),
+              studentState.student.coins.toString(),
+              studentState.student.streakScore.toString(),
+              '∞/∞',
+            ];
+          }
 
-        if (state is StudentDataLoaded) {
-          _desc = [
-            state.student.score.toString(),
-            state.student.coins.toString(),
-            state.student.streakScore.toString(),
-            '∞/∞',
-          ];
-
-          // Get only the quizzes for registered subjects
-          registeredQuizzes = _getRegisteredQuizzes(
-            state.student.selectedBooks,
-          );
-        }
-
-        return RefreshIndicator.adaptive(
-          onRefresh: () {
-            return Future.delayed(const Duration(milliseconds: 500), () {
-              context.read<StudentBloc>().add(StudentFetchData());
-            });
-          },
-          child: CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 130,
-                pinned: true,
-                floating: false,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                flexibleSpace: ClipRRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                    child: FlexibleSpaceBar(
-                      background: _AppBarBackground(
-                        displayName: _displayName,
-                        initials: _initials,
+          return RefreshIndicator.adaptive(
+            onRefresh: () {
+              return Future.delayed(const Duration(milliseconds: 500), () {
+                context.read<StudentBloc>().add(StudentFetchData());
+                context.read<BookScoreBloc>().add(RefreshOverallScore());
+              });
+            },
+            child: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  expandedHeight: 130,
+                  pinned: true,
+                  floating: false,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  flexibleSpace: ClipRRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                      child: FlexibleSpaceBar(
+                        background: _AppBarBackground(
+                          displayName: _displayName,
+                          initials: _initials,
+                          greeting: _greeting,
+                        ),
+                        expandedTitleScale: 1,
+                        title: _ProgressBarRow(
+                          desc: _desc,
+                          onPopupTap: (index) {
+                            if (studentState is StudentDataLoaded) {
+                              _onPopupTap(index, studentState);
+                            }
+                          },
+                        ),
+                        centerTitle: true,
                       ),
-                      expandedTitleScale: 1,
-                      title: _ProgressBarRow(
-                        desc: _desc,
-                        onPopupTap: (index) {
-                          if (state is StudentDataLoaded) {
-                            _onPopupTap(index, state);
-                          }
-                        },
-                      ),
-                      centerTitle: true,
                     ),
                   ),
                 ),
-              ),
-              SliverList.builder(
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    print("index is $index");
-                    if (state is StudentDataLoaded) {
-                      return _PromotionCard(state);
-                    }
-                    return const SizedBox.shrink();
-                  }
+                if (studentState is StudentDataLoaded)
+                  _buildDynamicContent(studentState)
+                else
+                  SliverToBoxAdapter(
+                    child: const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 
-                  final quizIndex = index - 1;
+  Widget _buildDynamicContent(StudentDataLoaded studentState) {
+    return BlocBuilder<BookScoreBloc, BookScoreState>(
+      builder: (context, scoreState) {
+        return SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            // First item - Promotion Card
+            if (index == 0) {
+              return _PromotionCard(studentState);
+            }
 
-                  if (state is StudentDataLoaded) {
-                    // Check if we have registered quizzes and if the index is valid
-                    if (registeredQuizzes.isNotEmpty &&
-                        quizIndex < registeredQuizzes.length) {
-                      final quiz = registeredQuizzes[quizIndex];
-                      print("Showing registered quiz: ${quiz['title']}");
+            // Subsequent items - Book Cards
+            final bookIndex = index - 1;
 
-                      return BbQuizzesDisplay(
-                        bookId:
-                            state.student.selectedBooks
-                                .firstWhere(
-                                  (book) => book.bookTitle
-                                      .toLowerCase()
-                                      .contains(quiz['title']!.toLowerCase()),
-                                )
-                                .id,
-                        title: quiz['title']!,
-                        description: quiz['description']!,
-                        imagePath1: quiz['imagePath1']!,
-                        imagePath2: quiz['imagePath2']!,
-                        color: quiz['color']!,
-                      );
-                    }
-                    // Show message if no subjects are registered at all
-                    else if (registeredQuizzes.isEmpty && quizIndex == 0) {
-                      return Container(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 10,
-                        ),
-                        padding: const EdgeInsets.all(30),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15),
-                          color: Colors.blue[50],
-                          border: Border.all(color: Colors.blue[200]!),
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.school_outlined,
-                                size: 64,
-                                color: Colors.blue[400],
-                              ),
-                              const SizedBox(height: 16),
-                              BBText(
-                                data: "No Subjects Registered",
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.titleLarge?.copyWith(
-                                  color: Colors.blue[700],
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              BBText(
-                                data:
-                                    "Please register your subjects to start taking quizzes",
-                                style: Theme.of(context).textTheme.bodyLarge
-                                    ?.copyWith(color: Colors.blue[600]),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                  }
+            if (bookIndex < studentState.student.selectedBooks.length) {
+              final book = studentState.student.selectedBooks[bookIndex];
+              final assets = _getSubjectAssets(book.bookTitle);
 
-                  // Return null for indices beyond registered quizzes
-                  return null;
-                },
-                itemCount:
-                    state is StudentDataLoaded
-                        ? registeredQuizzes.length +
-                            1 // +1 for promotion card
-                        : 1, // Only show promotion card if state is not loaded
-              ),
-            ],
-          ),
+              // Get score data if available
+              int? averageScore;
+              int? quizzesCompleted;
+              int? totalQuizzes;
+
+              if (scoreState is OverallScoreLoaded) {
+                final subjectScore = scoreState.data.subjectScores.firstWhere(
+                  (s) => s.id == book.id,
+                  orElse: () => null as dynamic,
+                );
+
+                averageScore = subjectScore.averageScore; // ✅ Use averageScore
+                quizzesCompleted = subjectScore.completed;
+                totalQuizzes = subjectScore.total;
+              }
+
+              return _DynamicBookCard(
+                bookId: book.id,
+                title: book.bookTitle,
+                description: 'Start your learning journey',
+                imagePath1: assets['imagePath1']!,
+                imagePath2: assets['imagePath2']!,
+                color: assets['color']!,
+                score: averageScore, // ✅ Pass averageScore
+                quizzesCompleted: quizzesCompleted,
+                totalQuizzes: totalQuizzes,
+                isLoading: scoreState is OverallScoreLoading,
+              );
+            }
+
+            // Show empty state if no books registered
+            if (bookIndex == 0 && studentState.student.selectedBooks.isEmpty) {
+              return _EmptyBooksState();
+            }
+
+            return null;
+          }, childCount: studentState.student.selectedBooks.length + 1),
         );
       },
     );
@@ -299,8 +302,12 @@ class _BBhomeState extends State<BBhome> {
 class _AppBarBackground extends StatelessWidget {
   final String displayName;
   final String initials;
-
-  const _AppBarBackground({required this.displayName, required this.initials});
+  final String greeting;
+  const _AppBarBackground({
+    required this.displayName,
+    required this.initials,
+    required this.greeting,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -314,7 +321,7 @@ class _AppBarBackground extends StatelessWidget {
             children: [
               const SizedBox(height: 40),
               Text(
-                "Good Evening",
+                greeting,
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(fontSize: 10),
@@ -490,13 +497,215 @@ class _PromotionCard extends StatelessWidget {
   }
 }
 
-// import 'package:flutter/material.dart';
+class _DynamicBookCard extends StatelessWidget {
+  final String bookId;
+  final String title;
+  final String description;
+  final String imagePath1;
+  final String imagePath2;
+  final Color color;
+  final int? score;
+  final int? quizzesCompleted;
+  final int? totalQuizzes;
+  final bool isLoading;
 
-// class BbHome extends StatelessWidget {
-//   const BbHome({super.key});
+  const _DynamicBookCard({
+    required this.bookId,
+    required this.title,
+    required this.description,
+    required this.imagePath1,
+    required this.imagePath2,
+    required this.color,
+    this.score,
+    this.quizzesCompleted,
+    this.totalQuizzes,
+    this.isLoading = false,
+  });
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(child: Center(child: Text("home")));
-//   }
-// }
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Score and Quiz stats row above the card
+          if ((score != null || quizzesCompleted != null) && !isLoading)
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 8, right: 4),
+              child: Row(
+                children: [
+                  // Score badge
+                  // if (score != null)
+                  //   Container(
+                  //     padding: const EdgeInsets.symmetric(
+                  //       horizontal: 12,
+                  //       vertical: 6,
+                  //     ),
+                  //     decoration: BoxDecoration(
+                  //       color: _getScoreColor(score!),
+                  //       borderRadius: BorderRadius.circular(20),
+                  //       boxShadow: [
+                  //         BoxShadow(
+                  //           color: _getScoreColor(score!).withOpacity(0.3),
+                  //           blurRadius: 4,
+                  //           offset: const Offset(0, 2),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //     child: Row(
+                  //       mainAxisSize: MainAxisSize.min,
+                  //       children: [
+                  //         const Icon(Icons.star, color: Colors.white, size: 14),
+                  //         const SizedBox(width: 4),
+                  //         Text(
+                  //           "$score%",
+                  //           style: const TextStyle(
+                  //             color: Colors.white,
+                  //             fontWeight: FontWeight.bold,
+                  //             fontSize: 12,
+                  //           ),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
+                  if (score != null && quizzesCompleted != null)
+                    const SizedBox(width: 8),
+
+                  // Quiz completion badge
+                  // if (quizzesCompleted != null && totalQuizzes != null)
+                  //   Container(
+                  //     padding: const EdgeInsets.symmetric(
+                  //       horizontal: 12,
+                  //       vertical: 6,
+                  //     ),
+                  //     decoration: BoxDecoration(
+                  //       color: Colors.white,
+                  //       borderRadius: BorderRadius.circular(20),
+                  //       border: Border.all(color: color, width: 1.5),
+                  //       boxShadow: [
+                  //         BoxShadow(
+                  //           color: Colors.black.withOpacity(0.05),
+                  //           blurRadius: 4,
+                  //           offset: const Offset(0, 2),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //     child: Row(
+                  //       mainAxisSize: MainAxisSize.min,
+                  //       children: [
+                  //         Icon(Icons.quiz_outlined, color: color, size: 14),
+                  //         const SizedBox(width: 4),
+                  //         Text(
+                  //           "$quizzesCompleted/$totalQuizzes Quizzes",
+                  //           style: TextStyle(
+                  //             color: color,
+                  //             fontWeight: FontWeight.w600,
+                  //             fontSize: 11,
+                  //           ),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
+                  const Spacer(),
+
+                  // Quiz completion percentage (not total score)
+                ],
+              ),
+            ),
+
+          // Loading indicator
+          if (isLoading)
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 8),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Loading progress...",
+                    style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+
+          // Base card with BbQuizzesDisplay
+          BbQuizzesDisplay(
+            bookId: bookId,
+            title: title,
+            description: description,
+            imagePath1: imagePath1,
+            imagePath2: imagePath2,
+            color: color,
+            score: score,
+            progress:
+                totalQuizzes != null && totalQuizzes! > 0
+                    ? (quizzesCompleted ?? 0) / totalQuizzes!
+                    : 0.0,
+            quizzesCompleted: quizzesCompleted,
+            totalQuizzes: totalQuizzes,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getScoreColor(int score) {
+    if (score >= 80) return BBColors.successGreen;
+    if (score >= 60) return BBColors.orangeAccent;
+    return BBColors.alertRed;
+  }
+
+  // Helper to calculate completion percentage for the card
+  int _getCompletionPercentage(int? completed, int? total) {
+    if (completed == null || total == null || total == 0) return 0;
+    return ((completed / total) * 100).round();
+  }
+}
+
+class _EmptyBooksState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      padding: const EdgeInsets.all(30),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        color: Colors.blue[50],
+        border: Border.all(color: Colors.blue[200]!),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.school_outlined, size: 64, color: Colors.blue[400]),
+            const SizedBox(height: 16),
+            BBText(
+              data: "No Subjects Registered",
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Colors.blue[700],
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            BBText(
+              data: "Please register your subjects to start taking quizzes",
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: Colors.blue[600]),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

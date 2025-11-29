@@ -29,4 +29,10 @@ abstract class QuizRepository {
     required List<Map<String, dynamic>> answers,
     required int timeSpentSeconds,
   });
+
+  Future<List<Topic>> getTopicsWithStatus({
+    required String bookTitle,
+    required int chapterNumber,
+    required String bookId,
+  });
 }

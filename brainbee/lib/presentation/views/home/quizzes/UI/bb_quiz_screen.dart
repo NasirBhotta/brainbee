@@ -3,6 +3,7 @@ import 'package:brainbee/core/utils/bb_text.dart';
 import 'package:brainbee/core/utils/bb_textTheme_extention.dart';
 import 'package:brainbee/core/utils/helper/bb_confirmation_dialog.dart';
 import 'package:brainbee/core/utils/helper/bb_result_extention.dart';
+import 'package:brainbee/presentation/views/home/bloc/student_bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/bloc/quiz_bloc.dart';
 import 'package:brainbee/presentation/views/home/quizzes/models/quiz_data_model.dart';
 import 'package:brainbee/presentation/views/learn/battle/UI/bb_battle_report_card.dart';
@@ -175,7 +176,7 @@ class _BBInAppQuizScreenState extends State<BBInAppQuizScreen> {
         timeSpentSeconds: totalQuizTime,
       ),
     );
-
+    context.read<StudentBloc>().add(StudentFetchData());
     // Show result dialog immediately (don't wait for submission)
     _showResultDialog();
   }

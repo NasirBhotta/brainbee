@@ -4,6 +4,35 @@ import 'package:brainbee/presentation/views/extras/achievements/models/bb_achiev
 import 'package:brainbee/presentation/views/extras/leaderboard/models/bb_leaderboard_class.dart';
 import 'package:brainbee/presentation/views/settings/model/book_model.dart';
 
+class TopicProgress {
+  final String topicKey;
+  final int quizzesCompleted;
+  final List<String> completedQuizIds;
+  final bool isUnlocked;
+  final DateTime? unlockedAt;
+
+  TopicProgress({
+    required this.topicKey,
+    this.quizzesCompleted = 0,
+    this.completedQuizIds = const [],
+    this.isUnlocked = false,
+    this.unlockedAt,
+  });
+
+  factory TopicProgress.fromJson(Map<String, dynamic> json) {
+    return TopicProgress(
+      topicKey: json['topicKey'] ?? '',
+      quizzesCompleted: json['quizzesCompleted'] ?? 0,
+      completedQuizIds: List<String>.from(json['completedQuizIds'] ?? []),
+      isUnlocked: json['isUnlocked'] ?? false,
+      unlockedAt:
+          json['unlockedAt'] != null
+              ? DateTime.parse(json['unlockedAt'])
+              : null,
+    );
+  }
+}
+
 class StudentModel extends UserModel {
   final int grade;
   final List<String> subjects;
@@ -25,6 +54,7 @@ class StudentModel extends UserModel {
   final Map<String, String> chapterLevels;
   final Map<String, TopicPerformance>? topicPerformance;
   final String? profileImage;
+  final Map<String, TopicProgress>? topicProgress;
 
   StudentModel({
     this.profileImage,
@@ -52,6 +82,7 @@ class StudentModel extends UserModel {
     required this.score,
     required this.chapterLevels,
     this.topicPerformance,
+    this.topicProgress,
   });
 
   factory StudentModel.fromJson(Map<String, dynamic> json) {
@@ -76,7 +107,7 @@ class StudentModel extends UserModel {
       goal: Goal.fromJson(user['goal'] ?? {}),
       grade: user['grade'] ?? 0,
       subjects: List<String>.from(user['subjects'] ?? []),
-      selectedBooks: selectedBooksList, // ✅ NEW: Parse selectedBooks if present
+      selectedBooks: selectedBooksList,
       parentId: user['parentId'],
       coins: user['coins'] ?? 0,
       streakScore: user['streakScore'] ?? 0,
@@ -98,9 +129,19 @@ class StudentModel extends UserModel {
       enrolledClasses: List<String>.from(user['enrolledClasses'] ?? []),
       score: user['score'] ?? 0,
       chapterLevels: Map<String, String>.from(user['chapter_levels'] ?? {}),
+
       // topicPerformance: (user['topic_performance'] ?? {}).map<dynamic, dynamic>(
       //   (key, value) => MapEntry(key, TopicPerformance.fromJson(value)),
       // ),
+      topicProgress:
+          json['user']['topicProgress'] != null
+              ? (json['user']['topicProgress'] as Map<String, dynamic>).map(
+                (key, value) => MapEntry(
+                  key,
+                  TopicProgress.fromJson(value as Map<String, dynamic>),
+                ),
+              )
+              : null,
     );
   }
 

@@ -1,52 +1,13 @@
 part of 'quiz_bloc.dart';
 
-// quiz_state.dart
 abstract class QuizState extends Equatable {
   const QuizState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class QuizInitial extends QuizState {}
-
-class QuizLoading extends QuizState {}
-
-class QuizzesLoaded extends QuizState {
-  final QuizData quizData;
-
-  const QuizzesLoaded({required this.quizData});
-
-  @override
-  List<Object> get props => [quizData];
-}
-
-class QuizStarted extends QuizState {
-  final QuizData quiz;
-
-  const QuizStarted({required this.quiz});
-
-  @override
-  List<Object> get props => [quiz];
-}
-
-class QuizGenerating extends QuizState {
-  final String message;
-
-  const QuizGenerating({this.message = 'Generating quiz...'});
-
-  @override
-  List<Object> get props => [message];
-}
-
-class QuizError extends QuizState {
-  final String message;
-
-  const QuizError({required this.message});
-
-  @override
-  List<Object> get props => [message];
-}
 
 class BookDataLoading extends QuizState {}
 
@@ -68,6 +29,24 @@ class BookDataError extends QuizState {
   List<Object> get props => [message];
 }
 
+class QuizStarted extends QuizState {
+  final QuizData quiz;
+
+  const QuizStarted({required this.quiz});
+
+  @override
+  List<Object> get props => [quiz];
+}
+
+class QuizGenerating extends QuizState {
+  final String message;
+
+  const QuizGenerating({required this.message});
+
+  @override
+  List<Object> get props => [message];
+}
+
 class QuizGenerated extends QuizState {
   final String message;
 
@@ -77,13 +56,28 @@ class QuizGenerated extends QuizState {
   List<Object> get props => [message];
 }
 
-class QuizSubmitting extends QuizState {
+class QuizError extends QuizState {
   final String message;
 
-  const QuizSubmitting({this.message = 'Submitting quiz results...'});
+  const QuizError({required this.message});
 
   @override
   List<Object> get props => [message];
+}
+
+class QuizLoading extends QuizState {}
+
+class QuizzesLoaded extends QuizState {
+  final QuizData quizData;
+
+  const QuizzesLoaded({required this.quizData});
+
+  @override
+  List<Object> get props => [quizData];
+}
+
+class QuizSubmitting extends QuizState {
+  const QuizSubmitting();
 }
 
 class QuizSubmitted extends QuizState {
@@ -102,4 +96,43 @@ class QuizSubmissionError extends QuizState {
 
   @override
   List<Object> get props => [message];
+}
+
+class TopicsWithStatusLoading extends QuizState {}
+
+class TopicsWithStatusLoaded extends QuizState {
+  final List<Topic> topics;
+  final int chapterNumber;
+  final Map<String, List<Topic>>
+  allTopicsByChapter; // ✅ Store all chapters' topics
+
+  const TopicsWithStatusLoaded({
+    required this.topics,
+    required this.chapterNumber,
+    required this.allTopicsByChapter,
+  });
+
+  @override
+  List<Object> get props => [topics, chapterNumber, allTopicsByChapter];
+}
+
+class TopicsWithStatusError extends QuizState {
+  final String message;
+
+  const TopicsWithStatusError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+// ✅ NEW: State for loading all topics at once
+class AllTopicsStatusLoading extends QuizState {}
+
+class AllTopicsStatusLoaded extends QuizState {
+  final Map<String, List<Topic>> allTopicsByChapter;
+
+  const AllTopicsStatusLoaded({required this.allTopicsByChapter});
+
+  @override
+  List<Object> get props => [allTopicsByChapter];
 }

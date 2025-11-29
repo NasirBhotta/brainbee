@@ -1,10 +1,10 @@
 part of 'quiz_bloc.dart';
 
-sealed class QuizEvent extends Equatable {
+abstract class QuizEvent extends Equatable {
   const QuizEvent();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class LoadSubjectQuizzes extends QuizEvent {
@@ -56,11 +56,12 @@ class LoadQuizById extends QuizEvent {
 }
 
 class SubmitQuizPerformance extends QuizEvent {
-  final int timeSpentSeconds;
   final String bookId;
   final String studentId;
   final String quizId;
   final List<Map<String, dynamic>> answers;
+  final int timeSpentSeconds;
+  final String? bookTitle; // ✅ Added to refresh topics after submission
 
   const SubmitQuizPerformance({
     required this.bookId,
@@ -68,14 +69,62 @@ class SubmitQuizPerformance extends QuizEvent {
     required this.quizId,
     required this.answers,
     required this.timeSpentSeconds,
+    this.bookTitle,
   });
 
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
+    bookId,
     studentId,
     quizId,
     answers,
     timeSpentSeconds,
-    bookId,
+    bookTitle,
   ];
+}
+
+class LoadTopicsWithStatus extends QuizEvent {
+  final String bookTitle;
+  final int chapterNumber;
+  final String bookId;
+
+  const LoadTopicsWithStatus({
+    required this.bookTitle,
+    required this.chapterNumber,
+    required this.bookId,
+  });
+
+  @override
+  List<Object> get props => [bookTitle, chapterNumber, bookId];
+}
+
+class RefreshTopicStatus extends QuizEvent {
+  final String bookTitle;
+  final int chapterNumber;
+  final String bookId;
+
+  const RefreshTopicStatus({
+    required this.bookTitle,
+    required this.chapterNumber,
+    required this.bookId,
+  });
+
+  @override
+  List<Object> get props => [bookTitle, chapterNumber];
+}
+
+// ✅ NEW: Event to load all topics for all chapters at once
+class LoadAllTopicsStatus extends QuizEvent {
+  final String bookTitle;
+  final List<Chapter> chapters;
+  final String bookId;
+
+  const LoadAllTopicsStatus({
+    required this.bookTitle,
+    required this.chapters,
+    required this.bookId,
+  });
+
+  @override
+  List<Object> get props => [bookTitle, chapters, bookId];
 }

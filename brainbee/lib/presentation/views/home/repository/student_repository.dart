@@ -144,7 +144,8 @@ class StudentRepository {
               ? userData['goals'][0]
               : null,
         ),
-
+        // Handle topicProgress
+        "topicProgress": userData['topicProgress'] ?? {},
         // ✅ Handle selectedBooks
         "selectedBooks": userData['selectedBooks'] ?? [],
         // 4. Default to an empty list if data is null or fails

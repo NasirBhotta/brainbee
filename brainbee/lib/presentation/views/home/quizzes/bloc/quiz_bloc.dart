@@ -12,6 +12,9 @@ part 'quiz_state.dart';
 class QuizBloc extends Bloc<QuizEvent, QuizState> {
   final QuizRepository quizRepository;
 
+  // Store topics by chapter for efficient updates
+  final Map<String, List<Topic>> _topicsByChapter = {};
+
   QuizBloc({required this.quizRepository}) : super(QuizInitial()) {
     on<LoadSubjectQuizzes>(_onLoadSubjectQuizzes);
     on<StartExistingQuiz>(_onStartExistingQuiz);
@@ -19,6 +22,9 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     on<RefreshQuizzes>(_onRefreshQuizzes);
     on<LoadQuizById>(_onLoadQuizById);
     on<SubmitQuizPerformance>(_onSubmitQuizPerformance);
+    on<LoadTopicsWithStatus>(_onLoadTopicsWithStatus);
+    on<RefreshTopicStatus>(_onRefreshTopicStatus);
+    on<LoadAllTopicsStatus>(_onLoadAllTopicsStatus);
   }
 
   Future<void> _onLoadSubjectQuizzes(
@@ -28,12 +34,13 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     try {
       emit(BookDataLoading());
 
-      // print("Subject: ${event.subject}, Grade: ${event.grade}");
-
       final bookData = await quizRepository.getQuizzesBySubject(
         subject: event.subject,
         grade: event.grade,
       );
+
+      // ✅ DON'T clear topics here - let them persist until new ones load
+      // This prevents the UI from showing empty data between loads
 
       emit(BookDataLoaded(bookData: bookData));
     } catch (e) {
@@ -46,7 +53,6 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     Emitter<QuizState> emit,
   ) async {
     try {
-      // You might want to refresh quiz data or validate it here
       emit(QuizStarted(quiz: event.quizData));
     } catch (e) {
       emit(QuizError(message: 'Failed to start quiz: ${e.toString()}'));
@@ -87,6 +93,19 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       );
 
       emit(QuizSubmitted(result: result));
+
+      // ✅ Trigger topic status refresh after quiz submission
+      // This will update unlock status for all chapters
+      if (state is BookDataLoaded) {
+        final bookState = state as BookDataLoaded;
+        add(
+          LoadAllTopicsStatus(
+            bookTitle: event.bookTitle ?? '',
+            chapters: bookState.bookData.chapters,
+            bookId: event.bookId,
+          ),
+        );
+      }
     } catch (e) {
       emit(
         QuizSubmissionError(message: 'Failed to submit quiz: ${e.toString()}'),
@@ -98,122 +117,105 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     RefreshQuizzes event,
     Emitter<QuizState> emit,
   ) async {
-    // Same as load but doesn't show loading state
     add(LoadSubjectQuizzes(subject: event.subject, grade: event.grade));
   }
 
-  // List<ParsedChapter> _parseQuizzesIntoChapters(
-  //   List<QuizData> quizzes,
-  //   String subject,
-  // ) {
-  //   final Map<String, List<QuizData>> chapterGroups = {};
+  Future<void> _onLoadTopicsWithStatus(
+    LoadTopicsWithStatus event,
+    Emitter<QuizState> emit,
+  ) async {
+    try {
+      final topics = await quizRepository.getTopicsWithStatus(
+        bookTitle: event.bookTitle,
+        chapterNumber: event.chapterNumber,
+        bookId: event.bookId,
+      );
 
-  //   // Group quizzes by chapter using topic_key pattern
-  //   for (final quiz in quizzes) {
-  //     final chapterKey = _extractChapterKey(quiz.topicKey);
-  //     chapterGroups[chapterKey] ??= [];
-  //     chapterGroups[chapterKey]!.add(quiz);
-  //   }
+      // Store topics for this chapter
+      final chapterKey = '${event.bookTitle}_${event.chapterNumber}';
+      _topicsByChapter[chapterKey] = topics;
 
-  //   // Convert to ParsedChapter objects
-  //   final chapters = <ParsedChapter>[];
-  //   int colorIndex = 0;
+      // ✅ Emit updated state with all accumulated topics
+      emit(
+        TopicsWithStatusLoaded(
+          topics: topics,
+          chapterNumber: event.chapterNumber,
+          allTopicsByChapter: Map.from(_topicsByChapter),
+        ),
+      );
+    } catch (e) {
+      emit(TopicsWithStatusError(e.toString()));
+    }
+  }
 
-  //   for (final entry in chapterGroups.entries) {
-  //     final chapterInfo = _parseChapterInfo(entry.key);
-  //     final topics = _createTopicsFromQuizzes(entry.value);
+  Future<void> _onRefreshTopicStatus(
+    RefreshTopicStatus event,
+    Emitter<QuizState> emit,
+  ) async {
+    await _onLoadTopicsWithStatus(
+      LoadTopicsWithStatus(
+        bookTitle: event.bookTitle,
+        chapterNumber: event.chapterNumber,
+        bookId: event.bookId,
+      ),
+      emit,
+    );
+  }
 
-  //     chapters.add(
-  //       ParsedChapter(
-  //         bookName: chapterInfo['bookName']!,
-  //         chapterNumber: int.parse(chapterInfo['chapterNumber']!),
-  //         chapterTitle: chapterInfo['chapterTitle']!,
-  //         topics: topics,
-  //         color: _getChapterColor(colorIndex),
-  //         icon: _getChapterIcon(subject, colorIndex),
-  //       ),
-  //     );
+  /// ✅ Load all topics for all chapters at once
+  /// Clear cache only when explicitly starting a fresh load
+  Future<void> _onLoadAllTopicsStatus(
+    LoadAllTopicsStatus event,
+    Emitter<QuizState> emit,
+  ) async {
+    try {
+      print("=== BLOC: Starting LoadAllTopicsStatus ===");
+      print("Book title received: ${event.bookTitle}");
+      print("Number of chapters: ${event.chapters.length}");
 
-  //     colorIndex++;
-  //   }
+      emit(AllTopicsStatusLoading());
 
-  //   // Sort chapters by chapter number
-  //   chapters.sort((a, b) => a.chapterNumber.compareTo(b.chapterNumber));
+      // ✅ Clear only when explicitly loading all topics
+      // This ensures old data doesn't persist when we want fresh data
+      _topicsByChapter.clear();
 
-  //   return chapters;
-  // }
+      // Load topics for all chapters in parallel for better performance
+      final futures = event.chapters.map((chapter) async {
+        print("BLOC: Loading topics for chapter ${chapter.chapter}");
 
-  // String _extractChapterKey(String topicKey) {
-  //   // Extract chapter part from topic_key like "Biology 9th Chapter 3 Morphology"
-  //   // Returns "Biology 9th Chapter 3"
-  //   final parts = topicKey.split(' ');
-  //   final chapterIndex = parts.indexOf('Chapter');
-  //   if (chapterIndex != -1 && chapterIndex + 1 < parts.length) {
-  //     return parts.sublist(0, chapterIndex + 2).join(' ');
-  //   }
-  //   return topicKey; // fallback
-  // }
+        final topics = await quizRepository.getTopicsWithStatus(
+          bookTitle: event.bookTitle,
+          chapterNumber: chapter.chapter,
+          bookId: event.bookId,
+        );
 
-  // Map<String, String> _parseChapterInfo(String chapterKey) {
-  //   // Parse "Biology 9th Chapter 3" into components
-  //   final parts = chapterKey.split(' ');
-  //   final chapterIndex = parts.indexOf('Chapter');
+        final chapterKey = '${event.bookTitle}_${chapter.chapter}';
+        print("BLOC: Loaded ${topics.length} topics for key: $chapterKey");
 
-  //   return {
-  //     'bookName': parts.sublist(0, chapterIndex).join(' '),
-  //     'chapterNumber': parts[chapterIndex + 1],
-  //     'chapterTitle':
-  //         'Chapter ${parts[chapterIndex + 1]}', // You might want to get actual titles
-  //   };
-  // }
+        return MapEntry(chapterKey, topics);
+      });
 
-  // List<ParsedTopic> _createTopicsFromQuizzes(List<QuizData> quizzes) {
-  //   return quizzes.map((quiz) {
-  //     final topicTitle = _extractTopicTitle(quiz.topicKey);
-  //     return ParsedTopic(
-  //       topicKey: quiz.topicKey,
-  //       topicTitle: topicTitle,
-  //       hasQuiz: true,
-  //       quizData: quiz,
-  //     );
-  //   }).toList();
-  // }
+      final results = await Future.wait(futures);
 
-  //   String _extractTopicTitle(String topicKey) {
-  //     // Extract topic title from "Biology 9th Chapter 3 Morphology"
-  //     // Returns "Morphology"
-  //     final parts = topicKey.split(' ');
-  //     final chapterIndex = parts.indexOf('Chapter');
-  //     if (chapterIndex != -1 && chapterIndex + 2 < parts.length) {
-  //       return parts.sublist(chapterIndex + 2).join(' ');
-  //     }
-  //     return topicKey; // fallback
-  //   }
+      // Update cache with fresh data
+      for (final entry in results) {
+        _topicsByChapter[entry.key] = entry.value;
+        print(
+          "BLOC: Cached ${entry.value.length} topics for key: ${entry.key}",
+        );
+      }
 
-  //   Color _getChapterColor(int index) {
-  //     const colors = [
-  //       BBColors.progressColor1,
-  //       BBColors.progressColor2,
-  //       BBColors.progressColor3,
-  //       BBColors.progressColor4,
-  //     ];
-  //     return colors[index % colors.length];
-  //   }
+      print("=== BLOC: All topics cached ===");
+      print("Total cache keys: ${_topicsByChapter.keys.toList()}");
 
-  //   IconData _getChapterIcon(String subject, int index) {
-  //     switch (subject.toLowerCase()) {
-  //       case 'mathematics':
-  //         return Icons.calculate;
-  //       case 'physics':
-  //         return Icons.science;
-  //       case 'biology':
-  //         return Icons.biotech;
-  //       case 'chemistry':
-  //         return Icons.add_reaction;
-  //       default:
-  //         return Icons.book;
-  //     }
-  //   }
+      emit(
+        AllTopicsStatusLoaded(allTopicsByChapter: Map.from(_topicsByChapter)),
+      );
+    } catch (e) {
+      print("=== BLOC ERROR: $e ===");
+      emit(TopicsWithStatusError('Failed to load all topics: ${e.toString()}'));
+    }
+  }
 
   FutureOr<void> _onLoadQuizById(
     LoadQuizById event,
